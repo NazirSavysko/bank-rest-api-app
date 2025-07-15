@@ -1,5 +1,6 @@
 package bank.rest.app.bankrestapp.entity;
 
+import bank.rest.app.bankrestapp.entity.enums.Role;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -25,4 +26,5 @@ public final class AuthUSer {
 
     private LocalDateTime createdAt;
 
+    private Role role;
 }
