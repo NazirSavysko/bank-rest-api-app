@@ -67,16 +67,16 @@ public class SecurityConfig {
         return provider;
     }
 
-//    @Bean
-//    public CorsConfigurationSource corsConfigurationSource() {
-//        CorsConfiguration config = new CorsConfiguration();
-//        config.setAllowedOrigins(of("http://localhost:3000"));
-//        config.setAllowedMethods(of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-//        config.setAllowedHeaders(of("*"));
-//        config.setAllowCredentials(true);
-//
-//        UrlBasedCorsConfigurationSource  source = new UrlBasedCorsConfigurationSource();
-//        source.registerCorsConfiguration("/**", config);
-//        return source;
-//    }
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(of("http://localhost:3000"));
+        config.setAllowedMethods(of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource  source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
 }
