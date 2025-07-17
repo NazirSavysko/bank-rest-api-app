@@ -1,12 +1,12 @@
 package bank.rest.app.bankrestapp.entity;
 
-import bank.rest.app.bankrestapp.entity.enums.Role;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
+
+import static jakarta.persistence.CascadeType.ALL;
 
 @Entity
 @Table(name = "auth_user")
@@ -26,5 +26,12 @@ public final class AuthUSer {
 
     private LocalDateTime createdAt;
 
-    private Role role;
+    @ManyToMany(fetch = FetchType.EAGER,
+            cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "customer_roles",
+            joinColumns = @JoinColumn(name = "customer_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private List<CustomerRole> customerRole;
 }

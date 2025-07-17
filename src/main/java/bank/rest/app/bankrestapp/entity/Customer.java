@@ -31,5 +31,4 @@ public final class Customer {
     @JoinColumn(name = "user_id", referencedColumnName = "userId")
     private AuthUSer authUser;
 
-
 }
