@@ -5,20 +5,24 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 
 
 import static io.jsonwebtoken.SignatureAlgorithm.HS256;
 import static java.lang.System.currentTimeMillis;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Component
-public class JwtUtil {
-    private final String SECRET = "your-256-bit-secret-key-your-256-bit-secret-key";
-    private final Key key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+public final class JwtUtil {
+    private final Key key;
+
+    public JwtUtil(@Value("${jwt.secret}") String secret) {
+        this.key = Keys.hmacShaKeyFor(secret.getBytes(UTF_8));
+    }
 
     public String generateToken(final @NotNull Customer customer) {
         return Jwts.builder()
