@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+import static jakarta.persistence.CascadeType.ALL;
+
 @Entity
 @Table(name = "card")
 @Setter
@@ -25,7 +27,7 @@ public final class Card {
 
     private LocalDateTime createdAt;
 
-    @OneToOne
+    @OneToOne(cascade = ALL)
     @JoinColumn(name = "account_id", referencedColumnName = "accountId")
     private Account account;
 }

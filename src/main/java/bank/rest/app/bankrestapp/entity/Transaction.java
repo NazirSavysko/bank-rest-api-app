@@ -1,6 +1,6 @@
 package bank.rest.app.bankrestapp.entity;
 
-import bank.rest.app.bankrestapp.entity.enums.Concurrency;
+import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
 import bank.rest.app.bankrestapp.entity.enums.TransactionType;
 import jakarta.persistence.*;
@@ -9,6 +9,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import static jakarta.persistence.CascadeType.ALL;
 import static jakarta.persistence.EnumType.STRING;
 
 @Entity
@@ -26,7 +27,7 @@ public final class Transaction {
     private BigDecimal amount;
 
     @Enumerated(STRING)
-    private Concurrency currencyCode;
+    private Currency currencyCode;
 
     private String description;
 
@@ -38,11 +39,11 @@ public final class Transaction {
 
     private LocalDateTime transactionDate;
 
-    @ManyToOne
+    @ManyToOne(cascade = ALL)
     @JoinColumn(name = "from_account_id", referencedColumnName = "accountId")
     private Account account;
 
-    @ManyToOne
+    @ManyToOne(cascade = ALL)
     @JoinColumn(name = "to_account_id", referencedColumnName = "accountId")
     private Account toAccount;
 

@@ -1,6 +1,6 @@
-package bank.rest.app.bankrestapp.dto;
+package bank.rest.app.bankrestapp.dto.get;
 
-public record PaymentDTO(
+public record GetPaymentDTO(
         String concurrency,
         String amount,
         String beneficiaryName,

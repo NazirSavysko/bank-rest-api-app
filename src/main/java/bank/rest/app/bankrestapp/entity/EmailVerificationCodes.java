@@ -25,5 +25,7 @@ public class EmailVerificationCodes {
 
     private String code;
 
+    private boolean isVerified;
+
     private LocalDateTime createdAt;
 }

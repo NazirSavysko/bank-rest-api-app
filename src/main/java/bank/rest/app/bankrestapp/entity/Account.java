@@ -1,7 +1,7 @@
 package bank.rest.app.bankrestapp.entity;
 
 import bank.rest.app.bankrestapp.entity.enums.AccountStatus;
-import bank.rest.app.bankrestapp.entity.enums.Concurrency;
+import bank.rest.app.bankrestapp.entity.enums.Currency;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static jakarta.persistence.CascadeType.ALL;
 import static jakarta.persistence.EnumType.STRING;
 
 @Entity
@@ -32,19 +33,19 @@ public final class Account {
     private BigDecimal balance;
 
     @Enumerated(STRING)
-    private Concurrency currencyCode;
+    private Currency currencyCode;
 
     @Enumerated(STRING)
     private AccountStatus status;
 
     private LocalDateTime createdAt;
 
-    @OneToOne(mappedBy = "account", cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "account", cascade = ALL)
     private Card card;
 
-    @OneToMany(mappedBy = "account")
+    @OneToMany(mappedBy = "account", cascade = ALL)
     private List<Transaction> transactionHistory;
 
-    @OneToMany(mappedBy = "account")
+    @OneToMany(mappedBy = "account", cascade = ALL)
     private List<Payment> paymentsList;
 }

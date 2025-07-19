@@ -1,9 +1,9 @@
 package bank.rest.app.bankrestapp.mapper.impl;
 
-import bank.rest.app.bankrestapp.dto.AccountDTO;
-import bank.rest.app.bankrestapp.dto.CardDTO;
-import bank.rest.app.bankrestapp.dto.PaymentDTO;
-import bank.rest.app.bankrestapp.dto.TransactionDTO;
+import bank.rest.app.bankrestapp.dto.get.GetAccountDTO;
+import bank.rest.app.bankrestapp.dto.get.GetCardDTO;
+import bank.rest.app.bankrestapp.dto.get.GetPaymentDTO;
+import bank.rest.app.bankrestapp.dto.get.GetTransactionDTO;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.Card;
 import bank.rest.app.bankrestapp.entity.Payment;
@@ -18,16 +18,16 @@ import static bank.rest.app.utils.MapperUtils.mapCollection;
 import static bank.rest.app.utils.MapperUtils.mapDto;
 
 @Component
-public final class AccountMapperImpl implements Mapper<Account, AccountDTO> {
+public final class AccountMapperImpl implements Mapper<Account, GetAccountDTO> {
 
-    private final Mapper<Card, CardDTO> cardMapper;
-    private final Mapper<Transaction, TransactionDTO> transactionMapper;
-    private final Mapper<Payment, PaymentDTO> paymentMapper;
+    private final Mapper<Card, GetCardDTO> cardMapper;
+    private final Mapper<Transaction, GetTransactionDTO> transactionMapper;
+    private final Mapper<Payment, GetPaymentDTO> paymentMapper;
 
     @Autowired
-    public AccountMapperImpl(final Mapper<Card, CardDTO> cardMapper,
-                             final Mapper<Transaction, TransactionDTO> transactionMapper,
-                             final Mapper<Payment, PaymentDTO> paymentMapper) {
+    public AccountMapperImpl(final Mapper<Card, GetCardDTO> cardMapper,
+                             final Mapper<Transaction, GetTransactionDTO> transactionMapper,
+                             final Mapper<Payment, GetPaymentDTO> paymentMapper) {
         this.cardMapper = cardMapper;
         this.transactionMapper = transactionMapper;
         this.paymentMapper = paymentMapper;
@@ -35,8 +35,8 @@ public final class AccountMapperImpl implements Mapper<Account, AccountDTO> {
 
     @Contract("_ -> new")
     @Override
-    public @NotNull AccountDTO toDto(final @NotNull Account entity) {
-        return new AccountDTO(
+    public @NotNull GetAccountDTO toDto(final @NotNull Account entity) {
+        return new GetAccountDTO(
                 entity.getAccountNumber(),
                 entity.getBalance(),
                 entity.getCurrencyCode().name(),

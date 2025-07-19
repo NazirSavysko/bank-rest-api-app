@@ -31,7 +31,6 @@ public final class RestControllerAdviceHandler {
     @ExceptionHandler(SQLException.class)
     public @NotNull ResponseEntity<?> handleSQLException(@NotNull SQLException e) {
 
-        e.printStackTrace();
         return ResponseEntity.internalServerError()
                 .contentType(APPLICATION_JSON)
                 .body(of(

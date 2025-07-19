@@ -1,11 +1,12 @@
 package bank.rest.app.bankrestapp.controller;
 
-import bank.rest.app.bankrestapp.dto.AuthenticateDTO;
+import bank.rest.app.bankrestapp.dto.get.AuthenticateDTO;
 import bank.rest.app.bankrestapp.dto.CreateCustomerDTO;
 import bank.rest.app.bankrestapp.dto.LoginDTO;
 import bank.rest.app.bankrestapp.facade.CustomerFacade;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,9 +27,10 @@ class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(final @RequestBody CreateCustomerDTO createCustomerDTO) {
+    public ResponseEntity<?> register(final @RequestBody CreateCustomerDTO createCustomerDTO,
+                                      final BindingResult bindingResult) {
 
-        this.customerFacade.register(createCustomerDTO);
+        this.customerFacade.register(createCustomerDTO, bindingResult);
 
         return ResponseEntity
                 .status(CREATED)
@@ -36,8 +38,9 @@ class AuthController {
     }
 
     @PostMapping(path = "/log-in")
-    public ResponseEntity<?> login(final @RequestBody LoginDTO loginDTO) {
-      final AuthenticateDTO authenticated  = this.customerFacade.authenticate(loginDTO);
+    public ResponseEntity<?> login(final @RequestBody LoginDTO loginDTO,
+                                   final BindingResult bindingResult) {
+      final AuthenticateDTO authenticated  = this.customerFacade.authenticate(loginDTO, bindingResult);
 
         return ok(authenticated);
     }

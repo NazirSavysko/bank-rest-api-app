@@ -1,4 +1,4 @@
-package bank.rest.app.bankrestapp.dto;
+package bank.rest.app.bankrestapp.dto.get;
 
 public record AuthenticateDTO(
         String token,

@@ -1,6 +1,6 @@
 package bank.rest.app.bankrestapp.controller;
 
-import bank.rest.app.bankrestapp.dto.CustomerDTO;
+import bank.rest.app.bankrestapp.dto.get.GetCustomerDTO;
 import bank.rest.app.bankrestapp.facade.CustomerFacade;
 import bank.rest.app.bankrestapp.security.CustomerPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,8 +27,8 @@ class CustomerController {
     public ResponseEntity<?> getCustomer(
             final @AuthenticationPrincipal CustomerPrincipal customerPrincipal){
         final String customerEmail = customerPrincipal.getUsername();
-        final CustomerDTO customerDTO =  this.customerFacade.getCustomer(customerEmail);
+        final GetCustomerDTO getCustomerDTO =  this.customerFacade.getCustomer(customerEmail);
 
-        return ok(customerDTO);
+        return ok(getCustomerDTO);
     }
 }

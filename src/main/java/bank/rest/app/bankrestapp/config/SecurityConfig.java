@@ -10,17 +10,11 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-
-import static java.util.List.of;
 import static org.springframework.security.config.http.SessionCreationPolicy.*;
 
 @EnableWebSecurity
@@ -50,8 +44,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                                 .requestMatchers("/api/v1/log-in").permitAll()
                                 .requestMatchers("/api/v1/register").permitAll()
-                                .requestMatchers("/api/v1/email/send").permitAll()
-                                .requestMatchers("/api/v1/email/check").permitAll()
+                                .requestMatchers("/api/v1/email/**").permitAll()
 //                        .requestMatchers("/api/auth/**").permitAll()
 //                        .requestMatchers("/api/verify/**").permitAll()
 //                        .requestMatchers("/api/v1/users/user").hasRole("ADMIN")

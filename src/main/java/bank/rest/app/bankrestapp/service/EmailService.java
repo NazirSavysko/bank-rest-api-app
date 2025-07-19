@@ -8,7 +8,7 @@ public interface EmailService {
     @Scheduled(fixedRate = 3600000)
     void deleteExpiredCodes();
 
-    boolean verifyCode(String email, String inputCode);
+    void verifyCode(String email, String inputCode);
 
     @Transactional
     void sendVerificationCode(String email);

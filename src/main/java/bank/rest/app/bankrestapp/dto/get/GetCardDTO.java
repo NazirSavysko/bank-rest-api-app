@@ -1,8 +1,8 @@
-package bank.rest.app.bankrestapp.dto;
+package bank.rest.app.bankrestapp.dto.get;
 
 import java.time.LocalDateTime;
 
-public record CardDTO(
+public record GetCardDTO(
         String cardNumber,
         LocalDateTime expirationDate,
         String cvv

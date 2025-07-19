@@ -16,18 +16,18 @@ import static java.util.List.of;
  *
  * <p>Real usage examples in the banking system:</p>
  * <pre>{@code
- * // Example 1: Mapping collection of Account entities to AccountDTO list
+ * // Example 1: Mapping collection of Account entities to GetAccountDTO list
  * List<Account> accounts = customer.getAccounts();
- * List<AccountDTO> accountDTOs = MapperUtils.mapCollection(accounts, accountMapper::toDto);
+ * List<GetAccountDTO> accountDTOs = MapperUtils.mapCollection(accounts, accountMapper::toDto);
  *
- * // Example 2: Mapping single Card entity to CardDTO
+ * // Example 2: Mapping single Card entity to GetCardDTO
  * Card cardEntity = account.getCard();
- * CardDTO cardDTO = MapperUtils.mapDto(cardEntity, cardMapper::toDto);
+ * GetCardDTO cardDTO = MapperUtils.mapDto(cardEntity, cardMapper::toDto);
  *
  * // Example 3: Mapping transaction history with null safety
  * List<Transaction> transactions = account.getTransactionHistory();
- * List<TransactionDTO> transactionDTOs = MapperUtils.mapCollection(transactions,
- *     transaction -> new TransactionDTO(
+ * List<GetTransactionDTO> transactionDTOs = MapperUtils.mapCollection(transactions,
+ *     transaction -> new GetTransactionDTO(
  *         transaction.getId(),
  *         transaction.getAmount(),
  *         transaction.getType().name(),
@@ -36,7 +36,7 @@ import static java.util.List.of;
  *
  * // Example 4: Chaining with optional operations
  * Optional<Customer> customerOpt = customerRepository.findById(id);
- * CustomerDTO customerDTO = customerOpt
+ * GetCustomerDTO customerDTO = customerOpt
  *     .map(customer -> MapperUtils.mapDto(customer, customerMapper::toDto))
  *     .orElseThrow(() -> new CustomerNotFoundException("Customer not found"));
  * }</pre>
@@ -68,9 +68,9 @@ public final class MapperUtils {
      *
      * <p><strong>Banking application use cases:</strong></p>
      * <ul>
-     *   <li>Converting Customer's accounts list to AccountDTO list for API responses</li>
-     *   <li>Converting Account's transaction history to TransactionDTO list</li>
-     *   <li>Converting Account's payments list to PaymentDTO list</li>
+     *   <li>Converting Customer's accounts list to GetAccountDTO list for API responses</li>
+     *   <li>Converting Account's transaction history to GetTransactionDTO list</li>
+     *   <li>Converting Account's payments list to GetPaymentDTO list</li>
      *   <li>Converting any entity collections to corresponding DTO collections</li>
      * </ul>
      *
@@ -117,9 +117,9 @@ public final class MapperUtils {
      *
      * <p><strong>Banking application use cases:</strong></p>
      * <ul>
-     *   <li>Converting Customer entity to CustomerDTO for profile responses</li>
-     *   <li>Converting Account entity to AccountDTO for account details</li>
-     *   <li>Converting Card entity to CardDTO for card information (with security masking)</li>
+     *   <li>Converting Customer entity to GetCustomerDTO for profile responses</li>
+     *   <li>Converting Account entity to GetAccountDTO for account details</li>
+     *   <li>Converting Card entity to GetCardDTO for card information (with security masking)</li>
      *   <li>Converting AuthUser entity to UserDTO for authentication responses</li>
      * </ul>
      *

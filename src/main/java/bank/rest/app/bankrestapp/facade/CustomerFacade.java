@@ -1,12 +1,15 @@
 package bank.rest.app.bankrestapp.facade;
 
 import bank.rest.app.bankrestapp.dto.*;
+import bank.rest.app.bankrestapp.dto.get.AuthenticateDTO;
+import bank.rest.app.bankrestapp.dto.get.GetCustomerDTO;
+import org.springframework.validation.BindingResult;
 
 public interface CustomerFacade {
 
-    CustomerDTO getCustomer(final String customerEmail);
+    GetCustomerDTO getCustomer(final String customerEmail);
 
-    void register(CreateCustomerDTO createCustomerDTO);
+    void register(CreateCustomerDTO createCustomerDTO, final BindingResult bindingResult);
 
-    AuthenticateDTO authenticate(LoginDTO loginDTO);
+    AuthenticateDTO authenticate(LoginDTO loginDTO, final BindingResult bindingResult);
 }

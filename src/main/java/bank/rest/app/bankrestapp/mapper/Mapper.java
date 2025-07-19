@@ -1,5 +1,9 @@
 package bank.rest.app.bankrestapp.mapper;
 
+import bank.rest.app.bankrestapp.dto.get.GetAccountDTO;
+import bank.rest.app.bankrestapp.dto.get.GetCardDTO;
+import bank.rest.app.bankrestapp.dto.get.GetCustomerDTO;
+
 /**
  * Functional interface for converting objects from one type to another.
  * Designed for converting entities to DTO objects and vice versa.
@@ -9,9 +13,9 @@ package bank.rest.app.bankrestapp.mapper;
  *
  * <p>Real usage examples from the banking system:</p>
  * <pre>{@code
- * // Example 1: Converting Customer entity to CustomerDTO for API responses
- * Mapper<Customer, CustomerDTO> customerMapper = customer ->
- *     new CustomerDTO(
+ * // Example 1: Converting Customer entity to GetCustomerDTO for API responses
+ * Mapper<Customer, GetCustomerDTO> customerMapper = customer ->
+ *     new GetCustomerDTO(
  *         mapCollection(customer.getAccounts(), accountMapper::toDto),
  *         customer.getFirstName(),
  *         customer.getLastName(),
@@ -19,9 +23,9 @@ package bank.rest.app.bankrestapp.mapper;
  *         customer.getPhone()
  *     );
  *
- * // Example 2: Converting Account entity to AccountDTO with nested mappings
- * Mapper<Account, AccountDTO> accountMapper = account ->
- *     new AccountDTO(
+ * // Example 2: Converting Account entity to GetAccountDTO with nested mappings
+ * Mapper<Account, GetAccountDTO> accountMapper = account ->
+ *     new GetAccountDTO(
  *         account.getAccountNumber(),
  *         account.getBalance(),
  *         account.getCurrencyCode().name(), // UAH, USD, EUR
@@ -31,9 +35,9 @@ package bank.rest.app.bankrestapp.mapper;
  *         mapCollection(account.getPaymentsList(), paymentMapper::toDto)
  *     );
  *
- * // Example 3: Converting Card entity to CardDTO (security-aware)
- * Mapper<Card, CardDTO> cardMapper = card ->
- *     new CardDTO(
+ * // Example 3: Converting Card entity to GetCardDTO (security-aware)
+ * Mapper<Card, GetCardDTO> cardMapper = card ->
+ *     new GetCardDTO(
  *         card.getCardNumber(),
  *         card.getExpiryDate(),
  *         "***" // CVV never exposed in API responses for security
@@ -56,9 +60,9 @@ package bank.rest.app.bankrestapp.mapper;
  * // Usage in service layer with dependency injection
  * @Component
  * public class BankingService {
- *     private final Mapper<Customer, CustomerDTO> customerMapper;
+ *     private final Mapper<Customer, GetCustomerDTO> customerMapper;
  *
- *     public CustomerDTO getCustomerProfile(Integer customerId) {
+ *     public GetCustomerDTO getCustomerProfile(Integer customerId) {
  *         Customer entity = customerRepository.findById(customerId);
  *         return customerMapper.toDto(entity);
  *     }
@@ -66,7 +70,7 @@ package bank.rest.app.bankrestapp.mapper;
  * }</pre>
  * 
  * @param <T> source object type (Entity: Customer, Account, Card, Payment, Transaction, AuthUSer)
- * @param <R> target object type (DTO: CustomerDTO, AccountDTO, CardDTO, PaymentDTO, TransactionDTO)
+ * @param <R> target object type (DTO: GetCustomerDTO, GetAccountDTO, GetCardDTO, GetPaymentDTO, GetTransactionDTO)
  *
  * @author Savysko Nazir
  * @version 1.0
@@ -74,9 +78,9 @@ package bank.rest.app.bankrestapp.mapper;
  * @see bank.rest.app.bankrestapp.entity.Customer
  * @see bank.rest.app.bankrestapp.entity.Account
  * @see bank.rest.app.bankrestapp.entity.Card
- * @see bank.rest.app.bankrestapp.dto.CustomerDTO
- * @see bank.rest.app.bankrestapp.dto.AccountDTO
- * @see bank.rest.app.bankrestapp.dto.CardDTO
+ * @see GetCustomerDTO
+ * @see GetAccountDTO
+ * @see GetCardDTO
  * @see bank.rest.app.bankrestapp.mapper.impl.CustomerMapperImpl
  * @see bank.rest.app.bankrestapp.mapper.impl.AccountMapperImpl
  * @see bank.rest.app.bankrestapp.mapper.impl.CardMapperImpl
@@ -92,9 +96,9 @@ public interface Mapper<T,R>  {
      * the source object into the target type. In the banking application context,
      * this is typically used for:</p>
      * <ul>
-     *   <li>Converting Customer entities to CustomerDTO for API responses</li>
-     *   <li>Converting Account entities to AccountDTO with nested Card and Transaction data</li>
-     *   <li>Converting Card entities to CardDTO while protecting sensitive CVV information</li>
+     *   <li>Converting Customer entities to GetCustomerDTO for API responses</li>
+     *   <li>Converting Account entities to GetAccountDTO with nested Card and Transaction data</li>
+     *   <li>Converting Card entities to GetCardDTO while protecting sensitive CVV information</li>
      *   <li>Converting incoming DTOs to entities for database persistence</li>
      *   <li>Transforming between different representation layers with proper enum handling</li>
      * </ul>
@@ -102,7 +106,7 @@ public interface Mapper<T,R>  {
      * <p><strong>Security considerations:</strong></p>
      * <ul>
      *   <li>Never expose sensitive data like CVV codes or plain text passwords in DTOs</li>
-     *   <li>Use enum.name() for converting AccountStatus and Concurrency enums to strings</li>
+     *   <li>Use enum.name() for converting AccountStatus and Currency enums to strings</li>
      *   <li>Utilize {@link bank.rest.app.utils.MapperUtils} for null-safe collection mapping</li>
      *   <li>Handle nested object mappings with dependency injection in Spring components</li>
      * </ul>
