@@ -11,4 +11,7 @@ public interface CustomerService {
     void register(String firstName, String lastName, String email, String password, String phoneNumber);
 
     Customer checkIfAuthenticated(String email, String password);
+
+    @Transactional(rollbackFor = Exception.class)
+    void resetPassword(String email, String password);
 }

@@ -49,4 +49,9 @@ public final class MessageError {
      * Error message when email verification code is not verified.
      */
     public static final String ERRORS_EMAIL_NOT_VERIFIED = "Електронна пошта не підтверджена";
+
+    /**
+     * Error message when a customer's password is already in use.
+     */
+    public static final String ERRORS_PASSWORD_ALREADY_EXISTS = "Пароль вже використовується";
 }

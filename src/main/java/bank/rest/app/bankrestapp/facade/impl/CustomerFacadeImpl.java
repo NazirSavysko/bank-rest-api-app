@@ -78,4 +78,27 @@ public class CustomerFacadeImpl implements CustomerFacade {
 
         return new AuthenticateDTO(token, customerRole);
     }
+
+    @Override
+    public void resetPassword(final @NotNull ResetPasswordRequestDTO resetPasswordRequestDTO) {
+        this.customerService.resetPassword(
+                resetPasswordRequestDTO.email(),
+                resetPasswordRequestDTO.password()
+        );
+    }
+
+    @Override
+    public void updatePassword(final UpdateCustomerDTO updateCustomerDTO, final BindingResult bindingResult) {
+        this.dtoValidator.validate(updateCustomerDTO,bindingResult);
+
+        this.customerService.checkIfAuthenticated(
+                updateCustomerDTO.email(),
+                updateCustomerDTO.oldPassword()
+        );
+
+        this.customerService.updatePassword(
+                updateCustomerDTO.email(),
+                updateCustomerDTO.newPassword()
+        );
+    }
 }

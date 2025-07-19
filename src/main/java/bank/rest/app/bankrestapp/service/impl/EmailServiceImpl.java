@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import static bank.rest.app.bankrestapp.validation.MessageError.ERRORS_EMAIL_CODE_IS_INVALID;
+import static bank.rest.app.bankrestapp.validation.MessageError.*;
 import static java.lang.String.valueOf;
 import static java.time.LocalDateTime.now;
 
@@ -71,5 +71,20 @@ public class EmailServiceImpl implements EmailService {
         message.setSubject("Код підтвердження реєстрації");
         message.setText("Ваш код підтвердження: " + code);
         this.mailSender.send(message);
+    }
+
+    @Override
+    public void checkIfCodeIsVerified(final String email) {
+        final EmailVerificationCodes emailCode = this.codeRepo.findByEmail(email)
+                .orElseThrow(() -> new NoSuchElementException(ERRORS_EMAIL_CODE_IS_INVALID));
+
+        if (emailCode.isVerified()) {
+            throw new IllegalArgumentException(ERRORS_EMAIL_NOT_VERIFIED);
+        }
+        if (emailCode.getCreatedAt().isBefore(now().minusMinutes(EMAIL_CODE_EXPIRATION_MINUTES))) {
+            throw new IllegalArgumentException(ERRORS_EMAIL_CODE_IS_EXPIRED);
+        }
+
+        this.codeRepo.delete(emailCode);
     }
 }

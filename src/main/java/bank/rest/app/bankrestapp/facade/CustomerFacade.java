@@ -12,4 +12,8 @@ public interface CustomerFacade {
     void register(CreateCustomerDTO createCustomerDTO, final BindingResult bindingResult);
 
     AuthenticateDTO authenticate(LoginDTO loginDTO, final BindingResult bindingResult);
+
+    void resetPassword(ResetPasswordRequestDTO resetPasswordRequestDTO);
+
+    void updatePassword(UpdateCustomerDTO updateCustomerDTO, BindingResult bindingResult);
 }
