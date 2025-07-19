@@ -63,6 +63,7 @@ public class EmailServiceImpl implements EmailService {
         entity.setEmail(email);
         entity.setCode(code);
         entity.setCreatedAt(now());
+        entity.setVerified(false);
         this.codeRepo.save(entity);
 
         final SimpleMailMessage message = new SimpleMailMessage();

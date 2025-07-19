@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 
 import static jakarta.persistence.CascadeType.ALL;
 import static jakarta.persistence.EnumType.STRING;
+import static jakarta.persistence.GenerationType.SEQUENCE;
 
 @Entity
 @Table(name = "transaction")
@@ -22,6 +23,7 @@ import static jakarta.persistence.EnumType.STRING;
 public final class Transaction {
 
     @Id
+    @GeneratedValue(strategy = SEQUENCE)
     private Integer transactionId;
 
     private BigDecimal amount;

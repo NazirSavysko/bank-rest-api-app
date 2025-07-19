@@ -18,6 +18,7 @@ public final class RestControllerAdviceHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public @NotNull ResponseEntity<?> handleIllegalArgumentException(@NotNull IllegalArgumentException e) {
 
+        e.printStackTrace();
         return ResponseEntity.badRequest()
                 .contentType(APPLICATION_JSON)
                 .body(

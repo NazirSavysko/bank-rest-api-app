@@ -63,7 +63,7 @@ public class CustomerServiceImpl implements CustomerService {
         final EmailVerificationCodes emailCode = this.emailVerificationCodeRepository.findByEmail(email)
                 .orElseThrow(() -> new NoSuchElementException(ERRORS_EMAIL_CODE_IS_INVALID));
 
-        if (!emailCode.isVerified()) {
+        if (emailCode.isVerified()) {
             throw new IllegalArgumentException(ERRORS_EMAIL_NOT_VERIFIED);
         }
         if (emailCode.getCreatedAt().isBefore(now().minusMinutes(10))) {
@@ -95,6 +95,8 @@ public class CustomerServiceImpl implements CustomerService {
         account.setCustomer(customer);
         account.setCard(card);
         card.setAccount(account);
+        authUser.setCustomer(customer);
+        authUser.setCustomerRole(of(customerRole));
 
         this.customerRepository.save(customer);
 

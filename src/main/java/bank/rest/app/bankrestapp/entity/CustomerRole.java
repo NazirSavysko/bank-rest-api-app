@@ -7,6 +7,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
+import static jakarta.persistence.CascadeType.DETACH;
 import static jakarta.persistence.EnumType.STRING;
 import static jakarta.persistence.GenerationType.SEQUENCE;
 
@@ -24,4 +27,7 @@ public class CustomerRole {
 
     @Enumerated(value = STRING)
     private Role roleName;
+
+    @ManyToMany(mappedBy = "customerRole", cascade = {DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
+    private List<AuthUSer> authUsers;
 }

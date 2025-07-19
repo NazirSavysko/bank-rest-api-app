@@ -11,6 +11,7 @@ import java.util.List;
 
 import static jakarta.persistence.CascadeType.ALL;
 import static jakarta.persistence.EnumType.STRING;
+import static jakarta.persistence.GenerationType.SEQUENCE;
 
 @Entity
 @Table(name = "account")
@@ -22,6 +23,7 @@ import static jakarta.persistence.EnumType.STRING;
 public final class Account {
 
     @Id
+    @GeneratedValue(strategy = SEQUENCE)
     private Integer accountId;
 
     @ManyToOne

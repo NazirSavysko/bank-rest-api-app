@@ -6,6 +6,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 import static jakarta.persistence.CascadeType.ALL;
+import static jakarta.persistence.GenerationType.SEQUENCE;
 
 @Entity
 @Table(name = "card")
@@ -17,6 +18,7 @@ import static jakarta.persistence.CascadeType.ALL;
 public final class Card {
 
     @Id
+    @GeneratedValue(strategy = SEQUENCE)
     private Integer cardId;
 
     private String cardNumber;

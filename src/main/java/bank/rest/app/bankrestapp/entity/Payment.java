@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 
 import static jakarta.persistence.CascadeType.ALL;
 import static jakarta.persistence.EnumType.STRING;
+import static jakarta.persistence.GenerationType.SEQUENCE;
 
 @Entity
 @Table(name = "payment")
@@ -20,6 +21,7 @@ import static jakarta.persistence.EnumType.STRING;
 public final class Payment {
 
     @Id
+    @GeneratedValue(strategy = SEQUENCE)
     private Integer paymentId;
 
     private BigDecimal amount;

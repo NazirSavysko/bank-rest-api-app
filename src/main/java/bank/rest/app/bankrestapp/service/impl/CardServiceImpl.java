@@ -17,6 +17,7 @@ import static java.time.LocalDateTime.now;
 public final class CardServiceImpl implements CardService {
 
     private static final String CARD_NUMBER_PATTERN = "%016d";
+    private static final String CVV_NUMBER_PATTERN = "%03d";
     private static final int CARD_EXPIRY_YEARS = 5;
 
     private final CardRepository cardRepository;
@@ -53,6 +54,6 @@ public final class CardServiceImpl implements CardService {
     }
 
     private @NotNull String generateCvv() {
-        return String.format("%03d", (int) (random() * 1000));
+        return String.format(CVV_NUMBER_PATTERN, (int) (random() * 1000));
     }
 }

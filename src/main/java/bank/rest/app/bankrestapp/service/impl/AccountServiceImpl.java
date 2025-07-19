@@ -9,10 +9,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import static bank.rest.app.bankrestapp.entity.enums.AccountStatus.ACTIVE;
 import static bank.rest.app.bankrestapp.entity.enums.Currency.valueOf;
 import static java.lang.String.format;
+import static java.time.LocalDateTime.now;
 
 @Service
 public final class AccountServiceImpl implements AccountService {
@@ -40,6 +42,7 @@ public final class AccountServiceImpl implements AccountService {
                 .balance(balance)
                 .currencyCode(currencyEnum)
                 .status(ACTIVE)
+                .createdAt(now())
                 .build();
     }
 

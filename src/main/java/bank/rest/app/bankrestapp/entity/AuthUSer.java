@@ -6,7 +6,9 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static jakarta.persistence.CascadeType.ALL;
+import static jakarta.persistence.CascadeType.*;
+import static jakarta.persistence.FetchType.EAGER;
+import static jakarta.persistence.GenerationType.SEQUENCE;
 
 @Entity
 @Table(name = "auth_user")
@@ -18,6 +20,7 @@ import static jakarta.persistence.CascadeType.ALL;
 public final class AuthUSer {
 
     @Id
+    @GeneratedValue(strategy = SEQUENCE)
     private Integer userId;
 
     private String email;
@@ -26,11 +29,13 @@ public final class AuthUSer {
 
     private LocalDateTime createdAt;
 
-    @ManyToMany(fetch = FetchType.EAGER,
-            cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @OneToOne(mappedBy = "authUser", cascade = ALL, fetch = EAGER)
+    private Customer customer;
+
+    @ManyToMany(cascade = {DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
     @JoinTable(
             name = "customer_roles",
-            joinColumns = @JoinColumn(name = "customer_id"),
+            joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private List<CustomerRole> customerRole;
