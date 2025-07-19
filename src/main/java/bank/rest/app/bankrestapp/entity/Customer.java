@@ -31,4 +31,8 @@ public final class Customer {
     @JoinColumn(name = "user_id", referencedColumnName = "userId")
     private AuthUSer authUser;
 
+
+    @OneToMany(mappedBy = "customer", cascade = ALL)
+    private java.util.List<Account> accounts;
+
 }

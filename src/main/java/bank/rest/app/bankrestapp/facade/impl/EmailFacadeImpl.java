@@ -1,7 +1,6 @@
 package bank.rest.app.bankrestapp.facade.impl;
 
 import bank.rest.app.bankrestapp.dto.EmailDTO;
-import bank.rest.app.bankrestapp.dto.ResetPasswordRequestDTO;
 import bank.rest.app.bankrestapp.dto.VerifyCodeDTO;
 import bank.rest.app.bankrestapp.facade.EmailFacade;
 import bank.rest.app.bankrestapp.service.EmailService;
@@ -19,8 +18,8 @@ public class EmailFacadeImpl implements EmailFacade {
         this.emailService = emailService;
     }
     @Override
-    public void sendVerificationCode(final @NotNull EmailDTO emailDTO) {
-        emailService.sendVerificationCode(emailDTO.email());
+    public void sendVerificationCode(final EmailDTO email) {
+        emailService.sendVerificationCode(email.email());
     }
 
     @Override

@@ -5,8 +5,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 public interface CustomerService {
 
-    Customer login(String email, String password);
+    Customer login(String email);
 
     @Transactional(rollbackFor = Exception.class)
-    Customer register(String firstName, String lastName, String email, String password, String phoneNumber);
+    void register(String firstName, String lastName, String email, String password, String phoneNumber);
+
+    Customer checkIfAuthenticated(String email, String password);
 }

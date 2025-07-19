@@ -7,6 +7,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static jakarta.persistence.EnumType.STRING;
 
@@ -37,4 +38,13 @@ public final class Account {
     private AccountStatus status;
 
     private LocalDateTime createdAt;
+
+    @OneToOne(mappedBy = "account", cascade = CascadeType.ALL)
+    private Card card;
+
+    @OneToMany(mappedBy = "account")
+    private List<Transaction> transactionHistory;
+
+    @OneToMany(mappedBy = "account")
+    private List<Payment> paymentsList;
 }

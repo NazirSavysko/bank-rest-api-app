@@ -1,10 +1,13 @@
 package bank.rest.app.bankrestapp.entity;
 
+import bank.rest.app.bankrestapp.entity.enums.Concurrency;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+
+import static jakarta.persistence.EnumType.STRING;
 
 @Entity
 @Table(name = "payment")
@@ -20,7 +23,8 @@ public final class Payment {
 
     private BigDecimal amount;
 
-    private String currencyCode;
+    @Enumerated(STRING)
+    private Concurrency currencyCode;
 
     private String BeneficiaryName;
 

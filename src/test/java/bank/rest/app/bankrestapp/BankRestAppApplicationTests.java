@@ -8,6 +8,7 @@ class BankRestAppApplicationTests {
 
     @Test
     void contextLoads() {
+
     }
 
 }

@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import static jakarta.persistence.EnumType.STRING;
 
@@ -24,6 +25,7 @@ public final class Transaction {
 
     private BigDecimal amount;
 
+    @Enumerated(STRING)
     private Concurrency currencyCode;
 
     private String description;
@@ -31,7 +33,10 @@ public final class Transaction {
     @Enumerated(STRING)
     private TransactionType transactionType;
 
+    @Enumerated(STRING)
     private TransactionStatus status;
+
+    private LocalDateTime transactionDate;
 
     @ManyToOne
     @JoinColumn(name = "from_account_id", referencedColumnName = "accountId")

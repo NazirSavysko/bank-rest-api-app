@@ -1,11 +1,12 @@
 package bank.rest.app.bankrestapp.facade;
 
-import bank.rest.app.bankrestapp.dto.CreateCustomerDTO;
-import bank.rest.app.bankrestapp.dto.LoginDTO;
+import bank.rest.app.bankrestapp.dto.*;
 
 public interface CustomerFacade {
 
-    Object login(LoginDTO loginDTO);
+    CustomerDTO getCustomer(final String customerEmail);
 
-    Object register(CreateCustomerDTO createCustomerDTO);
+    void register(CreateCustomerDTO createCustomerDTO);
+
+    AuthenticateDTO authenticate(LoginDTO loginDTO);
 }

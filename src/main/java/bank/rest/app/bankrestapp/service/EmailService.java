@@ -4,8 +4,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.annotation.Transactional;
 
 public interface EmailService {
-    @Scheduled(fixedRate = 3600000) // раз в час
     @Transactional
+    @Scheduled(fixedRate = 3600000)
     void deleteExpiredCodes();
 
     boolean verifyCode(String email, String inputCode);

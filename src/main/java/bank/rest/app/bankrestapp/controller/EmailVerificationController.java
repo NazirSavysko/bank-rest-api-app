@@ -1,17 +1,18 @@
 package bank.rest.app.bankrestapp.controller;
 
 import bank.rest.app.bankrestapp.dto.EmailDTO;
-import bank.rest.app.bankrestapp.dto.ResetPasswordRequestDTO;
 import bank.rest.app.bankrestapp.dto.VerifyCodeDTO;
 import bank.rest.app.bankrestapp.facade.EmailFacade;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.ResponseEntity.badRequest;
+import static org.springframework.http.ResponseEntity.ok;
+
 
 @RestController
-@RequestMapping("/api/v1/verify")
+@RequestMapping("/api/v1/email")
 public final class EmailVerificationController {
 
     private final EmailFacade emailFacade;
@@ -22,20 +23,17 @@ public final class EmailVerificationController {
     }
 
     @PostMapping("/send")
-    public ResponseEntity<?> sendCode(final @RequestParam EmailDTO emailDTO) {
-        emailFacade.sendVerificationCode(emailDTO);
+    public ResponseEntity<?> sendCode(final @RequestBody EmailDTO email) {
+        emailFacade.sendVerificationCode(email);
 
-        return ResponseEntity
-                .ok("Code has been sent to your email");
+        return ok()
+                .build();
     }
 
     @PostMapping("/check")
     public ResponseEntity<?> checkCode(final @RequestParam VerifyCodeDTO verifyCodeDTO) {
         final boolean valid = emailFacade.verifyCode(verifyCodeDTO);
 
-        return valid ? ResponseEntity.ok("Code is valid") :
-                ResponseEntity
-                        .status(BAD_REQUEST)
-                        .body("Invalid code");
+        return valid ? ok().build() : badRequest().build();
     }
 }

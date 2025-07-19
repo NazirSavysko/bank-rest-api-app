@@ -1,5 +1,6 @@
-package bank.rest.app.bankrestapp.security;
+package bank.rest.app.bankrestapp.config;
 
+import bank.rest.app.bankrestapp.security.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,6 +21,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 
 import static java.util.List.of;
+import static org.springframework.security.config.http.SessionCreationPolicy.*;
 
 @EnableWebSecurity
 @Configuration
@@ -28,7 +30,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Autowired
-    public SecurityConfig(UserDetailsService userDetailsService,JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(UserDetailsService userDetailsService, JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.userDetailsService = userDetailsService;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
@@ -44,13 +46,16 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
-                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // ⬅️ нет сессий
+                .sessionManagement(sess -> sess.sessionCreationPolicy(STATELESS))
                 .authorizeHttpRequests(auth -> auth
-//                        .requestMatchers("/login").permitAll()
+                                .requestMatchers("/api/v1/log-in").permitAll()
+                                .requestMatchers("/api/v1/register").permitAll()
+                                .requestMatchers("/api/v1/email/send").permitAll()
+                                .requestMatchers("/api/v1/email/check").permitAll()
 //                        .requestMatchers("/api/auth/**").permitAll()
 //                        .requestMatchers("/api/verify/**").permitAll()
-//                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .anyRequest().authenticated()
+//                        .requestMatchers("/api/v1/users/user").hasRole("ADMIN")
+                                .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .formLogin(AbstractHttpConfigurer::disable)
@@ -67,16 +72,16 @@ public class SecurityConfig {
         return provider;
     }
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(of("http://localhost:3000"));
-        config.setAllowedMethods(of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(of("*"));
-        config.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource  source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
-        return source;
-    }
+//    @Bean
+//    public CorsConfigurationSource corsConfigurationSource() {
+//        CorsConfiguration config = new CorsConfiguration();
+//        config.setAllowedOrigins(of("http://localhost:3000"));
+//        config.setAllowedMethods(of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+//        config.setAllowedHeaders(of("*"));
+//        config.setAllowCredentials(true);
+//
+//        UrlBasedCorsConfigurationSource  source = new UrlBasedCorsConfigurationSource();
+//        source.registerCorsConfiguration("/**", config);
+//        return source;
+//    }
 }

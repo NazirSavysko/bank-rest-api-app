@@ -6,6 +6,7 @@ import bank.rest.app.bankrestapp.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -36,7 +37,7 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public boolean verifyCode(String email, String inputCode) {
         return codeRepo.findByEmail(email)
-                .filter(code -> code.getVerificationCode().equals(inputCode))
+                .filter(code -> code.getCode().equals(inputCode))
                 .filter(code -> code.getCreatedAt().isAfter(LocalDateTime.now().minusMinutes(5)))
                 .isPresent();
     }
@@ -49,7 +50,7 @@ public class EmailServiceImpl implements EmailService {
 
         EmailVerificationCodes entity = new EmailVerificationCodes();
         entity.setEmail(email);
-        entity.setVerificationCode(code);
+        entity.setCode(code);
         codeRepo.save(entity);
 
         SimpleMailMessage message = new SimpleMailMessage();

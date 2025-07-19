@@ -1,12 +1,12 @@
 package bank.rest.app.bankrestapp.entity;
 
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+
+import static jakarta.persistence.GenerationType.SEQUENCE;
 
 @Entity
 @Table(name = "email_verification_codes")
@@ -18,11 +18,12 @@ import java.time.LocalDateTime;
 public class EmailVerificationCodes {
 
     @Id
+    @GeneratedValue(strategy = SEQUENCE)
     private Integer id;
 
     private String email;
 
-    private String verificationCode;
+    private String code;
 
     private LocalDateTime createdAt;
 }
