@@ -8,21 +8,12 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
-import static bank.rest.app.bankrestapp.entity.enums.AccountStatus.ACTIVE;
-import static bank.rest.app.bankrestapp.entity.enums.Currency.valueOf;
+import static bank.rest.app.bankrestapp.constants.AccountDefaults.*;
 import static java.lang.String.format;
-import static java.time.LocalDateTime.now;
 
 @Service
 public final class AccountServiceImpl implements AccountService {
-
-
-    private static final String ACCOUNT_NUMBER_PATTERN = "%034d";
-
-    private static final int ACCOUNT_BALANCE_INITIAL = 100_000_000;
 
     private final AccountRepository accountRepository;
 
@@ -32,17 +23,15 @@ public final class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public Account generateAccountByCurrencyCode(final @NotNull String currency) {
+    public Account generateAccountByCurrencyCode(final @NotNull Currency currency) {
         final String accountNumber = this.generateAccountNumber();
-        final BigDecimal balance = new BigDecimal(ACCOUNT_BALANCE_INITIAL);
-        final Currency currencyEnum = valueOf(currency.toUpperCase());
 
         return Account.builder()
                 .accountNumber(accountNumber)
-                .balance(balance)
-                .currencyCode(currencyEnum)
-                .status(ACTIVE)
-                .createdAt(now())
+                .balance(ACCOUNT_BALANCE_INITIAL)
+                .currencyCode(currency)
+                .status(DEFAULT_ACCOUNT_STATUS)
+                .createdAt(DEFAULT_CREATED_AT)
                 .build();
     }
 

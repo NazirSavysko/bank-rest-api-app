@@ -17,7 +17,7 @@ public class EmailFacadeImpl implements EmailFacade {
     private final DtoValidator dtoValidator;
 
     @Autowired
-    public EmailFacadeImpl(final EmailService emailService,final DtoValidator dtoValidator) {
+    public EmailFacadeImpl(final EmailService emailService, final DtoValidator dtoValidator) {
         this.emailService = emailService;
         this.dtoValidator = dtoValidator;
     }
@@ -35,6 +35,6 @@ public class EmailFacadeImpl implements EmailFacade {
                            final BindingResult bindingResult) {
         this.dtoValidator.validate(verifyCodeDTO, bindingResult);
 
-         this.emailService.verifyCode(verifyCodeDTO.email(), verifyCodeDTO.code());
+        this.emailService.verifyCode(verifyCodeDTO.email(), verifyCodeDTO.code());
     }
 }

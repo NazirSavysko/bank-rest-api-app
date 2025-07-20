@@ -1,4 +1,4 @@
-package bank.rest.app.bankrestapp.validation;
+package bank.rest.app.bankrestapp.constants;
 
 /**
  * Utility class containing error message constants.

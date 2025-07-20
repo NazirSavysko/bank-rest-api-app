@@ -9,16 +9,13 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
+import static bank.rest.app.bankrestapp.constants.CardDefaults.*;
 import static java.lang.Math.random;
 import static java.lang.String.format;
 import static java.time.LocalDateTime.now;
 
 @Service
 public final class CardServiceImpl implements CardService {
-
-    private static final String CARD_NUMBER_PATTERN = "%016d";
-    private static final String CVV_NUMBER_PATTERN = "%03d";
-    private static final int CARD_EXPIRY_YEARS = 5;
 
     private final CardRepository cardRepository;
 
@@ -37,8 +34,8 @@ public final class CardServiceImpl implements CardService {
         return Card.builder()
                 .cardNumber(cardNumber)
                 .cvv(cvv)
-                .expiryDate(expiryDate)
-                .createdAt(createdAt)
+                .expiryDate(createdAt)
+                .createdAt(expiryDate)
                 .build();
     }
 
@@ -54,6 +51,6 @@ public final class CardServiceImpl implements CardService {
     }
 
     private @NotNull String generateCvv() {
-        return String.format(CVV_NUMBER_PATTERN, (int) (random() * 1000));
+        return format(CVV_NUMBER_PATTERN, (int) (random() * 1000));
     }
 }

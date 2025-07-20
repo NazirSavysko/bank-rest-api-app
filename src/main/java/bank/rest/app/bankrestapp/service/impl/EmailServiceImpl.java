@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import static bank.rest.app.bankrestapp.validation.MessageError.*;
+import static bank.rest.app.bankrestapp.constants.MessageError.*;
 import static java.lang.String.valueOf;
 import static java.time.LocalDateTime.now;
 
@@ -64,6 +64,7 @@ public class EmailServiceImpl implements EmailService {
         entity.setCode(code);
         entity.setCreatedAt(now());
         entity.setVerified(false);
+
         this.codeRepo.save(entity);
 
         final SimpleMailMessage message = new SimpleMailMessage();
