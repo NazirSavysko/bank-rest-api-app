@@ -27,7 +27,7 @@ public class EmailFacadeImpl implements EmailFacade {
                                      final BindingResult bindingResult) {
         this.dtoValidator.validate(email, bindingResult);
 
-        emailService.sendVerificationCode(email.email());
+        this.emailService.sendVerificationCode(email.email());
     }
 
     @Override

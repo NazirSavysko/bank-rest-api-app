@@ -1,8 +1,6 @@
 package bank.rest.app.bankrestapp.service;
 
 import bank.rest.app.bankrestapp.entity.Customer;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import org.springframework.transaction.annotation.Transactional;
 
 public interface CustomerService {
