@@ -91,14 +91,7 @@ public class CustomerFacadeImpl implements CustomerFacade {
     public void updatePassword(final UpdateCustomerDTO updateCustomerDTO, final BindingResult bindingResult) {
         this.dtoValidator.validate(updateCustomerDTO,bindingResult);
 
-        this.customerService.checkIfAuthenticated(
-                updateCustomerDTO.email(),
-                updateCustomerDTO.oldPassword()
-        );
-
-        this.customerService.updatePassword(
-                updateCustomerDTO.email(),
-                updateCustomerDTO.newPassword()
-        );
+        this.customerService.updatePassword(updateCustomerDTO.email(), updateCustomerDTO.newPassword(),
+                updateCustomerDTO.oldPassword());
     }
 }

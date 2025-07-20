@@ -6,6 +6,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 import static jakarta.persistence.CascadeType.ALL;
+import static jakarta.persistence.FetchType.EAGER;
 import static jakarta.persistence.GenerationType.SEQUENCE;
 
 @Entity

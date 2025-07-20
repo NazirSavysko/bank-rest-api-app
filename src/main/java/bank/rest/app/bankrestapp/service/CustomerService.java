@@ -1,6 +1,8 @@
 package bank.rest.app.bankrestapp.service;
 
 import bank.rest.app.bankrestapp.entity.Customer;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.transaction.annotation.Transactional;
 
 public interface CustomerService {
@@ -14,4 +16,7 @@ public interface CustomerService {
 
     @Transactional(rollbackFor = Exception.class)
     void resetPassword(String email, String password);
+
+    @Transactional(rollbackFor = Exception.class)
+    void updatePassword(String email, String newPassword,String oldPassword);
 }

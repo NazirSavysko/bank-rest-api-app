@@ -32,7 +32,8 @@ public final class AuthUSer {
     @OneToOne(mappedBy = "authUser", cascade = ALL, fetch = EAGER)
     private Customer customer;
 
-    @ManyToMany(cascade = {DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
+    @ManyToMany(cascade = {DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH},
+               fetch = EAGER)
     @JoinTable(
             name = "customer_roles",
             joinColumns = @JoinColumn(name = "user_id"),

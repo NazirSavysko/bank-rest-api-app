@@ -31,7 +31,7 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Autowired
     public CustomerServiceImpl(final CustomerRepository customerRepository,
-                               final  PasswordEncoder passwordEncoder,
+                               final PasswordEncoder passwordEncoder,
                                final CustomerRoleRepository customerRoleRepository,
                                final AccountService accountService,
                                final CardService cardService,
@@ -59,6 +59,9 @@ public class CustomerServiceImpl implements CustomerService {
                          final String phoneNumber) {
         if (customerRepository.findByAuthUserEmail(email).isPresent()) {
             throw new IllegalArgumentException(ERRORS_EMAIL_ALREADY_EXISTS);
+        }
+        if (customerRepository.findAllByPhone(phoneNumber).isPresent()) {
+            throw new IllegalArgumentException(ERRORS_PHONE_NUMBER_ALREADY_EXISTS);
         }
         this.emailService.sendVerificationCode(email);
 
@@ -95,30 +98,42 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public @NotNull Customer checkIfAuthenticated(final String email, final String password) {
-        final Customer customer = customerRepository.findByAuthUserEmail(email)
-                .orElseThrow(() -> new NoSuchElementException(ERRORS_INVALID_EMAIL));
-
-        if (!passwordEncoder.matches(password, customer.getAuthUser().getPasswordHash())) {
-            throw new IllegalArgumentException(ERRORS_INVALID_PASSWORD);
-        }
-
-        return customer;
+        return this.checkAuthentication(email, password, ERRORS_INVALID_PASSWORD);
     }
 
     @Override
     public void resetPassword(final String email, final String password) {
-        final Customer customer = customerRepository.findByAuthUserEmail(email)
-                .orElseThrow(() -> new NoSuchElementException(ERRORS_INVALID_EMAIL));
+        final Customer customer = this.checkAuthentication(email, password, ERRORS_INVALID_PASSWORD);
 
-        if (passwordEncoder.matches(password, customer.getAuthUser().getPasswordHash())) {
-            throw new IllegalArgumentException(ERRORS_PASSWORD_ALREADY_EXISTS);
+        this.changePassword(customer, password);
+    }
+
+    @Override
+    public void updatePassword(final String email, final @NotNull String newPassword, final String oldPassword) {
+        if (newPassword.equals(oldPassword)) {
+            throw new IllegalArgumentException(ERRORS_INVALID_NEW_PASSWORD);
         }
 
-        this.emailService.checkIfCodeIsVerified(email);
+        final Customer customer = this.checkAuthentication(email, oldPassword, ERRORS_INVALID_OLD_PASSWORD);
 
-        customer.getAuthUser().setPasswordHash(passwordEncoder.encode(password));
+        this.changePassword(customer, newPassword);
+    }
 
+    private void changePassword(final @NotNull Customer customer, final String newPassword) {
+        this.emailService.checkIfCodeIsVerified(customer.getAuthUser().getEmail());
+
+        customer.getAuthUser().setPasswordHash(passwordEncoder.encode(newPassword));
         customerRepository.save(customer);
     }
 
+    private @NotNull Customer checkAuthentication(final String email, final String password, final String messagePasswordError) {
+        final Customer customer = customerRepository.findByAuthUserEmail(email)
+                .orElseThrow(() -> new NoSuchElementException(ERRORS_INVALID_EMAIL));
+
+        if (!passwordEncoder.matches(password, customer.getAuthUser().getPasswordHash())) {
+            throw new IllegalArgumentException(messagePasswordError);
+        }
+
+        return customer;
+    }
 }

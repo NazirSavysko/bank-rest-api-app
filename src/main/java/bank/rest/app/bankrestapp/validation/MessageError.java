@@ -13,7 +13,8 @@ public final class MessageError {
     /**
      * Private constructor to prevent instantiation of this utility class.
      */
-    private MessageError() {}
+    private MessageError() {
+    }
 
     /**
      * Error message when email already exists in the system.
@@ -54,4 +55,19 @@ public final class MessageError {
      * Error message when a customer's password is already in use.
      */
     public static final String ERRORS_PASSWORD_ALREADY_EXISTS = "Пароль вже використовується";
+
+    /**
+     * Error message when a customer's phone number already exists.
+     */
+    public static final String ERRORS_PHONE_NUMBER_ALREADY_EXISTS = "Номер телефону вже використовується";
+
+    /**
+     * Error message when a customer's old password is invalid.
+     */
+    public static final String ERRORS_INVALID_OLD_PASSWORD = "Некоректний старий пароль";
+
+    /**
+     * Error message when a customer's new password is invalid.
+     */
+    public static final String ERRORS_INVALID_NEW_PASSWORD = "Некоректний новий пароль";
 }
