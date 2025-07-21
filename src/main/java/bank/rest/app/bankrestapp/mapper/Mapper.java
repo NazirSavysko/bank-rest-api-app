@@ -3,6 +3,7 @@ package bank.rest.app.bankrestapp.mapper;
 import bank.rest.app.bankrestapp.dto.get.GetAccountDTO;
 import bank.rest.app.bankrestapp.dto.get.GetCardDTO;
 import bank.rest.app.bankrestapp.dto.get.GetCustomerDTO;
+import bank.rest.app.bankrestapp.utils.MapperUtils;
 
 /**
  * Functional interface for converting objects from one type to another.
@@ -84,7 +85,7 @@ import bank.rest.app.bankrestapp.dto.get.GetCustomerDTO;
  * @see bank.rest.app.bankrestapp.mapper.impl.CustomerMapperImpl
  * @see bank.rest.app.bankrestapp.mapper.impl.AccountMapperImpl
  * @see bank.rest.app.bankrestapp.mapper.impl.CardMapperImpl
- * @see bank.rest.app.utils.MapperUtils
+ * @see MapperUtils
  */
 @FunctionalInterface
 public interface Mapper<T,R>  {
@@ -107,22 +108,22 @@ public interface Mapper<T,R>  {
      * <ul>
      *   <li>Never expose sensitive data like CVV codes or plain text passwords in DTOs</li>
      *   <li>Use enum.name() for converting AccountStatus and Currency enums to strings</li>
-     *   <li>Utilize {@link bank.rest.app.utils.MapperUtils} for null-safe collection mapping</li>
+     *   <li>Utilize {@link MapperUtils} for null-safe collection mapping</li>
      *   <li>Handle nested object mappings with dependency injection in Spring components</li>
      * </ul>
      *
      * @param entity source object for conversion. Must not be null
      * @return converted object of type R, never null
-     * @throws NullPointerException if entity is null (handled by MapperUtils.mapDto)
-     * @throws IllegalArgumentException if entity contains invalid data for mapping
+     * @throws NullPointerException if the entity is null (handled by MapperUtils.mapDto)
+     * @throws IllegalArgumentException if an entity contains invalid data for mapping
      *
      * @implNote Implementations should:
      *           <ul>
      *             <li>Use {@code @Component} annotation for Spring dependency injection</li>
      *             <li>Inject other mappers via constructor for nested object conversion</li>
      *             <li>Use {@code @Contract("_ -> new")} and {@code @NotNull} annotations</li>
-     *             <li>Handle collections with {@link bank.rest.app.utils.MapperUtils#mapCollection}</li>
-     *             <li>Handle single objects with {@link bank.rest.app.utils.MapperUtils#mapDto}</li>
+     *             <li>Handle collections with {@link MapperUtils#mapCollection}</li>
+     *             <li>Handle single objects with {@link MapperUtils#mapDto}</li>
      *           </ul>
      */
     R toDto(T entity);

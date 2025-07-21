@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 
-import static bank.rest.app.utils.MapperUtils.mapDto;
+import static bank.rest.app.bankrestapp.utils.MapperUtils.mapDto;
 
 @Component
 public class AccountFacadeImpl implements AccountFacade {

@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import static org.springframework.http.ResponseEntity.ok;
 
 @RestController
-@RequestMapping("/api/v1/users")
+@RequestMapping("/api/v1/customers")
 class CustomerController {
 
     private final CustomerFacade customerFacade;
@@ -26,7 +26,7 @@ class CustomerController {
         this.customerFacade = customerFacade;
     }
 
-    @GetMapping("/user")
+    @GetMapping("/customer")
     public ResponseEntity<?> getCustomer(
             final @AuthenticationPrincipal CustomerPrincipal customerPrincipal) {
         final String customerEmail = customerPrincipal.getUsername();

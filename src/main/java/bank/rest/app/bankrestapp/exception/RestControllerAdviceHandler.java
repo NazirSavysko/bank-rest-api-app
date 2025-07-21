@@ -4,11 +4,15 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.io.UncheckedIOException;
 import java.sql.SQLException;
 import java.util.NoSuchElementException;
 
+import static java.time.LocalDateTime.now;
 import static java.util.Map.of;
+import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
@@ -17,40 +21,58 @@ public final class RestControllerAdviceHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public @NotNull ResponseEntity<?> handleIllegalArgumentException(@NotNull IllegalArgumentException e) {
-
         return ResponseEntity.badRequest()
                 .contentType(APPLICATION_JSON)
-                .body(
-                        of(
-                                "error", "Bad Request",
-                                "message", e.getMessage()
-                        )
-                );
+                .body(of(
+                        "timestamp", now(),
+                        "error", "Bad Request",
+                        "message", e.getMessage()
+                ));
     }
 
     @ExceptionHandler(SQLException.class)
     public @NotNull ResponseEntity<?> handleSQLException(@NotNull SQLException e) {
-
         return ResponseEntity.internalServerError()
                 .contentType(APPLICATION_JSON)
                 .body(of(
-                        "error", "Database error",
+                        "timestamp", now(),
+                        "error", "Database Error",
                         "message", e.getMessage()
                 ));
     }
 
     @ExceptionHandler(NoSuchElementException.class)
     public @NotNull ResponseEntity<?> handleNoSuchElementException(@NotNull NoSuchElementException e) {
-
-        return ResponseEntity
-                .status(NOT_FOUND)
+        return ResponseEntity.status(NOT_FOUND)
                 .contentType(APPLICATION_JSON)
-                .body(
-                        of(
-                                "error", "Not Found",
-                                "message", e.getMessage()
-                        )
-                );
+                .body(of(
+                        "timestamp", now(),
+                        "error", "Not Found",
+                        "message", e.getMessage()
+                ));
     }
 
+    // ===== Email HTML шаблон ошибка =====
+    @ExceptionHandler(UncheckedIOException.class)
+    public @NotNull ResponseEntity<?> handleTemplateReadException(@NotNull UncheckedIOException e) {
+        return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                .contentType(APPLICATION_JSON)
+                .body(of(
+                        "timestamp", now(),
+                        "error", "Email Template Error",
+                        "message", e.getMessage()
+                ));
+    }
+
+    // ===== Ошибка отправки email =====
+    @ExceptionHandler(ResponseStatusException.class)
+    public @NotNull ResponseEntity<?> handleEmailSendError(@NotNull ResponseStatusException e) {
+        return ResponseEntity.status(e.getStatusCode())
+                .contentType(APPLICATION_JSON)
+                .body(of(
+                        "timestamp", now(),
+                        "error", "Email Sending Error",
+                        "message", e.getReason()
+                ));
+    }
 }

@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 import java.util.NoSuchElementException;
 
 import static bank.rest.app.bankrestapp.constants.AccountDefaults.DEFAULT_CURRENCY;
-import static bank.rest.app.bankrestapp.entity.enums.Currency.UAH;
 import static bank.rest.app.bankrestapp.entity.enums.Role.ROLE_USER;
 import static bank.rest.app.bankrestapp.constants.MessageError.*;
 import static java.time.LocalDateTime.now;

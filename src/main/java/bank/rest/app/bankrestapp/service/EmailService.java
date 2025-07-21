@@ -1,7 +1,10 @@
 package bank.rest.app.bankrestapp.service;
 
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import static org.springframework.transaction.annotation.Propagation.NESTED;
 
 public interface EmailService {
     @Transactional(rollbackFor = Exception.class)
@@ -10,6 +13,7 @@ public interface EmailService {
 
     void verifyCode(String email, String inputCode);
 
+    @Transactional(rollbackFor = Exception.class,propagation = NESTED)
     void sendVerificationCode(String email);
 
     void checkIfCodeIsVerified(final String email);

@@ -18,7 +18,7 @@ import org.springframework.validation.BindingResult;
 import java.util.NoSuchElementException;
 
 import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_CUSTOMER_ROLE_NOT_FOUND;
-import static bank.rest.app.utils.MapperUtils.mapDto;
+import static bank.rest.app.bankrestapp.utils.MapperUtils.mapDto;
 
 @Component
 public class CustomerFacadeImpl implements CustomerFacade {

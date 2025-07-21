@@ -1,4 +1,4 @@
-package bank.rest.app.utils;
+package bank.rest.app.bankrestapp.utils;
 
 import java.util.Collection;
 import java.util.List;
