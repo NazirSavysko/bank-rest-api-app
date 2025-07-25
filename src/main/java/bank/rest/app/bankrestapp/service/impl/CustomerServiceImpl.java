@@ -47,9 +47,7 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public @NotNull Customer login(final String email) {
-
-        return customerRepository.findByAuthUserEmail(email)
-                .orElseThrow(() -> new NoSuchElementException(ERRORS_INVALID_EMAIL));
+        return this.getCustomerByEmail(email);
     }
 
     @Override
@@ -103,8 +101,12 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
-    public void resetPassword(final String email, final String password) {
-        final Customer customer = this.checkAuthentication(email, password, ERRORS_INVALID_PASSWORD);
+    public void resetPassword(final String email, final @NotNull String password) {
+        final Customer customer = this.getCustomerByEmail(email);
+
+        if (password.equals(customer.getAuthUser().getPasswordHash())) {
+            throw new IllegalArgumentException(ERRORS_INVALID_NEW_PASSWORD);
+        }
 
         this.changePassword(customer, password);
     }
@@ -129,13 +131,17 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     private @NotNull Customer checkAuthentication(final String email, final String password, final String messagePasswordError) {
-        final Customer customer = customerRepository.findByAuthUserEmail(email)
-                .orElseThrow(() -> new NoSuchElementException(ERRORS_INVALID_EMAIL));
+        final Customer customer = this.getCustomerByEmail(email);
 
         if (!passwordEncoder.matches(password, customer.getAuthUser().getPasswordHash())) {
             throw new IllegalArgumentException(messagePasswordError);
         }
 
         return customer;
+    }
+
+    private Customer getCustomerByEmail(final String email) {
+        return customerRepository.findByAuthUserEmail(email)
+                .orElseThrow(() -> new NoSuchElementException(ERRORS_INVALID_EMAIL));
     }
 }

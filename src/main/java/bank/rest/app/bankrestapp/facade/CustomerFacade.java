@@ -15,5 +15,6 @@ public interface CustomerFacade {
 
     void resetPassword(ResetPasswordRequestDTO resetPasswordRequestDTO);
 
+
     void updatePassword(UpdateCustomerDTO updateCustomerDTO, BindingResult bindingResult);
 }

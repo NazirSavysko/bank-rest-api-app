@@ -49,7 +49,7 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public Account createAccount(final String accountType, final String customerEmail) {
+    public Account createAccount(final @NotNull String accountType, final String customerEmail) {
         final Currency currency = Currency.valueOf(accountType.toUpperCase());
         final Account account = this.generateAccountByCurrencyCode(currency);
         final Card card = this.cardService.generateCard();

@@ -14,7 +14,12 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+
+import static java.util.List.*;
 import static org.springframework.security.config.http.SessionCreationPolicy.*;
 
 @EnableWebSecurity
@@ -45,10 +50,8 @@ public class SecurityConfig {
                                 .requestMatchers("/api/v1/log-in").permitAll()
                                 .requestMatchers("/api/v1/register").permitAll()
                                 .requestMatchers("/api/v1/email/**").permitAll()
+                                .requestMatchers("/api/v1/customers/forgot-password").permitAll()
                                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-//                        .requestMatchers("/api/auth/**").permitAll()
-//                        .requestMatchers("/api/verify/**").permitAll()
-//                        .requestMatchers("/api/v1/users/user").hasRole("ADMIN")
                                 .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
@@ -66,16 +69,16 @@ public class SecurityConfig {
         return provider;
     }
 
-//    @Bean
-//    public CorsConfigurationSource corsConfigurationSource() {
-//        CorsConfiguration config = new CorsConfiguration();
-//        config.setAllowedOrigins(of("http://localhost:3000"));
-//        config.setAllowedMethods(of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-//        config.setAllowedHeaders(of("*"));
-//        config.setAllowCredentials(true);
-//
-//        UrlBasedCorsConfigurationSource  source = new UrlBasedCorsConfigurationSource();
-//        source.registerCorsConfiguration("/**", config);
-//        return source;
-//    }
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(of("http://localhost:5173"));
+        config.setAllowedMethods(of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource  source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
 }

@@ -1,0 +1,31 @@
+package bank.rest.app.bankrestapp.controller;
+
+import bank.rest.app.bankrestapp.dto.CreateTransaction;
+import bank.rest.app.bankrestapp.facade.TransactionFacade;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+@RestController
+@RequestMapping("/api/v1/transactions")
+class TransactionController {
+
+    private final TransactionFacade transactionFacade;
+
+    @Autowired
+    public TransactionController(final TransactionFacade transactionFacade) {
+        this.transactionFacade = transactionFacade;
+    }
+
+
+    @PostMapping("/withdraw")
+    public ResponseEntity<?> withdraw(@RequestBody CreateTransaction transaction) {
+
+
+
+        return ResponseEntity.ok().build();
+    }
+}
