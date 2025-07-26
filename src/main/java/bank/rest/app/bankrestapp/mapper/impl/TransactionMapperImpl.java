@@ -1,13 +1,18 @@
 package bank.rest.app.bankrestapp.mapper.impl;
 
+import bank.rest.app.bankrestapp.currency.CurrencyLoader;
 import bank.rest.app.bankrestapp.dto.get.GetShortCustomerDTO;
 import bank.rest.app.bankrestapp.dto.get.GetTransactionDTO;
+import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.Customer;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.mapper.Mapper;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
 
 import static bank.rest.app.bankrestapp.utils.MapperUtils.mapDto;
 
@@ -54,12 +59,11 @@ import static bank.rest.app.bankrestapp.utils.MapperUtils.mapDto;
  * - status: "COMPLETED"
  * </pre>
  *
+ * @author Nazira Savisska
  * @see bank.rest.app.bankrestapp.entity.Transaction
  * @see bank.rest.app.bankrestapp.dto.get.GetTransactionDTO
  * @see bank.rest.app.bankrestapp.dto.get.GetShortCustomerDTO
  * @see bank.rest.app.bankrestapp.mapper.Mapper
- *
- * @author Nazira Savisska
  * @since 1.0
  */
 @Component

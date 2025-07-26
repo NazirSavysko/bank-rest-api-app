@@ -16,6 +16,9 @@ public record CreateTransaction(
         String recipientCardNumber,
         @NotNull(message = "{transaction.amount.null}")
         @CurrencyAmount
-        BigDecimal amount
+        BigDecimal amount,
+        @NotBlank(message = "{transaction.description.blank}")
+        @Size(max = 255, message = "{transaction.description.size}")
+        String description
 ) {
 }

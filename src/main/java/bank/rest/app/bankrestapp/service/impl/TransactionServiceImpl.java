@@ -3,6 +3,7 @@ package bank.rest.app.bankrestapp.service.impl;
 import bank.rest.app.bankrestapp.currency.CurrencyLoader;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.Customer;
+import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.service.EmailService;
@@ -12,6 +13,10 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.NoSuchElementException;
+
+import static bank.rest.app.bankrestapp.entity.enums.TransactionStatus.COMPLETED;
+import static bank.rest.app.bankrestapp.entity.enums.TransactionType.TRANSFER;
+import static java.time.LocalDateTime.now;
 
 
 @Service
@@ -31,7 +36,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public void withdraw(final String senderCardNumber, final String recipientCardNumber, final BigDecimal amount) {
+    public void withdraw(final String senderCardNumber, final String recipientCardNumber, final BigDecimal amount, final String description) {
 
         final Account senderAccount = getAccountByCardNumber(senderCardNumber);
         final Account recipientAccount = getAccountByCardNumber(recipientCardNumber);
@@ -53,16 +58,34 @@ public class TransactionServiceImpl implements TransactionService {
             amountToReceive = this.currencyLoader.convert(amount, senderCurrency.name(), recipientCurrency.name());
         }
 
-        // Обновление балансов
         senderAccount.setBalance(senderAccount.getBalance().subtract(amount));
         recipientAccount.setBalance(recipientAccount.getBalance().add(amountToReceive));
 
-        accountRepository.save(senderAccount);
-        accountRepository.save(recipientAccount);
+        this.createTransaction(senderAccount, recipientAccount, amount, description);
     }
 
     private Account getAccountByCardNumber(final String card) {
         return accountRepository.findByCard_CardNumber(card)
                 .orElseThrow(() -> new NoSuchElementException("Account not found for the provided card"));
+    }
+
+    private void createTransaction(final Account senderAccount, final Account recipientAccount,
+                                   final BigDecimal amount, final String description) {
+        final Transaction transaction = Transaction.builder()
+                .description(description)
+                .amount(amount)
+                .account(senderAccount)
+                .toAccount(recipientAccount)
+                .transactionDate(now())
+                .currencyCode(senderAccount.getCurrencyCode())
+                .status(COMPLETED)
+                .transactionType(TRANSFER)
+                .build();
+
+        senderAccount.getSentTransactions().add(transaction);
+        recipientAccount.getReceivedTransactions().add(transaction);
+
+        accountRepository.save(senderAccount);
+        accountRepository.save(recipientAccount);
     }
 }

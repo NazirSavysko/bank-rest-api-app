@@ -1,5 +1,6 @@
 package bank.rest.app.bankrestapp.mapper.impl;
 
+import bank.rest.app.bankrestapp.currency.CurrencyLoader;
 import bank.rest.app.bankrestapp.dto.get.GetAccountDTO;
 import bank.rest.app.bankrestapp.dto.get.GetCardDTO;
 import bank.rest.app.bankrestapp.dto.get.GetPaymentDTO;
@@ -14,8 +15,12 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.stream.Stream;
+
 import static bank.rest.app.bankrestapp.utils.MapperUtils.mapCollection;
 import static bank.rest.app.bankrestapp.utils.MapperUtils.mapDto;
+import static java.util.stream.Stream.concat;
 
 /**
  * Implementation of the Mapper interface for converting Account entities to GetAccountDTO objects.
@@ -53,11 +58,10 @@ import static bank.rest.app.bankrestapp.utils.MapperUtils.mapDto;
  * - paymentsList: List of GetPaymentDTO objects
  * </pre>
  *
+ * @author Nazira Savisska
  * @see bank.rest.app.bankrestapp.entity.Account
  * @see bank.rest.app.bankrestapp.dto.get.GetAccountDTO
  * @see bank.rest.app.bankrestapp.mapper.Mapper
- *
- * @author Nazira Savisska
  * @since 1.0
  */
 @Component
@@ -66,6 +70,7 @@ public final class AccountMapperImpl implements Mapper<Account, GetAccountDTO> {
     private final Mapper<Card, GetCardDTO> cardMapper;
     private final Mapper<Transaction, GetTransactionDTO> transactionMapper;
     private final Mapper<Payment, GetPaymentDTO> paymentMapper;
+    private final CurrencyLoader currencyLoader;
 
     /**
      * Constructs an AccountMapperImpl with the required nested mappers.
@@ -77,10 +82,12 @@ public final class AccountMapperImpl implements Mapper<Account, GetAccountDTO> {
     @Autowired
     public AccountMapperImpl(final Mapper<Card, GetCardDTO> cardMapper,
                              final Mapper<Transaction, GetTransactionDTO> transactionMapper,
+                             final CurrencyLoader currencyLoader,
                              final Mapper<Payment, GetPaymentDTO> paymentMapper) {
         this.cardMapper = cardMapper;
         this.transactionMapper = transactionMapper;
         this.paymentMapper = paymentMapper;
+        this.currencyLoader = currencyLoader;
     }
 
     /**
@@ -106,9 +113,34 @@ public final class AccountMapperImpl implements Mapper<Account, GetAccountDTO> {
                 entity.getBalance(),
                 entity.getCurrencyCode().name(),
                 entity.getStatus().name(),
-                mapDto(entity.getCard(),this.cardMapper::toDto),
-                mapCollection(entity.getTransactionHistory(), this.transactionMapper::toDto),
+                mapDto(entity.getCard(), this.cardMapper::toDto),
+                mapCollection(this.getTransactionHistory(entity.getSentTransactions(), entity.getReceivedTransactions(), entity), this.transactionMapper::toDto),
                 mapCollection(entity.getPaymentsList(), this.paymentMapper::toDto)
-        ) ;
+        );
+    }
+
+    /**
+     * Merges the sender's and recipient's transaction histories into a single list.
+     *
+     * <p>This method ensures that all transactions are converted to the account's currency
+     * and combines both lists into one, maintaining the order of sender transactions first.</p>
+     *
+     * @param senderTransactions   the list of transactions sent by the account; must not be null
+     * @param recipientTransactions the list of transactions received by the account; must not be null
+     * @param account              the account for which the transaction history is being retrieved; must not be null
+     * @return a merged list of transactions with amounts converted to the account's currency
+     */
+    private @NotNull List<Transaction> getTransactionHistory(final @NotNull List<Transaction> senderTransactions, final @NotNull List<Transaction> recipientTransactions, final Account account) {
+        if (recipientTransactions.isEmpty()) {
+            return senderTransactions;
+        }
+
+        final Stream<Transaction> getStream = recipientTransactions.stream().peek(transaction -> {
+            transaction.setAmount(currencyLoader.convert(transaction.getAmount(), transaction.getCurrencyCode().name(), account.getCurrencyCode().name()));
+            transaction.setCurrencyCode(account.getCurrencyCode());
+        });
+
+        return concat(getStream, senderTransactions.stream()).toList();
+
     }
 }

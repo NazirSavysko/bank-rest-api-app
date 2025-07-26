@@ -1,5 +1,6 @@
 package bank.rest.app.bankrestapp.currency;
 
+import bank.rest.app.bankrestapp.entity.enums.Currency;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,7 +12,10 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
@@ -74,6 +78,15 @@ public final class CurrencyLoader {
         BigDecimal result = fromToUah.divide(BigDecimal.valueOf(toRate.getRate()), 4, RoundingMode.HALF_UP);
 
         return result.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    public String convertInTransaction(@NotNull Currency fromTransaction, Currency fromAccount, BigDecimal amount) {
+        if (fromTransaction.equals(fromAccount)) {
+            return amount.setScale(2, RoundingMode.HALF_UP).toString();
+        }
+
+        BigDecimal convertedAmount = convert(amount, fromTransaction.name(), fromAccount.name());
+        return convertedAmount.setScale(2, RoundingMode.HALF_UP).toString();
     }
 
     // DTO-класс для курсов

@@ -7,6 +7,6 @@ import java.math.BigDecimal;
 public interface TransactionService {
 
     @Transactional(rollbackFor = Exception.class)
-    void withdraw(String senderCardNumber, String recipientCardNumber, BigDecimal amount);
+    void withdraw(String senderCardNumber, String recipientCardNumber, BigDecimal amount, final String description);
 
 }

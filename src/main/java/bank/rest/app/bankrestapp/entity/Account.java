@@ -46,7 +46,10 @@ public final class Account {
     private Card card;
 
     @OneToMany(mappedBy = "account", cascade = ALL)
-    private List<Transaction> transactionHistory;
+    private List<Transaction> sentTransactions;
+
+    @OneToMany(mappedBy = "toAccount", cascade = ALL)
+    private List<Transaction> receivedTransactions;
 
     @OneToMany(mappedBy = "account", cascade = ALL)
     private List<Payment> paymentsList;

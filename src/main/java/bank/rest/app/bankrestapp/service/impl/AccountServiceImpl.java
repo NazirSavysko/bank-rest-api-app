@@ -8,6 +8,7 @@ import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.CustomerRepository;
 import bank.rest.app.bankrestapp.service.AccountService;
 import bank.rest.app.bankrestapp.service.CardService;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -76,12 +77,12 @@ public class AccountServiceImpl implements AccountService {
         return accountNumber;
     }
 
-    private String getBeginningOfWordByCurrency(Currency currency) {
+    @Contract(pure = true)
+    private @NotNull String getBeginningOfWordByCurrency(@NotNull Currency currency) {
         return switch (currency) {
             case UAH -> "UA";
             case USD -> "US";
             case EUR -> "EU";
-            default -> throw new IllegalArgumentException("Unsupported currency: " + currency);
         };
     }
 }

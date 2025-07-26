@@ -27,7 +27,8 @@ public class TransactionFacadeImpl implements TransactionFacade {
         this.transactionService.withdraw(
                 transaction.senderCardNumber(),
                 transaction.recipientCardNumber(),
-                transaction.amount()
+                transaction.amount(),
+                transaction.description()
         );
     }
 }
