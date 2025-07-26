@@ -64,12 +64,13 @@ import static java.time.LocalDateTime.now;
 public final class AccountDefaults {
 
     /**
-     * Pattern for formatting account numbers with leading zeros.
-     * Creates a 34-digit string with zero-padding for consistent account number format.
+     * Pattern for formatting account numbers.
+     * The pattern is set to a 34-character string with the first 2 characters
+     * being a fixed prefix and the remaining 32 characters being a zero-padded number.
      *
-     * <p>Example: account ID 12345 becomes "0000000000000000000000000000012345"</p>
+     * <p>Example: "UAC00000000000000000000000000000"</p>
      */
-    public static final String ACCOUNT_NUMBER_PATTERN = "%034d";
+    public static final String ACCOUNT_NUMBER_PATTERN =  "%2s%032d";
 
     /**
      * Initial balance amount set for new accounts upon creation.

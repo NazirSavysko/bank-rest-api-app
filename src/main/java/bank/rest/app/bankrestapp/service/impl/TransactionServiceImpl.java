@@ -1,5 +1,6 @@
 package bank.rest.app.bankrestapp.service.impl;
 
+import bank.rest.app.bankrestapp.currency.CurrencyLoader;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.Card;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
@@ -19,10 +20,13 @@ import static java.math.RoundingMode.HALF_UP;
 public class TransactionServiceImpl implements TransactionService {
 
     private final AccountRepository accountRepository;
+    private final CurrencyLoader currencyLoader;
 
     @Autowired
-    public TransactionServiceImpl(final AccountRepository accountRepository) {
+    public TransactionServiceImpl(final AccountRepository accountRepository,
+                                  final CurrencyLoader currencyLoader) {
         this.accountRepository = accountRepository;
+        this.currencyLoader = currencyLoader;
     }
 
     @Override
@@ -40,13 +44,7 @@ public class TransactionServiceImpl implements TransactionService {
         BigDecimal amountToReceive = amount;
 
         if (!senderCurrency.equals(recipientCurrency)) {
-            final BigDecimal senderRate = getRate(senderCurrency);
-            final BigDecimal recipientRate = getRate(recipientCurrency);
-
-            amountToReceive = amount
-                    .divide(senderRate, 4, HALF_UP)
-                    .multiply(recipientRate)
-                    .setScale(2, HALF_UP);
+            amountToReceive = this.currencyLoader.convert(amount, senderCurrency.name(), recipientCurrency.name());
         }
 
         // Обновление балансов

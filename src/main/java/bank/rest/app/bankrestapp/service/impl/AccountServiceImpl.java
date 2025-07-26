@@ -37,7 +37,8 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public Account generateAccountByCurrencyCode(final @NotNull Currency currency) {
-        final String accountNumber = this.generateAccountNumber();
+        final String beginningOfWord = this.getBeginningOfWordByCurrency(currency);
+        final String accountNumber = this.generateAccountNumber(beginningOfWord);
 
         return Account.builder()
                 .accountNumber(accountNumber)
@@ -64,14 +65,23 @@ public class AccountServiceImpl implements AccountService {
         return this.accountRepository.save(account);
     }
 
-    private String generateAccountNumber() {
+    private String generateAccountNumber(String beginningOfWord) {
         String accountNumber;
 
         do {
             final long randomNumber = (long) (Math.random() * 1_0000_0000_0000_0000L);
-            accountNumber = format(ACCOUNT_NUMBER_PATTERN, randomNumber);
+            accountNumber = format(ACCOUNT_NUMBER_PATTERN,beginningOfWord, randomNumber);
         } while (accountRepository.existsByAccountNumber(accountNumber));
 
         return accountNumber;
+    }
+
+    private String getBeginningOfWordByCurrency(Currency currency) {
+        return switch (currency) {
+            case UAH -> "UA";
+            case USD -> "US";
+            case EUR -> "EU";
+            default -> throw new IllegalArgumentException("Unsupported currency: " + currency);
+        };
     }
 }

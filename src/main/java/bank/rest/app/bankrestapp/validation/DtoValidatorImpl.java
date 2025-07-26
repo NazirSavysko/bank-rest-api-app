@@ -1,6 +1,7 @@
 package bank.rest.app.bankrestapp.validation;
 
 import bank.rest.app.bankrestapp.entity.annotation.Currency;
+import bank.rest.app.bankrestapp.entity.annotation.CurrencyAmount;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.stereotype.Component;
@@ -8,6 +9,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.Validator;
 
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
 import java.util.stream.Collectors;
 
 import static java.util.Arrays.stream;
@@ -113,31 +115,35 @@ public final class DtoValidatorImpl implements DtoValidator {
     }
 
     /**
-     * Validates the given DTO object and checks for custom annotations like {@link Currency}.
-     * This method extends the basic validation by also checking fields annotated with
-     * custom annotations and validating their values.
+     * Validates the DTO object and checks for custom annotations like {@link Currency}
+     * and {@link CurrencyAmount}. This method performs the following:
+     * <ol>
+     *   <li>Validates the DTO using the Spring validator</li>
+     *   <li>Checks fields annotated with {@link Currency} or {@link CurrencyAmount}</li>
+     *   <li>Validates currency codes and amounts according to custom rules</li>
+     * </ol>
      *
-     * <p>For example, it checks if a field annotated with {@code @Currency} contains
-     * a valid currency code (e.g., "USD", "EUR","UAH"). If an invalid value is found,
-     * it adds an error to the BindingResult.</p>
-     *
-     * @param dto    the object to validate; must not be null and should be annotated
-     *               with appropriate validation constraints
-     * @param result the BindingResult that will contain validation errors after
-     *               the validation process; may already contain errors from previous
-     *               validation steps
+     * @param dto    the object to validate, must not be null
+     * @param result the binding result containing validation errors, if any
      */
     private void validateAndValidateCustomAnnotation(final Object dto, final BindingResult result) {
         validator.validate(dto, result);
         final Field[] fields = dto.getClass().getDeclaredFields();
         stream(fields)
-                .filter(field -> field.isAnnotationPresent(Currency.class))
+                .filter(field -> field.isAnnotationPresent(Currency.class) || field.isAnnotationPresent(CurrencyAmount.class))
                 .forEach(field -> {
                     field.setAccessible(true);
                     try {
-                        final String value = (String) field.get(dto);
-                        if (value == null || !(value.equals("UAH") || value.equals("USD") || value.equals("EUR"))) {
-                            result.rejectValue(field.getName(), "currency.invalid", "неправильний кол валют");
+                        if (field.isAnnotationPresent(CurrencyAmount.class)) {
+                            final BigDecimal amount = (BigDecimal) field.get(dto);
+                            if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+                                result.rejectValue(field.getName(), "amount.invalid", "неправильна сума");
+                            }
+                        } else {
+                            final String value = (String) field.get(dto);
+                            if (value == null || !(value.equals("UAH") || value.equals("USD") || value.equals("EUR"))) {
+                                result.rejectValue(field.getName(), "currency.invalid", "неправильний кол валют");
+                            }
                         }
                     } catch (IllegalAccessException e) {
                         throw new RuntimeException("Failed to access field: " + field.getName(), e);
