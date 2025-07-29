@@ -4,6 +4,7 @@ import bank.rest.app.bankrestapp.currency.CurrencyLoader;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.Customer;
 import bank.rest.app.bankrestapp.entity.Transaction;
+import bank.rest.app.bankrestapp.entity.enums.AccountStatus;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.service.EmailService;
@@ -40,6 +41,10 @@ public class TransactionServiceImpl implements TransactionService {
 
         final Account senderAccount = getAccountByCardNumber(senderCardNumber);
         final Account recipientAccount = getAccountByCardNumber(recipientCardNumber);
+
+        if (!senderAccount.getStatus().equals(AccountStatus.ACTIVE)){
+            throw new IllegalArgumentException("Account is not active");
+        }
 
         final Customer senderCustomer = senderAccount.getCustomer();
 
