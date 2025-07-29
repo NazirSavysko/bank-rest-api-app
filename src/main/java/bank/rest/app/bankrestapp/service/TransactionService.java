@@ -1,5 +1,6 @@
 package bank.rest.app.bankrestapp.service;
 
+import bank.rest.app.bankrestapp.entity.Transaction;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -7,6 +8,6 @@ import java.math.BigDecimal;
 public interface TransactionService {
 
     @Transactional(rollbackFor = Exception.class)
-    void withdraw(String senderCardNumber, String recipientCardNumber, BigDecimal amount, final String description);
+    Transaction withdraw(String senderCardNumber, String recipientCardNumber, BigDecimal amount, final String description);
 
 }

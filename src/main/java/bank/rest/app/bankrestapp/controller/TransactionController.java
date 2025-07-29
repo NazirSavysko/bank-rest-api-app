@@ -1,6 +1,7 @@
 package bank.rest.app.bankrestapp.controller;
 
 import bank.rest.app.bankrestapp.dto.CreateTransaction;
+import bank.rest.app.bankrestapp.dto.get.GetTransactionDTO;
 import bank.rest.app.bankrestapp.facade.TransactionFacade;
 import bank.rest.app.bankrestapp.security.CustomerPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,8 +29,8 @@ class TransactionController {
     public ResponseEntity<?> withdraw(final @RequestBody CreateTransaction transaction,
                                       final BindingResult bindingResult) {
 
-        this.transactionFacade.withdraw(transaction, bindingResult);
+        final GetTransactionDTO getTransactionDTO = this.transactionFacade.withdraw(transaction, bindingResult);
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(getTransactionDTO);
     }
 }

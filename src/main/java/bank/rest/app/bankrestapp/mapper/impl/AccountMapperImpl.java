@@ -146,6 +146,7 @@ public final class AccountMapperImpl implements Mapper<Account, GetAccountDTO> {
         final Stream<Transaction> getStream = recipientTransactions.stream().peek(transaction -> {
             transaction.setAmount(currencyLoader.convert(transaction.getAmount(), transaction.getCurrencyCode().name(), account.getCurrencyCode().name()));
             transaction.setCurrencyCode(account.getCurrencyCode());
+            transaction.setIsRecipient(true);
         });
 
         return concat(getStream, senderTransactions.stream()).toList();

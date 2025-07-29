@@ -7,8 +7,10 @@ import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.AccountStatus;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
+import bank.rest.app.bankrestapp.resository.TransactionRepository;
 import bank.rest.app.bankrestapp.service.EmailService;
 import bank.rest.app.bankrestapp.service.TransactionService;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,20 +26,23 @@ import static java.time.LocalDateTime.now;
 public class TransactionServiceImpl implements TransactionService {
 
     private final AccountRepository accountRepository;
+    private final TransactionRepository transactionRepository;
     private final CurrencyLoader currencyLoader;
     private final EmailService emailService;
 
     @Autowired
     public TransactionServiceImpl(final AccountRepository accountRepository,
+                                  final TransactionRepository transactionRepository,
                                   final EmailService emailService,
                                   final CurrencyLoader currencyLoader) {
         this.accountRepository = accountRepository;
         this.currencyLoader = currencyLoader;
         this.emailService = emailService;
+        this.transactionRepository = transactionRepository;
     }
 
     @Override
-    public void withdraw(final String senderCardNumber, final String recipientCardNumber, final BigDecimal amount, final String description) {
+    public Transaction withdraw(final String senderCardNumber, final String recipientCardNumber, final BigDecimal amount, final String description) {
 
         final Account senderAccount = getAccountByCardNumber(senderCardNumber);
         final Account recipientAccount = getAccountByCardNumber(recipientCardNumber);
@@ -66,7 +71,7 @@ public class TransactionServiceImpl implements TransactionService {
         senderAccount.setBalance(senderAccount.getBalance().subtract(amount));
         recipientAccount.setBalance(recipientAccount.getBalance().add(amountToReceive));
 
-        this.createTransaction(senderAccount, recipientAccount, amount, description);
+           return   this.createTransaction(senderAccount, recipientAccount, amount, description);
     }
 
     private Account getAccountByCardNumber(final String card) {
@@ -74,8 +79,8 @@ public class TransactionServiceImpl implements TransactionService {
                 .orElseThrow(() -> new NoSuchElementException("Account not found for the provided card"));
     }
 
-    private void createTransaction(final Account senderAccount, final Account recipientAccount,
-                                   final BigDecimal amount, final String description) {
+    private @NotNull Transaction createTransaction(final Account senderAccount, final Account recipientAccount,
+                                                   final BigDecimal amount, final String description) {
         final Transaction transaction = Transaction.builder()
                 .description(description)
                 .amount(amount)
@@ -90,7 +95,6 @@ public class TransactionServiceImpl implements TransactionService {
         senderAccount.getSentTransactions().add(transaction);
         recipientAccount.getReceivedTransactions().add(transaction);
 
-        accountRepository.save(senderAccount);
-        accountRepository.save(recipientAccount);
+        return this.transactionRepository.save(transaction);
     }
 }

@@ -49,5 +49,14 @@ public final class Transaction {
     @JoinColumn(name = "to_account_id", referencedColumnName = "accountId")
     private Account toAccount;
 
+    @Transient
+    private Boolean isRecipient;
+
+
+    @PrePersist
+    public void prePersist() {
+     isRecipient = false;
+    }
+
 }
 
