@@ -125,14 +125,22 @@ public final class AccountMapperImpl implements Mapper<Account, GetAccountDTO> {
      * <p>This method ensures that all transactions are converted to the account's currency
      * and combines both lists into one, maintaining the order of sender transactions first.</p>
      *
-     * @param senderTransactions   the list of transactions sent by the account; must not be null
+     * @param senderTransactions    the list of transactions sent by the account; must not be null
      * @param recipientTransactions the list of transactions received by the account; must not be null
-     * @param account              the account for which the transaction history is being retrieved; must not be null
+     * @param account               the account for which the transaction history is being retrieved; must not be null
      * @return a merged list of transactions with amounts converted to the account's currency
      */
     private @NotNull List<Transaction> getTransactionHistory(final @NotNull List<Transaction> senderTransactions, final @NotNull List<Transaction> recipientTransactions, final Account account) {
+
+        if (senderTransactions.isEmpty() && recipientTransactions.isEmpty()) {
+            return List.of();
+        }
+
         if (recipientTransactions.isEmpty()) {
             return senderTransactions;
+        }
+        if (senderTransactions.isEmpty()) {
+            return recipientTransactions;
         }
 
         final Stream<Transaction> getStream = recipientTransactions.stream().peek(transaction -> {

@@ -8,6 +8,7 @@ import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.CustomerRepository;
 import bank.rest.app.bankrestapp.service.AccountService;
 import bank.rest.app.bankrestapp.service.CardService;
+import org.hibernate.mapping.List;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,7 @@ import java.util.NoSuchElementException;
 import static bank.rest.app.bankrestapp.constants.AccountDefaults.*;
 import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_INVALID_EMAIL;
 import static java.lang.String.format;
+import static java.util.List.of;
 
 @Service
 public class AccountServiceImpl implements AccountService {
@@ -62,6 +64,8 @@ public class AccountServiceImpl implements AccountService {
         account.setCustomer(customer);
         account.setCard(card);
         card.setAccount(account);
+        account.setSentTransactions(of());
+        account.setReceivedTransactions(of());
 
         return this.accountRepository.save(account);
     }
