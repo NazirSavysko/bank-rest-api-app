@@ -13,7 +13,7 @@ public interface EmailService {
 
     void verifyCode(String email, String inputCode);
 
-    @Transactional(rollbackFor = Exception.class,propagation = NESTED)
+    @Transactional(rollbackFor = Exception.class)
     void sendVerificationCode(String email);
 
     void checkIfCodeIsVerified(final String email);

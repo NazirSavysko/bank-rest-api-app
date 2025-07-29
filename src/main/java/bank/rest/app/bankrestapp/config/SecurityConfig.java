@@ -52,7 +52,7 @@ public class SecurityConfig {
                                 .requestMatchers("/api/v1/email/**").permitAll()
                                 .requestMatchers("/api/v1/customers/forgot-password").permitAll()
                                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                                .anyRequest().authenticated()
+                                .anyRequest().hasRole("USER")
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .formLogin(AbstractHttpConfigurer::disable)
