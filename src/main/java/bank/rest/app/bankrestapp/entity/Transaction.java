@@ -53,9 +53,9 @@ public final class Transaction {
     private Boolean isRecipient;
 
 
-    @PrePersist
-    public void prePersist() {
-     isRecipient = false;
+    @PostLoad
+    public void postLoad() {
+        isRecipient = true;
     }
 
 }

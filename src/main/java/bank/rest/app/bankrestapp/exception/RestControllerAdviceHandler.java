@@ -12,8 +12,7 @@ import java.util.NoSuchElementException;
 
 import static java.time.LocalDateTime.now;
 import static java.util.Map.of;
-import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 @RestControllerAdvice
@@ -72,6 +71,30 @@ public final class RestControllerAdviceHandler {
                 .body(of(
                         "timestamp", now(),
                         "error", "Email Sending Error",
+                        "message", e.getMessage()
+                ));
+    }
+
+
+    @ExceptionHandler(AccountNotActiveException.class)
+    public @NotNull ResponseEntity<?> handleAccountNotActiveException(@NotNull AccountNotActiveException e) {
+        return ResponseEntity.status(LOCKED)
+                .contentType(APPLICATION_JSON)
+                .body(of(
+                        "timestamp", now(),
+                        "error", "Account Not Active",
+                        "message", e.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(InsufficientFundsException.class)
+    public @NotNull ResponseEntity<?> handleInsufficientFundsException(@NotNull InsufficientFundsException e) {
+
+        return ResponseEntity.status(BAD_REQUEST)
+                .contentType(APPLICATION_JSON)
+                .body(of(
+                        "timestamp", now(),
+                        "error", "Insufficient Funds",
                         "message", e.getMessage()
                 ));
     }

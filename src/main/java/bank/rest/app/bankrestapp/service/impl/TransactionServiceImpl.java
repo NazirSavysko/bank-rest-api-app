@@ -4,8 +4,10 @@ import bank.rest.app.bankrestapp.currency.CurrencyLoader;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.Customer;
 import bank.rest.app.bankrestapp.entity.Transaction;
-import bank.rest.app.bankrestapp.entity.enums.AccountStatus;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
+import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
+import bank.rest.app.bankrestapp.exception.AccountNotActiveException;
+import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.TransactionRepository;
 import bank.rest.app.bankrestapp.service.EmailService;
@@ -17,8 +19,8 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.NoSuchElementException;
 
-import static bank.rest.app.bankrestapp.entity.enums.TransactionStatus.CANCELLED;
-import static bank.rest.app.bankrestapp.entity.enums.TransactionStatus.COMPLETED;
+import static bank.rest.app.bankrestapp.entity.enums.AccountStatus.ACTIVE;
+import static bank.rest.app.bankrestapp.entity.enums.TransactionStatus.*;
 import static bank.rest.app.bankrestapp.entity.enums.TransactionType.TRANSFER;
 import static java.time.LocalDateTime.now;
 
@@ -48,8 +50,9 @@ public class TransactionServiceImpl implements TransactionService {
         final Account senderAccount = getAccountByCardNumber(senderCardNumber);
         final Account recipientAccount = getAccountByCardNumber(recipientCardNumber);
 
-        if (!senderAccount.getStatus().equals(AccountStatus.ACTIVE)) {
-            throw new IllegalArgumentException("Account is not active");
+        if (!senderAccount.getStatus().equals(ACTIVE)) {
+            this.createTransaction(senderAccount, recipientAccount, amount, description, CANCELLED);
+            throw new AccountNotActiveException("Account is not active");
         }
 
         final Customer senderCustomer = senderAccount.getCustomer();
@@ -57,7 +60,8 @@ public class TransactionServiceImpl implements TransactionService {
         this.emailService.checkIfCodeIsVerified(senderCustomer.getAuthUser().getEmail());
 
         if (senderAccount.getBalance().compareTo(amount) < 0) {
-            throw new IllegalArgumentException("Insufficient funds in sender's account");
+            this.createTransaction(senderAccount, recipientAccount, amount, description, FAILED);
+            throw new InsufficientFundsException("Insufficient funds in sender's account");
         }
 
         final Currency senderCurrency = senderAccount.getCurrencyCode();
@@ -72,7 +76,7 @@ public class TransactionServiceImpl implements TransactionService {
         senderAccount.setBalance(senderAccount.getBalance().subtract(amount));
         recipientAccount.setBalance(recipientAccount.getBalance().add(amountToReceive));
 
-        return this.createTransaction(senderAccount, recipientAccount, amount, description);
+        return this.createTransaction(senderAccount, recipientAccount, amount, description,COMPLETED);
     }
 
     private Account getAccountByCardNumber(final String card) {
@@ -81,23 +85,9 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     private @NotNull Transaction createTransaction(final @NotNull Account senderAccount, final Account recipientAccount,
-                                                   final BigDecimal amount, final String description) {
+                                                   final BigDecimal amount, final String description, TransactionStatus status) {
 
         Transaction transaction;
-        if (!senderAccount.getStatus().equals(AccountStatus.ACTIVE)) {
-            transaction = Transaction.builder()
-                    .description(description)
-                    .amount(amount)
-                    .account(senderAccount)
-                    .toAccount(recipientAccount)
-                    .transactionDate(now())
-                    .currencyCode(senderAccount.getCurrencyCode())
-                    .status(CANCELLED)
-                    .transactionType(TRANSFER)
-                    .build();
-
-            this.transactionRepository.save(transaction);
-        }
         transaction = Transaction.builder()
                 .description(description)
                 .amount(amount)
@@ -105,7 +95,7 @@ public class TransactionServiceImpl implements TransactionService {
                 .toAccount(recipientAccount)
                 .transactionDate(now())
                 .currencyCode(senderAccount.getCurrencyCode())
-                .status(COMPLETED)
+                .status(status)
                 .transactionType(TRANSFER)
                 .build();
 

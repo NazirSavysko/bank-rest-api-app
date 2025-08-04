@@ -28,5 +28,7 @@ public enum TransactionStatus {
     COMPLETED,
 
     /** Transaction was canceled or failed during processing */
-    CANCELLED
+    CANCELLED,
+
+    FAILED
 }
