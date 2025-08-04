@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.NoSuchElementException;
 
+import static bank.rest.app.bankrestapp.entity.enums.TransactionStatus.CANCELLED;
 import static bank.rest.app.bankrestapp.entity.enums.TransactionStatus.COMPLETED;
 import static bank.rest.app.bankrestapp.entity.enums.TransactionType.TRANSFER;
 import static java.time.LocalDateTime.now;
@@ -47,7 +48,7 @@ public class TransactionServiceImpl implements TransactionService {
         final Account senderAccount = getAccountByCardNumber(senderCardNumber);
         final Account recipientAccount = getAccountByCardNumber(recipientCardNumber);
 
-        if (!senderAccount.getStatus().equals(AccountStatus.ACTIVE)){
+        if (!senderAccount.getStatus().equals(AccountStatus.ACTIVE)) {
             throw new IllegalArgumentException("Account is not active");
         }
 
@@ -71,7 +72,7 @@ public class TransactionServiceImpl implements TransactionService {
         senderAccount.setBalance(senderAccount.getBalance().subtract(amount));
         recipientAccount.setBalance(recipientAccount.getBalance().add(amountToReceive));
 
-           return   this.createTransaction(senderAccount, recipientAccount, amount, description);
+        return this.createTransaction(senderAccount, recipientAccount, amount, description);
     }
 
     private Account getAccountByCardNumber(final String card) {
@@ -79,9 +80,25 @@ public class TransactionServiceImpl implements TransactionService {
                 .orElseThrow(() -> new NoSuchElementException("Account not found for the provided card"));
     }
 
-    private @NotNull Transaction createTransaction(final Account senderAccount, final Account recipientAccount,
+    private @NotNull Transaction createTransaction(final @NotNull Account senderAccount, final Account recipientAccount,
                                                    final BigDecimal amount, final String description) {
-        final Transaction transaction = Transaction.builder()
+
+        Transaction transaction;
+        if (!senderAccount.getStatus().equals(AccountStatus.ACTIVE)) {
+            transaction = Transaction.builder()
+                    .description(description)
+                    .amount(amount)
+                    .account(senderAccount)
+                    .toAccount(recipientAccount)
+                    .transactionDate(now())
+                    .currencyCode(senderAccount.getCurrencyCode())
+                    .status(CANCELLED)
+                    .transactionType(TRANSFER)
+                    .build();
+
+            this.transactionRepository.save(transaction);
+        }
+        transaction = Transaction.builder()
                 .description(description)
                 .amount(amount)
                 .account(senderAccount)

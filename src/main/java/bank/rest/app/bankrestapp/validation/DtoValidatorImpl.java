@@ -149,5 +149,13 @@ public final class DtoValidatorImpl implements DtoValidator {
                         throw new RuntimeException("Failed to access field: " + field.getName(), e);
                     }
                 });
+
+        if (result.hasErrors()) {
+            final String message = result.getAllErrors().stream()
+                    .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                    .collect(Collectors.joining("\n"));
+
+            throw new IllegalArgumentException(message);
+        }
     }
 }

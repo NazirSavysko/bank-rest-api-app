@@ -101,6 +101,8 @@ public final class AccountDefaults {
      */
     public static final Currency DEFAULT_CURRENCY = UAH;
 
+    public static final int MAXIMUM_NUMBER_OF_ACCOUNTS = 3;
+
     /**
      * Private constructor to prevent instantiation of this utility class.
      * This class is designed to be used only for its static constants.

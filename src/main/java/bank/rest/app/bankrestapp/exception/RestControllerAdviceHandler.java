@@ -72,7 +72,7 @@ public final class RestControllerAdviceHandler {
                 .body(of(
                         "timestamp", now(),
                         "error", "Email Sending Error",
-                        "message", e.getReason()
+                        "message", e.getMessage()
                 ));
     }
 }

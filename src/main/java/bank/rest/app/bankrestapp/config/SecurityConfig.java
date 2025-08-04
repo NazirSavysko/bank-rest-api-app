@@ -19,6 +19,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 
+import java.util.List;
+
 import static java.util.List.*;
 import static org.springframework.security.config.http.SessionCreationPolicy.*;
 
@@ -72,12 +74,17 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(of("http://localhost:5173"));
-        config.setAllowedMethods(of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(of("*"));
+
+        config.setAllowedOrigins(List.of(
+                "http://localhost:5173",
+                "http://192.168.0.100:5173" // 👈 добавь IP-шный origin
+        ));
+
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 
-        UrlBasedCorsConfigurationSource  source = new UrlBasedCorsConfigurationSource();
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
     }

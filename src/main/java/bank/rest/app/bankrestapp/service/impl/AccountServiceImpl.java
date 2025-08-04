@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 import static bank.rest.app.bankrestapp.constants.AccountDefaults.*;
 import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_INVALID_EMAIL;
@@ -60,6 +61,15 @@ public class AccountServiceImpl implements AccountService {
 
         final Customer customer = this.customerRepository.findByAuthUserEmail(customerEmail)
                 .orElseThrow(() -> new NoSuchElementException(ERRORS_INVALID_EMAIL));
+
+        if(customer.getAccounts().size() >= MAXIMUM_NUMBER_OF_ACCOUNTS) {
+            throw new IllegalArgumentException("Customer has reached the maximum number of accounts.");
+        }
+        Optional<Account> existingAccount = customer.getAccounts().stream().filter(account1 ->
+                account1.getCurrencyCode() == currency).findFirst();
+        if (existingAccount.isPresent()) {
+            throw new IllegalArgumentException("Customer already has an account with this currency.");
+        }
 
         account.setCustomer(customer);
         account.setCard(card);
