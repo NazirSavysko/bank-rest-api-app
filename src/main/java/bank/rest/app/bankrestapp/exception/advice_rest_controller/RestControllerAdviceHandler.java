@@ -1,5 +1,7 @@
-package bank.rest.app.bankrestapp.exception;
+package bank.rest.app.bankrestapp.exception.advice_rest_controller;
 
+import bank.rest.app.bankrestapp.exception.AccountNotActiveException;
+import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
