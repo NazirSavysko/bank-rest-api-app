@@ -25,17 +25,5 @@ public enum AccountStatus {
     ACTIVE,
 
     /** Account is blocked due to security concerns or policy violations */
-    BLOCKED,
-
-    /** Account is permanently closed and cannot be reactivated */
-    CLOSED,
-
-    /** Account is temporarily frozen, usually for investigation purposes */
-    FROZEN,
-
-    /** Account is newly created and awaiting verification or approval */
-    PENDING,
-
-    /** Account is temporarily suspended, typically for administrative reasons */
-    SUSPENDED
+    BLOCKED
 }

@@ -2,6 +2,7 @@ package bank.rest.app.bankrestapp.facade.impl;
 
 import bank.rest.app.bankrestapp.dto.*;
 import bank.rest.app.bankrestapp.dto.get.AuthenticateDTO;
+import bank.rest.app.bankrestapp.dto.get.CetCustomerDetailsForAdminDTO;
 import bank.rest.app.bankrestapp.dto.get.GetCustomerDTO;
 import bank.rest.app.bankrestapp.entity.Customer;
 import bank.rest.app.bankrestapp.facade.CustomerFacade;
@@ -15,9 +16,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_CUSTOMER_ROLE_NOT_FOUND;
+import static bank.rest.app.bankrestapp.utils.MapperUtils.mapCollection;
 import static bank.rest.app.bankrestapp.utils.MapperUtils.mapDto;
 
 @Component
@@ -27,15 +30,20 @@ public class CustomerFacadeImpl implements CustomerFacade {
     private final Mapper<Customer, GetCustomerDTO> customerMapper;
     private final JwtUtil jwtUtil;
     private final DtoValidator dtoValidator;
+    private final Mapper<Customer, CetCustomerDetailsForAdminDTO> customerMapperForAdmin;
+
+
     @Autowired
     public CustomerFacadeImpl(final CustomerService customerService,
                               final Mapper<Customer, GetCustomerDTO> customerMapper,
+                                final Mapper<Customer, CetCustomerDetailsForAdminDTO> customerMapperForAdmin,
                                 final DtoValidator dtoValidator,
                               final JwtUtil jwtUtil) {
         this.customerService = customerService;
         this.customerMapper = customerMapper;
         this.jwtUtil = jwtUtil;
         this.dtoValidator = dtoValidator;
+        this.customerMapperForAdmin = customerMapperForAdmin;
     }
 
     @Override
@@ -93,5 +101,12 @@ public class CustomerFacadeImpl implements CustomerFacade {
 
         this.customerService.updatePassword(updateCustomerDTO.email(), updateCustomerDTO.newPassword(),
                 updateCustomerDTO.oldPassword());
+    }
+
+    @Override
+    public List<CetCustomerDetailsForAdminDTO> getCetCustomerDetailsForAdmin() {
+        final List<Customer> customers = this.customerService.getAllCustomers();
+        return mapCollection(customers, this.customerMapperForAdmin::toDto);
+
     }
 }

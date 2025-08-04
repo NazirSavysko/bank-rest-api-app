@@ -3,6 +3,8 @@ package bank.rest.app.bankrestapp.service;
 import bank.rest.app.bankrestapp.entity.Customer;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 public interface CustomerService {
 
     @Transactional(readOnly = true)
@@ -19,4 +21,7 @@ public interface CustomerService {
 
     @Transactional(rollbackFor = Exception.class)
     void updatePassword(String email, String newPassword,String oldPassword);
+
+    @Transactional(readOnly = true)
+    List<Customer> getAllCustomers();
 }

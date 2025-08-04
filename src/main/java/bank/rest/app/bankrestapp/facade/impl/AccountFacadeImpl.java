@@ -1,7 +1,9 @@
 package bank.rest.app.bankrestapp.facade.impl;
 
+import bank.rest.app.bankrestapp.dto.AccountStatusDTO;
 import bank.rest.app.bankrestapp.dto.CreateAccountDTO;
 import bank.rest.app.bankrestapp.dto.get.GetAccountDTO;
+import bank.rest.app.bankrestapp.dto.get.GetAccountForAdminDTO;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.facade.AccountFacade;
 import bank.rest.app.bankrestapp.mapper.Mapper;
@@ -41,5 +43,10 @@ public class AccountFacadeImpl implements AccountFacade {
         );
 
         return mapDto(account, this.accountMapper::toDto);
+    }
+
+    @Override
+    public GetAccountForAdminDTO updateAccountStatus(final AccountStatusDTO accountStatus) {
+        return null;
     }
 }

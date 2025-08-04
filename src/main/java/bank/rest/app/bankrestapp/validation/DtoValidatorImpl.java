@@ -1,5 +1,6 @@
 package bank.rest.app.bankrestapp.validation;
 
+import bank.rest.app.bankrestapp.entity.annotation.AccountStatus;
 import bank.rest.app.bankrestapp.entity.annotation.Currency;
 import bank.rest.app.bankrestapp.entity.annotation.CurrencyAmount;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -130,7 +131,7 @@ public final class DtoValidatorImpl implements DtoValidator {
         validator.validate(dto, result);
         final Field[] fields = dto.getClass().getDeclaredFields();
         stream(fields)
-                .filter(field -> field.isAnnotationPresent(Currency.class) || field.isAnnotationPresent(CurrencyAmount.class))
+                .filter(field -> field.isAnnotationPresent(Currency.class) || field.isAnnotationPresent(CurrencyAmount.class) || field.isAnnotationPresent(AccountStatus.class))
                 .forEach(field -> {
                     field.setAccessible(true);
                     try {
@@ -139,10 +140,15 @@ public final class DtoValidatorImpl implements DtoValidator {
                             if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
                                 result.rejectValue(field.getName(), "amount.invalid", "неправильна сума");
                             }
-                        } else {
+                        } else if (field.isAnnotationPresent(Currency.class)) {
                             final String value = (String) field.get(dto);
                             if (value == null || !(value.equals("UAH") || value.equals("USD") || value.equals("EUR"))) {
                                 result.rejectValue(field.getName(), "currency.invalid", "неправильний кол валют");
+                            }
+                        }else if (field.isAnnotationPresent(AccountStatus.class)) {
+                            final String value = (String) field.get(dto);
+                            if (value == null || !(value.equals("ACTIVE") || value.equals("BLOCKED"))) {
+                                result.rejectValue(field.getName(), "account.status.invalid", "неправильний статус рахунку");
                             }
                         }
                     } catch (IllegalAccessException e) {

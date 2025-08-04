@@ -1,9 +1,16 @@
 package bank.rest.app.bankrestapp.controller;
 
+import bank.rest.app.bankrestapp.controller.payload.AccountStatusPayload;
+import bank.rest.app.bankrestapp.dto.AccountStatusDTO;
+import bank.rest.app.bankrestapp.dto.get.CetCustomerDetailsForAdminDTO;
+import bank.rest.app.bankrestapp.dto.get.GetAccountForAdminDTO;
+import bank.rest.app.bankrestapp.facade.AccountFacade;
+import bank.rest.app.bankrestapp.facade.CustomerFacade;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 import static org.springframework.http.ResponseEntity.ok;
 
@@ -11,9 +18,34 @@ import static org.springframework.http.ResponseEntity.ok;
 @RequestMapping("/api/v1/admin")
 class AdminController {
 
-    @GetMapping("/dashboard")
-    public ResponseEntity<?> getAdminDashboard() {
+    private final CustomerFacade customerFacade;
+    private final AccountFacade accountFacade;
 
-        return ok().build() ;
+    @Autowired
+    public AdminController(final CustomerFacade customerFacade,final AccountFacade accountFacade){
+        this.customerFacade = customerFacade;
+        this.accountFacade = accountFacade;
     }
+
+
+    @GetMapping("/list/users")
+    public ResponseEntity<?> getAdminDashboard() {
+        final List<CetCustomerDetailsForAdminDTO> cetCustomerDetailsForAdminDTO = customerFacade.getCetCustomerDetailsForAdmin();
+
+        return ok(cetCustomerDetailsForAdminDTO);
+    }
+
+    @PutMapping("/user/accounts/{accountId:\\d+}")
+    public ResponseEntity<?> updateAccountStatus(@PathVariable final Integer accountId, final @RequestBody AccountStatusPayload status) {
+
+        final AccountStatusDTO accountStatus = new AccountStatusDTO(
+                accountId,
+                status.status()
+        );
+
+        final GetAccountForAdminDTO accountStatusDTO = this.accountFacade.updateAccountStatus(accountStatus);
+        return ok()
+                .build();
+    }
+
 }

@@ -2,8 +2,11 @@ package bank.rest.app.bankrestapp.facade;
 
 import bank.rest.app.bankrestapp.dto.*;
 import bank.rest.app.bankrestapp.dto.get.AuthenticateDTO;
+import bank.rest.app.bankrestapp.dto.get.CetCustomerDetailsForAdminDTO;
 import bank.rest.app.bankrestapp.dto.get.GetCustomerDTO;
 import org.springframework.validation.BindingResult;
+
+import java.util.List;
 
 public interface CustomerFacade {
 
@@ -17,4 +20,6 @@ public interface CustomerFacade {
 
 
     void updatePassword(UpdateCustomerDTO updateCustomerDTO, BindingResult bindingResult);
+
+    List<CetCustomerDetailsForAdminDTO> getCetCustomerDetailsForAdmin();
 }

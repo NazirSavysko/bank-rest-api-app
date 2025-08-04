@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import static bank.rest.app.bankrestapp.constants.AccountDefaults.DEFAULT_CURRENCY;
@@ -120,6 +121,11 @@ public class CustomerServiceImpl implements CustomerService {
         final Customer customer = this.checkAuthentication(email, oldPassword, ERRORS_INVALID_OLD_PASSWORD);
 
         this.changePassword(customer, newPassword);
+    }
+
+    @Override
+    public List<Customer> getAllCustomers() {
+        return customerRepository.findAll();
     }
 
     private void changePassword(final @NotNull Customer customer, final String newPassword) {
