@@ -44,7 +44,7 @@ public final class AccountMapperImpl implements Mapper<Account, GetAccountDTO> {
     }
 
     private static boolean test(@NotNull Transaction transaction) {
-        return transaction.getStatus().equals(CANCELLED) || transaction.getStatus().equals(FAILED);
+        return !(transaction.getStatus().equals(CANCELLED) || transaction.getStatus().equals(FAILED));
     }
 
     @Contract("_ -> new")
@@ -70,19 +70,23 @@ public final class AccountMapperImpl implements Mapper<Account, GetAccountDTO> {
         if (recipientTransactions.isEmpty()) {
             return senderTransactions;
         }
-        if (senderTransactions.isEmpty()) {
-            return recipientTransactions;
-        }
 
-        final Stream<Transaction> getStream = recipientTransactions.stream()
-                .filter(AccountMapperImpl::test)
-                .peek(transaction -> {
-            transaction.setAmount(currencyLoader.convert(transaction.getAmount(), transaction.getCurrencyCode().name(), account.getCurrencyCode().name()));
-            transaction.setCurrencyCode(account.getCurrencyCode());
-            transaction.setIsRecipient(true);
-        });
+        final Stream<Transaction> getStream = this.getTransactionHistory(recipientTransactions, account);
+        if (senderTransactions.isEmpty()) {
+            return getStream.toList();
+        }
 
         return concat(getStream, senderTransactions.stream()).toList();
 
+    }
+
+    private Stream<Transaction> getTransactionHistory(final @NotNull List<Transaction> recipientTransactions, final Account account) {
+        return recipientTransactions.stream()
+                .filter(AccountMapperImpl::test)
+                .peek(transaction -> {
+                    transaction.setAmount(currencyLoader.convert(transaction.getAmount(), transaction.getCurrencyCode().name(), account.getCurrencyCode().name()));
+                    transaction.setCurrencyCode(account.getCurrencyCode());
+                    transaction.setIsRecipient(true);
+                });
     }
 }

@@ -97,6 +97,7 @@ public class TransactionServiceImpl implements TransactionService {
                 .currencyCode(senderAccount.getCurrencyCode())
                 .status(status)
                 .transactionType(TRANSFER)
+                .isRecipient(false)
                 .build();
 
         senderAccount.getSentTransactions().add(transaction);
