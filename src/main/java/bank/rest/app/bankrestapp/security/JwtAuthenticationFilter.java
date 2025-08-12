@@ -1,6 +1,7 @@
 package bank.rest.app.bankrestapp.security;
 
 import bank.rest.app.bankrestapp.entity.Customer;
+import bank.rest.app.bankrestapp.mapper.Mapper;
 import bank.rest.app.bankrestapp.resository.CustomerRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -23,10 +24,12 @@ public final class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final CustomerRepository customerRepository;
+    private final Mapper<Customer, UserDetails> customerMapper;
 
-    public JwtAuthenticationFilter(JwtUtil jwtUtil,@Lazy CustomerRepository customerRepository) {
+    public JwtAuthenticationFilter(JwtUtil jwtUtil,@Lazy CustomerRepository customerRepository,Mapper<Customer, UserDetails> customerMapper) {
         this.jwtUtil = jwtUtil;
         this.customerRepository = customerRepository;
+        this.customerMapper = customerMapper;
     }
 
     @Override
@@ -41,11 +44,11 @@ public final class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (jwtUtil.isTokenValid(jwt)) {
                 String email = jwtUtil.getEmail(jwt);
-                Optional<Customer> optionalUser = customerRepository.findByAuthUserEmail(email);
+                Optional<Customer> optionalUser = this.customerRepository.findByAuthUserEmail(email);
 
                 if (optionalUser.isPresent()) {
                     Customer user = optionalUser.get();
-                    UserDetails userDetails = new CustomerPrincipal(user);
+                    UserDetails userDetails = this.customerMapper.toDto(user);
 
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(

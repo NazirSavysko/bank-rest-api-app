@@ -1,5 +1,9 @@
 package bank.rest.app.bankrestapp.entity.enums;
 
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.security.core.GrantedAuthority;
+
 /**
  * Enumeration representing user roles in the banking system.
  *
@@ -22,11 +26,25 @@ package bank.rest.app.bankrestapp.entity.enums;
  * @author Nazira Savisska
  * @since 1.0
  */
-public enum Role {
+public enum Role implements GrantedAuthority {
 
     /** Administrative role with full system privileges and user management capabilities */
     ROLE_ADMIN,
 
     /** Standard user role for regular customers with limited access to own resources */
-    ROLE_USER
+    ROLE_USER;
+
+    /**
+     * Returns the authority string for this role.
+     *
+     * <p>This method is used by Spring Security to determine the granted authority
+     * associated with this role.</p>
+     *
+     * @return the name of the role as a string
+     */
+    @Contract(pure = true)
+    @Override
+    public @NotNull String getAuthority() {
+        return name();
+    }
 }

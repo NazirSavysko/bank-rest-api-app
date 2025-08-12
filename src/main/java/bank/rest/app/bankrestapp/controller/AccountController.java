@@ -5,10 +5,10 @@ import bank.rest.app.bankrestapp.controller.payload.CreateAccountPayload;
 import bank.rest.app.bankrestapp.dto.CreateAccountDTO;
 import bank.rest.app.bankrestapp.dto.get.GetAccountDTO;
 import bank.rest.app.bankrestapp.facade.AccountFacade;
-import bank.rest.app.bankrestapp.security.CustomerPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,11 +31,11 @@ public final class AccountController {
 
     @PostMapping("/create")
     public ResponseEntity<?> createAccount(
-            final @AuthenticationPrincipal CustomerPrincipal customerPrincipal,
+            final @AuthenticationPrincipal UserDetails userDetails,
             final @RequestBody CreateAccountPayload createAccountPayload,
             final BindingResult bindingResult
             ) {
-        final String customerEmail = customerPrincipal.getUsername();
+        final String customerEmail = userDetails.getUsername();
         final CreateAccountDTO createAccountDTO = new CreateAccountDTO(
                 createAccountPayload.accountType(),
                 customerEmail

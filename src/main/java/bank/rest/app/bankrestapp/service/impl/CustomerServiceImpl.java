@@ -7,8 +7,8 @@ import bank.rest.app.bankrestapp.service.AccountService;
 import bank.rest.app.bankrestapp.service.CardService;
 import bank.rest.app.bankrestapp.service.CustomerService;
 import bank.rest.app.bankrestapp.service.EmailService;
+import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +22,7 @@ import static java.time.LocalDateTime.now;
 import static java.util.List.of;
 
 @Service
+@AllArgsConstructor
 public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepository;
@@ -31,20 +32,6 @@ public class CustomerServiceImpl implements CustomerService {
     private final CardService cardService;
     private final EmailService emailService;
 
-    @Autowired
-    public CustomerServiceImpl(final CustomerRepository customerRepository,
-                               final PasswordEncoder passwordEncoder,
-                               final CustomerRoleRepository customerRoleRepository,
-                               final AccountService accountService,
-                               final CardService cardService,
-                               final EmailService emailService) {
-        this.customerRepository = customerRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.customerRoleRepository = customerRoleRepository;
-        this.accountService = accountService;
-        this.cardService = cardService;
-        this.emailService = emailService;
-    }
 
     @Override
     public @NotNull Customer login(final String email) {

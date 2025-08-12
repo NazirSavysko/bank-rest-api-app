@@ -1,15 +1,14 @@
 package bank.rest.app.bankrestapp.controller;
 
-import bank.rest.app.bankrestapp.controller.payload.ResetCustomerPassword;
 import bank.rest.app.bankrestapp.controller.payload.UpdateCustomerPassword;
 import bank.rest.app.bankrestapp.dto.ResetPasswordRequestDTO;
 import bank.rest.app.bankrestapp.dto.UpdateCustomerDTO;
 import bank.rest.app.bankrestapp.dto.get.GetCustomerDTO;
 import bank.rest.app.bankrestapp.facade.CustomerFacade;
-import bank.rest.app.bankrestapp.security.CustomerPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,8 +27,8 @@ class CustomerController {
 
     @GetMapping("/customer")
     public ResponseEntity<?> getCustomer(
-            final @AuthenticationPrincipal CustomerPrincipal customerPrincipal) {
-        final String customerEmail = customerPrincipal.getUsername();
+            final @AuthenticationPrincipal UserDetails userDetails) {
+        final String customerEmail = userDetails.getUsername();
         final GetCustomerDTO getCustomerDTO = this.customerFacade.getCustomer(customerEmail);
 
         return ok(getCustomerDTO);
@@ -45,10 +44,10 @@ class CustomerController {
 
     @PutMapping("/change-password")
     public ResponseEntity<?> changePassword(
-            final @AuthenticationPrincipal CustomerPrincipal customerPrincipal,
+            final @AuthenticationPrincipal UserDetails userDetails,
             final @RequestBody UpdateCustomerPassword updateCustomerPassword,
             final BindingResult bindingResult) {
-        final String customerEmail = customerPrincipal.getUsername();
+        final String customerEmail = userDetails.getUsername();
         final UpdateCustomerDTO updateCustomerDTO = new UpdateCustomerDTO(
                 customerEmail,
                 updateCustomerPassword.oldPassword(),

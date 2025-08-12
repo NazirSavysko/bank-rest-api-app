@@ -1,9 +1,10 @@
 package bank.rest.app.bankrestapp.security;
 
 import bank.rest.app.bankrestapp.entity.Customer;
+import bank.rest.app.bankrestapp.mapper.Mapper;
 import bank.rest.app.bankrestapp.resository.CustomerRepository;
+import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -11,14 +12,12 @@ import org.springframework.stereotype.Component;
 
 
 @Component
+@AllArgsConstructor
 public final class MyCustomerDetailsService implements UserDetailsService {
 
     private final CustomerRepository customerRepository;
+    private final Mapper<Customer, UserDetails> userDetailsMapper;
 
-    @Autowired
-    public MyCustomerDetailsService(final CustomerRepository customerRepository) {
-        this.customerRepository = customerRepository;
-    }
 
     @Override
     public @NotNull UserDetails loadUserByUsername(final String username) throws UsernameNotFoundException {
@@ -26,6 +25,6 @@ public final class MyCustomerDetailsService implements UserDetailsService {
                 () -> new UsernameNotFoundException("Customer not found with email: " + username)
         );
 
-        return new CustomerPrincipal(customer);
+        return this.userDetailsMapper.toDto(customer);
     }
 }

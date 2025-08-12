@@ -1,7 +1,8 @@
-package bank.rest.app.bankrestapp.mapper;
+package bank.rest.app.bankrestapp.mapper.impl;
 
 import bank.rest.app.bankrestapp.dto.get.CetCustomerDetailsForAdminDTO;
 import bank.rest.app.bankrestapp.entity.Customer;
+import bank.rest.app.bankrestapp.mapper.Mapper;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

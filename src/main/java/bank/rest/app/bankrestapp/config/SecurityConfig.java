@@ -49,12 +49,14 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .sessionManagement(sess -> sess.sessionCreationPolicy(STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                                .requestMatchers("/api/v1/log-in").permitAll()
-                                .requestMatchers("/api/v1/register").permitAll()
-                                .requestMatchers("/api/v1/email/**").permitAll()
-                                .requestMatchers("/api/v1/customers/forgot-password").permitAll()
-                                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                                .anyRequest().hasRole("USER")
+                        .requestMatchers(
+                                "/api/v1/log-in",
+                                "/api/v1/customers/forgot-password",
+                                "/api/v1/register",
+                                "/api/v1/email/**"
+                        ).permitAll()
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        .anyRequest().hasRole("USER")
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .formLogin(AbstractHttpConfigurer::disable)
@@ -77,7 +79,7 @@ public class SecurityConfig {
 
         config.setAllowedOrigins(List.of(
                 "http://localhost:5173",
-                "http://192.168.0.101:5173" // 👈 добавь IP-шный origin
+                "http://192.168.0.101:5173"
         ));
 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
