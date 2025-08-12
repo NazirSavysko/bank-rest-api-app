@@ -8,16 +8,15 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 
-@Component
+@Service
 @AllArgsConstructor
 public final class MyCustomerDetailsService implements UserDetailsService {
 
     private final CustomerRepository customerRepository;
     private final Mapper<Customer, UserDetails> userDetailsMapper;
-
 
     @Override
     public @NotNull UserDetails loadUserByUsername(final String username) throws UsernameNotFoundException {
