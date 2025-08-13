@@ -37,15 +37,11 @@ class AdminController {
 
     @PutMapping("/user/accounts/{accountId:\\d+}")
     public ResponseEntity<?> updateAccountStatus(@PathVariable final Integer accountId, final @RequestBody AccountStatusPayload status) {
-
-        final AccountStatusDTO accountStatus = new AccountStatusDTO(
-                accountId,
-                status.status()
-        );
+        final AccountStatusDTO accountStatus = new AccountStatusDTO(accountId, status.status());
 
         final GetAccountForAdminDTO accountStatusDTO = this.accountFacade.updateAccountStatus(accountStatus);
-        return ok()
-                .build();
+
+        return ok(accountStatusDTO);
     }
 
 }

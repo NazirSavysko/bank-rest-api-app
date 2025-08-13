@@ -106,7 +106,7 @@ public class CustomerFacadeImpl implements CustomerFacade {
     @Override
     public List<CetCustomerDetailsForAdminDTO> getCetCustomerDetailsForAdmin() {
         final List<Customer> customers = this.customerService.getAllCustomers();
-        return mapCollection(customers, this.customerMapperForAdmin::toDto);
 
+        return mapCollection(customers, this.customerMapperForAdmin::toDto);
     }
 }
