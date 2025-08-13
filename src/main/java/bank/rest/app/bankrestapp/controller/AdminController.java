@@ -16,7 +16,7 @@ import static org.springframework.http.ResponseEntity.ok;
 
 @RestController
 @RequestMapping("/api/v1/admin")
-class AdminController {
+public final class AdminController {
 
     private final CustomerFacade customerFacade;
     private final AccountFacade accountFacade;
