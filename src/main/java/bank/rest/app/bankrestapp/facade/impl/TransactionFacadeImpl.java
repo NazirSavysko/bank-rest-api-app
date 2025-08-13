@@ -7,6 +7,7 @@ import bank.rest.app.bankrestapp.facade.TransactionFacade;
 import bank.rest.app.bankrestapp.mapper.Mapper;
 import bank.rest.app.bankrestapp.service.TransactionService;
 import bank.rest.app.bankrestapp.validation.DtoValidator;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
@@ -14,20 +15,11 @@ import org.springframework.validation.BindingResult;
 import static bank.rest.app.bankrestapp.utils.MapperUtils.mapDto;
 
 @Component
+@AllArgsConstructor
 public class TransactionFacadeImpl implements TransactionFacade {
     private final TransactionService transactionService;
     private final DtoValidator dtoValidator;
     private final Mapper<Transaction, GetTransactionDTO> transactionMapper;
-
-
-    @Autowired
-    public TransactionFacadeImpl(final TransactionService transactionService,
-                                 final Mapper<Transaction, GetTransactionDTO> transactionMapper,
-                                 final DtoValidator dtoValidator) {
-        this.transactionService = transactionService;
-        this.dtoValidator = dtoValidator;
-        this.transactionMapper = transactionMapper;
-    }
 
     @Override
     public GetTransactionDTO withdraw(final CreateTransaction transaction, final BindingResult bindingResult) {

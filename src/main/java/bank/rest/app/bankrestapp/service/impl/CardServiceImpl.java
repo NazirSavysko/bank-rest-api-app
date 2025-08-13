@@ -3,6 +3,7 @@ package bank.rest.app.bankrestapp.service.impl;
 import bank.rest.app.bankrestapp.entity.Card;
 import bank.rest.app.bankrestapp.resository.CardRepository;
 import bank.rest.app.bankrestapp.service.CardService;
+import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,14 +16,10 @@ import static java.lang.String.format;
 import static java.time.LocalDateTime.now;
 
 @Service
+@AllArgsConstructor
 public final class CardServiceImpl implements CardService {
 
     private final CardRepository cardRepository;
-
-    @Autowired
-    public CardServiceImpl(CardRepository cardRepository) {
-        this.cardRepository = cardRepository;
-    }
 
     @Override
     public Card generateCard() {

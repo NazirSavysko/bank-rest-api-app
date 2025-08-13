@@ -5,6 +5,7 @@ import bank.rest.app.bankrestapp.controller.payload.CreateAccountPayload;
 import bank.rest.app.bankrestapp.dto.CreateAccountDTO;
 import bank.rest.app.bankrestapp.dto.get.GetAccountDTO;
 import bank.rest.app.bankrestapp.facade.AccountFacade;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -19,15 +20,10 @@ import static org.springframework.http.HttpStatus.CREATED;
 
 @RestController
 @RequestMapping("/api/v1/accounts")
+@AllArgsConstructor
 public final class AccountController {
 
     private final AccountFacade accountFacade;
-
-
-    @Autowired
-    public AccountController(final AccountFacade accountFacade) {
-        this.accountFacade = accountFacade;
-    }
 
     @PostMapping("/create")
     public ResponseEntity<?> createAccount(

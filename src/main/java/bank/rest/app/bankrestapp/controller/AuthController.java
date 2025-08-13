@@ -4,6 +4,7 @@ import bank.rest.app.bankrestapp.dto.get.AuthenticateDTO;
 import bank.rest.app.bankrestapp.dto.CreateCustomerDTO;
 import bank.rest.app.bankrestapp.dto.LoginDTO;
 import bank.rest.app.bankrestapp.facade.CustomerFacade;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -17,14 +18,10 @@ import static org.springframework.http.ResponseEntity.ok;
 
 @RestController
 @RequestMapping("/api/v1/")
+@AllArgsConstructor
 class AuthController {
 
     private final CustomerFacade customerFacade;
-
-    @Autowired
-    public AuthController(final CustomerFacade customerFacade) {
-        this.customerFacade = customerFacade;
-    }
 
     @PostMapping("/register")
     public ResponseEntity<?> register(final @RequestBody CreateCustomerDTO createCustomerDTO,

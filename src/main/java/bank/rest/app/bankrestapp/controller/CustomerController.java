@@ -5,6 +5,7 @@ import bank.rest.app.bankrestapp.dto.ResetPasswordRequestDTO;
 import bank.rest.app.bankrestapp.dto.UpdateCustomerDTO;
 import bank.rest.app.bankrestapp.dto.get.GetCustomerDTO;
 import bank.rest.app.bankrestapp.facade.CustomerFacade;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -16,14 +17,10 @@ import static org.springframework.http.ResponseEntity.ok;
 
 @RestController
 @RequestMapping("/api/v1/customers")
+@AllArgsConstructor
 class CustomerController {
 
     private final CustomerFacade customerFacade;
-
-    @Autowired
-    public CustomerController(final CustomerFacade customerFacade) {
-        this.customerFacade = customerFacade;
-    }
 
     @GetMapping("/customer")
     public ResponseEntity<?> getCustomer(

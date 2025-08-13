@@ -6,6 +6,7 @@ import bank.rest.app.bankrestapp.dto.get.CetCustomerDetailsForAdminDTO;
 import bank.rest.app.bankrestapp.dto.get.GetAccountForAdminDTO;
 import bank.rest.app.bankrestapp.facade.AccountFacade;
 import bank.rest.app.bankrestapp.facade.CustomerFacade;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,17 +17,11 @@ import static org.springframework.http.ResponseEntity.ok;
 
 @RestController
 @RequestMapping("/api/v1/admin")
+@AllArgsConstructor
 public final class AdminController {
 
     private final CustomerFacade customerFacade;
     private final AccountFacade accountFacade;
-
-    @Autowired
-    public AdminController(final CustomerFacade customerFacade,final AccountFacade accountFacade){
-        this.customerFacade = customerFacade;
-        this.accountFacade = accountFacade;
-    }
-
 
     @GetMapping("/list/users")
     public ResponseEntity<?> getAdminDashboard() {

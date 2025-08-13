@@ -5,6 +5,7 @@ import bank.rest.app.bankrestapp.dto.get.GetCustomerDTO;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.Customer;
 import bank.rest.app.bankrestapp.mapper.Mapper;
+import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,19 +53,10 @@ import static bank.rest.app.bankrestapp.utils.MapperUtils.mapCollection;
  * @since 1.0
  */
 @Component
+@AllArgsConstructor
 public final class CustomerMapperImpl implements Mapper<Customer, GetCustomerDTO> {
 
     private final Mapper<Account, GetAccountDTO> accountMapper;
-
-    /**
-     * Constructs a CustomerMapperImpl with the required account mapper.
-     *
-     * @param accountMapper mapper for converting Account entities to GetAccountDTO objects
-     */
-    @Autowired
-    public CustomerMapperImpl(final Mapper<Account, GetAccountDTO> accountMapper) {
-        this.accountMapper = accountMapper;
-    }
 
     /**
      * Converts a Customer entity to a GetCustomerDTO.

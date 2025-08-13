@@ -8,6 +8,7 @@ import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.CustomerRepository;
 import bank.rest.app.bankrestapp.service.AccountService;
 import bank.rest.app.bankrestapp.service.CardService;
+import lombok.AllArgsConstructor;
 import org.hibernate.mapping.List;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -24,20 +25,13 @@ import static java.lang.String.format;
 import static java.util.List.of;
 
 @Service
+@AllArgsConstructor
 public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepository;
     private final CustomerRepository customerRepository;
     private final CardService cardService;
 
-    @Autowired
-    public AccountServiceImpl(final AccountRepository accountRepository,
-                              final CardService cardService,
-                              final CustomerRepository customerRepository) {
-        this.accountRepository = accountRepository;
-        this.customerRepository = customerRepository;
-        this.cardService = cardService;
-    }
 
     @Override
     public Account generateAccountByCurrencyCode(final @NotNull Currency currency) {

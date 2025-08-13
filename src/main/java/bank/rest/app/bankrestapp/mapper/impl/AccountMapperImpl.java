@@ -10,6 +10,7 @@ import bank.rest.app.bankrestapp.entity.Card;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.mapper.Mapper;
+import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,7 @@ import static bank.rest.app.bankrestapp.utils.MapperUtils.mapDto;
 import static java.util.stream.Stream.concat;
 
 @Component
+@AllArgsConstructor
 public final class AccountMapperImpl implements Mapper<Account, GetAccountDTO> {
 
     private final Mapper<Card, GetCardDTO> cardMapper;
@@ -32,16 +34,6 @@ public final class AccountMapperImpl implements Mapper<Account, GetAccountDTO> {
     private final Mapper<Payment, GetPaymentDTO> paymentMapper;
     private final CurrencyLoader currencyLoader;
 
-    @Autowired
-    public AccountMapperImpl(final Mapper<Card, GetCardDTO> cardMapper,
-                             final Mapper<Transaction, GetTransactionDTO> transactionMapper,
-                             final CurrencyLoader currencyLoader,
-                             final Mapper<Payment, GetPaymentDTO> paymentMapper) {
-        this.cardMapper = cardMapper;
-        this.transactionMapper = transactionMapper;
-        this.paymentMapper = paymentMapper;
-        this.currencyLoader = currencyLoader;
-    }
 
     private static boolean test(@NotNull Transaction transaction) {
         return !(transaction.getStatus().equals(CANCELLED) || transaction.getStatus().equals(FAILED));

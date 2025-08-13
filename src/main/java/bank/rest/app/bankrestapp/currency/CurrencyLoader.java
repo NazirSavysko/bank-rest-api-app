@@ -2,6 +2,7 @@ package bank.rest.app.bankrestapp.currency;
 
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import jakarta.annotation.PostConstruct;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
@@ -19,15 +20,12 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
+@AllArgsConstructor
 public final class CurrencyLoader {
 
     private final RestTemplate restTemplate;
     private List<CurrencyRate> currentRates = new ArrayList<>();
 
-    @Autowired
-    public CurrencyLoader(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
-    }
 
     @PostConstruct
     public void init() {

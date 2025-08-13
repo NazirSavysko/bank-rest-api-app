@@ -11,6 +11,7 @@ import bank.rest.app.bankrestapp.security.JwtUtil;
 import bank.rest.app.bankrestapp.service.CustomerService;
 
 import bank.rest.app.bankrestapp.validation.DtoValidator;
+import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -24,6 +25,7 @@ import static bank.rest.app.bankrestapp.utils.MapperUtils.mapCollection;
 import static bank.rest.app.bankrestapp.utils.MapperUtils.mapDto;
 
 @Component
+@AllArgsConstructor
 public class CustomerFacadeImpl implements CustomerFacade {
 
     private final CustomerService customerService;
@@ -31,20 +33,6 @@ public class CustomerFacadeImpl implements CustomerFacade {
     private final JwtUtil jwtUtil;
     private final DtoValidator dtoValidator;
     private final Mapper<Customer, CetCustomerDetailsForAdminDTO> customerMapperForAdmin;
-
-
-    @Autowired
-    public CustomerFacadeImpl(final CustomerService customerService,
-                              final Mapper<Customer, GetCustomerDTO> customerMapper,
-                                final Mapper<Customer, CetCustomerDetailsForAdminDTO> customerMapperForAdmin,
-                                final DtoValidator dtoValidator,
-                              final JwtUtil jwtUtil) {
-        this.customerService = customerService;
-        this.customerMapper = customerMapper;
-        this.jwtUtil = jwtUtil;
-        this.dtoValidator = dtoValidator;
-        this.customerMapperForAdmin = customerMapperForAdmin;
-    }
 
     @Override
     public GetCustomerDTO getCustomer(final String customerEmail) {

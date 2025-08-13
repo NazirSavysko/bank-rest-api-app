@@ -12,6 +12,7 @@ import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.TransactionRepository;
 import bank.rest.app.bankrestapp.service.EmailService;
 import bank.rest.app.bankrestapp.service.TransactionService;
+import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,23 +27,13 @@ import static java.time.LocalDateTime.now;
 
 
 @Service
+@AllArgsConstructor
 public class TransactionServiceImpl implements TransactionService {
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
     private final CurrencyLoader currencyLoader;
     private final EmailService emailService;
-
-    @Autowired
-    public TransactionServiceImpl(final AccountRepository accountRepository,
-                                  final TransactionRepository transactionRepository,
-                                  final EmailService emailService,
-                                  final CurrencyLoader currencyLoader) {
-        this.accountRepository = accountRepository;
-        this.currencyLoader = currencyLoader;
-        this.emailService = emailService;
-        this.transactionRepository = transactionRepository;
-    }
 
     @Override
     public Transaction withdraw(final String senderCardNumber, final String recipientCardNumber, final BigDecimal amount, final String description) {

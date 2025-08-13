@@ -5,6 +5,7 @@ import bank.rest.app.bankrestapp.resository.EmailVerificationCodeRepository;
 import bank.rest.app.bankrestapp.service.EmailService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
@@ -28,17 +29,13 @@ import static java.time.LocalDateTime.now;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 
 @Service
+@AllArgsConstructor
 public class EmailServiceImpl implements EmailService {
 
+    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     private final JavaMailSender mailSender;
     private final EmailVerificationCodeRepository codeRepo;
 
-    @Autowired
-    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
-    public EmailServiceImpl(final JavaMailSender mailSender, final EmailVerificationCodeRepository codeRepo) {
-        this.mailSender = mailSender;
-        this.codeRepo = codeRepo;
-    }
 
     @Override
     public void deleteExpiredCodes() {
