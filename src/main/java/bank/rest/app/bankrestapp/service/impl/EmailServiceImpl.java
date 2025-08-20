@@ -80,6 +80,7 @@ public class EmailServiceImpl implements EmailService {
             helper.setText(this.buildEmailContent(code), true);
 
         } catch (IOException e) {
+            e.printStackTrace();
             throw new UncheckedIOException("Не вдалося зчитати шаблон листа", e);
 
         } catch (MessagingException e) {

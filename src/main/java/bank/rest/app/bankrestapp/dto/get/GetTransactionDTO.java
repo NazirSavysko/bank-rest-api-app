@@ -11,6 +11,6 @@ public record GetTransactionDTO(
         String transactionType,
         String currencyCode,
         String status,
-        Boolean isReverser
+        Boolean isRecipient
 ) {
 }

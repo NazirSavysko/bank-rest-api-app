@@ -55,7 +55,7 @@ public final class Transaction {
 
     @PostLoad
     public void postLoad() {
-        isRecipient = true;
+        isRecipient = false;
     }
 
 }
