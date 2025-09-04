@@ -32,8 +32,8 @@ class CustomerController {
     }
 
     @PutMapping("/forgot-password")
-    public ResponseEntity<?> updatePassword(final @RequestBody ResetPasswordRequestDTO resetPasswordRequestDTO) {
-        this.customerFacade.resetPassword(resetPasswordRequestDTO);
+    public ResponseEntity<?> updatePassword(final @RequestBody ResetPasswordRequestDTO resetPasswordRequestDTO,final BindingResult bindingResult) {
+        this.customerFacade.resetPassword(resetPasswordRequestDTO,bindingResult);
 
         return ok()
                 .build();

@@ -74,7 +74,8 @@ public class SecurityConfig {
 
         config.setAllowedOrigins(List.of(
                 "http://localhost:5173",
-                "http://192.168.0.103:5173"
+                "http://192.168.0.103:5173",
+                "http://172.20.10.7:5173"
         ));
 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));

@@ -13,7 +13,6 @@ import bank.rest.app.bankrestapp.service.CustomerService;
 import bank.rest.app.bankrestapp.validation.DtoValidator;
 import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 
@@ -76,7 +75,9 @@ public class CustomerFacadeImpl implements CustomerFacade {
     }
 
     @Override
-    public void resetPassword(final @NotNull ResetPasswordRequestDTO resetPasswordRequestDTO) {
+    public void resetPassword(final @NotNull ResetPasswordRequestDTO resetPasswordRequestDTO, final BindingResult bindingResult) {
+        this.dtoValidator.validate(resetPasswordRequestDTO,bindingResult);
+
         this.customerService.resetPassword(
                 resetPasswordRequestDTO.email(),
                 resetPasswordRequestDTO.password()
