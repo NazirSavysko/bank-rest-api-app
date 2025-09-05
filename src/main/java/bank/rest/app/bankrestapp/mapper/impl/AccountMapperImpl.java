@@ -67,18 +67,17 @@ public final class AccountMapperImpl implements Mapper<Account, GetAccountDTO> {
         if (senderTransactions.isEmpty()) {
             return getStream.toList();
         }
-
-        return concat(getStream, senderTransactions.stream()).toList();
+        final Stream<Transaction> getStream1 = this.getTransactionHistory(senderTransactions, account);
+        return concat(getStream,getStream1).toList();
 
     }
 
-    private Stream<Transaction> getTransactionHistory(final @NotNull List<Transaction> recipientTransactions, final Account account) {
-        return recipientTransactions.stream()
+    private Stream<Transaction> getTransactionHistory(final @NotNull List<Transaction> transactions, final Account account) {
+        return transactions.stream()
                 .filter(AccountMapperImpl::test)
                 .peek(transaction -> {
                     transaction.setAmount(currencyLoader.convert(transaction.getAmount(), transaction.getCurrencyCode().name(), account.getCurrencyCode().name()));
                     transaction.setCurrencyCode(account.getCurrencyCode());
-                    transaction.setIsRecipient(true);
                 });
     }
 }

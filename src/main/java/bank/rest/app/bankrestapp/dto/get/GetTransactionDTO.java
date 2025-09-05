@@ -11,7 +11,6 @@ public record GetTransactionDTO(
         String transactionType,
         String currencyCode,
         String status,
-        String numberOfCard,
-        Boolean isRecipient
-) {
-}
+        String senderCardNumber,
+        String receiverCardNumber
+) {}

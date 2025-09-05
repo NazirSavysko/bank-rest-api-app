@@ -48,15 +48,5 @@ public final class Transaction {
     @ManyToOne(cascade = ALL)
     @JoinColumn(name = "to_account_id", referencedColumnName = "accountId")
     private Account toAccount;
-
-    @Transient
-    private Boolean isRecipient;
-
-
-    @PostLoad
-    public void postLoad() {
-        isRecipient = false;
-    }
-
 }
 
