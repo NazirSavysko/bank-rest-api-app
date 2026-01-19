@@ -1,0 +1,1 @@
+ALTER SEQUENCE email_verification_codes_seq INCREMENT BY 50;
