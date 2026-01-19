@@ -1,0 +1,31 @@
+-- 1. Account
+CREATE SEQUENCE IF NOT EXISTS account_seq START WITH 1;
+ALTER SEQUENCE account_seq INCREMENT BY 50;
+
+-- 2. AuthUser
+CREATE SEQUENCE IF NOT EXISTS auth_user_seq START WITH 1;
+ALTER SEQUENCE auth_user_seq INCREMENT BY 50;
+
+-- 3. Card
+CREATE SEQUENCE IF NOT EXISTS card_seq START WITH 1;
+ALTER SEQUENCE card_seq INCREMENT BY 50;
+
+-- 4. Customer (именно здесь была ошибка)
+CREATE SEQUENCE IF NOT EXISTS customer_seq START WITH 1;
+ALTER SEQUENCE customer_seq INCREMENT BY 50;
+
+-- 5. Role
+CREATE SEQUENCE IF NOT EXISTS role_seq START WITH 1;
+ALTER SEQUENCE role_seq INCREMENT BY 50;
+
+-- 6. Payment
+CREATE SEQUENCE IF NOT EXISTS payment_seq START WITH 1;
+ALTER SEQUENCE payment_seq INCREMENT BY 50;
+
+-- 7. Transaction
+CREATE SEQUENCE IF NOT EXISTS transaction_seq START WITH 1;
+ALTER SEQUENCE transaction_seq INCREMENT BY 50;
+
+-- 8. EmailVerificationCodes
+CREATE SEQUENCE IF NOT EXISTS email_verification_codes_seq START WITH 1;
+ALTER SEQUENCE email_verification_codes_seq INCREMENT BY 50;
