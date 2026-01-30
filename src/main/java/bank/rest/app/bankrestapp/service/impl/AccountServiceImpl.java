@@ -74,6 +74,12 @@ public class AccountServiceImpl implements AccountService {
         return this.accountRepository.save(account);
     }
 
+    @Override
+    public Account getAccountByNumber(final String accountNumber) {
+        return this.accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new NoSuchElementException("Account not found for the provided account number"));
+    }
+
     private String generateAccountNumber(String beginningOfWord) {
         String accountNumber;
 

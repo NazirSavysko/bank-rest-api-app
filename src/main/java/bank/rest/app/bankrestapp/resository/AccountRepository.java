@@ -10,4 +10,6 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
     boolean existsByAccountNumber(String accountNumber);
 
     Optional<Account> findByCard_CardNumber(String cardCardNumber);
+
+    Optional<Account> findByAccountNumber(String accountNumber);
 }

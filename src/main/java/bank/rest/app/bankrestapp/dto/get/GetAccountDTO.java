@@ -8,7 +8,7 @@ public record GetAccountDTO(
         BigDecimal balance,
         String currency,
         String status,
-        GetCardDTO card,
-        List<GetTransactionDTO> transactions,
-        List<GetPaymentDTO> payments
+        GetCardDTO card
+//        List<GetTransactionDTO> transactions,
+//        List<GetPaymentDTO> payments
 ) {}

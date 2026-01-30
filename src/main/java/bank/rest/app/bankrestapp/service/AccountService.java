@@ -10,4 +10,6 @@ public interface AccountService {
 
     @Transactional(rollbackFor = Exception.class)
     Account createAccount(String accountType,String customerEmail);
+
+    Account getAccountByNumber(String accountNumber);
 }
