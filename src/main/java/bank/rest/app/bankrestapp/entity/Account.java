@@ -8,6 +8,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 import static jakarta.persistence.CascadeType.ALL;
 import static jakarta.persistence.EnumType.STRING;
@@ -53,4 +54,15 @@ public final class Account {
 
     @OneToMany(mappedBy = "account", cascade = ALL)
     private List<Payment> paymentsList;
+
+    @Override
+    public boolean equals(final Object o) {
+        if (!(o instanceof final Account account)) return false;
+        return this.accountNumber.equals(account.accountNumber);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(accountNumber);
+    }
 }

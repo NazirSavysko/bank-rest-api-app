@@ -65,11 +65,15 @@ public class TransactionFacadeImpl implements TransactionFacade {
                 .peek(transaction -> {
                     transaction.setAmount(currencyLoader.convert(transaction.getAmount(), transaction.getCurrencyCode().name(), account.getCurrencyCode().name()));
                     transaction.setCurrencyCode(account.getCurrencyCode());
+
+                    if(transaction.getToAccount().equals(account)) {
+                        transaction.setIsRecipient(Boolean.TRUE);
+                    }
                 }).map(transactionMapper::toDto)
                 .toList();
     }
 
     private static boolean test(@NotNull Transaction transaction,final Account account) {
-        return !(transaction.getStatus().equals(CANCELLED) || transaction.getStatus().equals(FAILED) || transaction.getToAccount().equals(account));
+        return !((transaction.getStatus().equals(CANCELLED) || transaction.getStatus().equals(FAILED)) && transaction.getToAccount().equals(account));
     }
 }
