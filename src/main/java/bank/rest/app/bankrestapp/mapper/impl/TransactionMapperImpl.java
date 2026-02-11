@@ -114,6 +114,7 @@ public final class TransactionMapperImpl implements Mapper<Transaction, GetTrans
                 entity.getCurrencyCode().name(),
                 entity.getStatus().name(),
                 entity.getAccount().getCard().getCardNumber(),
+                entity.getIsRecipient(),
                 entity.getToAccount().getCard().getCardNumber()
         );
     }
