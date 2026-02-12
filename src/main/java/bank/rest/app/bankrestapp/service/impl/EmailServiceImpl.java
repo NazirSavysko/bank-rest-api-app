@@ -6,8 +6,12 @@ import bank.rest.app.bankrestapp.service.EmailService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -29,12 +33,15 @@ import static java.time.LocalDateTime.now;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class EmailServiceImpl implements EmailService {
 
-    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
+
     private final JavaMailSender mailSender;
     private final EmailVerificationCodeRepository codeRepo;
+
+    @Value("${SPRING_MAIL_USERNAME}")
+    private String fromEmail;
 
 
     @Override
@@ -75,6 +82,7 @@ public class EmailServiceImpl implements EmailService {
         MimeMessage message = this.mailSender.createMimeMessage();
         try {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(fromEmail);
             helper.setTo(email);
             helper.setSubject("Код підтвердження електронної пошти");
             helper.setText(this.buildEmailContent(code), true);
