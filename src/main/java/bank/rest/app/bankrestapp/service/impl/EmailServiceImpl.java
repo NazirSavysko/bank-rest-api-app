@@ -4,16 +4,11 @@ import bank.rest.app.bankrestapp.entity.EmailVerificationCodes;
 import bank.rest.app.bankrestapp.resository.EmailVerificationCodeRepository;
 import bank.rest.app.bankrestapp.service.EmailService;
 import com.resend.Resend;
-
-import com.resend.services.emails.model.CreateEmailOptions;
-import com.resend.services.emails.model.CreateEmailOptions;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
-
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -24,9 +19,7 @@ import java.util.NoSuchElementException;
 import static bank.rest.app.bankrestapp.constants.EmailDefaults.EMAIL_CODE_EXPIRATION_MINUTES;
 import static bank.rest.app.bankrestapp.constants.EmailDefaults.EMAIL_CODE_VALIDITY_WINDOW_MINUTES;
 import static bank.rest.app.bankrestapp.constants.MessageError.*;
-import static java.lang.String.valueOf;
 import static java.time.LocalDateTime.now;
-import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 
 @Service
 @RequiredArgsConstructor
