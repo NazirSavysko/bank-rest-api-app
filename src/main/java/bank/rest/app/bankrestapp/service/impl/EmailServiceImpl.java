@@ -53,7 +53,6 @@ public class EmailServiceImpl implements EmailService {
 
     @Override
     public void sendVerificationCode(final String email) {
-        // 1. Генеруємо код
         final int generatedCode = (int) (Math.random() * 90000 + 10000);
         final String code = String.valueOf(generatedCode);
 
@@ -80,10 +79,10 @@ public class EmailServiceImpl implements EmailService {
 
             com.resend.services.emails.model.CreateEmailOptions sendEmailRequest =
                     com.resend.services.emails.model.CreateEmailOptions.builder()
-                            .from("BankApp <onboarding@resend.dev>")
+                            .from("Bank Emulator <no-reply@send.bank-emulator.app>")
                             .to(email)
                             .subject("Код підтвердження електронної пошти")
-                            .html(htmlContent) // Передаємо вже замінений HTML
+                            .html(htmlContent)
                             .build();
 
             resend.emails().send(sendEmailRequest);
