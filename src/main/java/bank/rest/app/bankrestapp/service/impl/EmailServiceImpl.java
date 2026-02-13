@@ -79,7 +79,7 @@ public class EmailServiceImpl implements EmailService {
 
             com.resend.services.emails.model.CreateEmailOptions sendEmailRequest =
                     com.resend.services.emails.model.CreateEmailOptions.builder()
-                            .from("Bank Emulator <no-reply@send.bank-emulator.app>")
+                            .from("Bank Emulator <no-reply@bank-emulator.app>")
                             .to(email)
                             .subject("Код підтвердження електронної пошти")
                             .html(htmlContent)
