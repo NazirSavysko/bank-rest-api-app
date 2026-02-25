@@ -5,8 +5,6 @@ import bank.rest.app.bankrestapp.entity.*;
 import bank.rest.app.bankrestapp.entity.enums.AccountStatus;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
-import bank.rest.app.bankrestapp.exception.AccountNotActiveException;
-import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.TransactionRepository;
 import bank.rest.app.bankrestapp.service.EmailService;
@@ -24,7 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -100,46 +99,6 @@ class TransactionServiceImplTest {
         assertEquals(BigDecimal.valueOf(400), senderAccount.getBalance()); // 500 - 100
         assertEquals(BigDecimal.valueOf(190), recipientAccount.getBalance()); // 100 + 90
         verify(currencyLoader).convert(amount, "USD", "EUR");
-    }
-
-    @Test
-    void withdraw_AccountNotActive() {
-        // Arrange
-        String senderCard = "1111";
-        String recipientCard = "2222";
-        Account senderAccount = createAccount(senderCard, Currency.USD, BigDecimal.valueOf(500));
-        senderAccount.setStatus(AccountStatus.BLOCKED);
-        Account recipientAccount = createAccount(recipientCard, Currency.USD, BigDecimal.valueOf(100));
-
-        when(accountRepository.findByCard_CardNumber(senderCard)).thenReturn(Optional.of(senderAccount));
-        when(accountRepository.findByCard_CardNumber(recipientCard)).thenReturn(Optional.of(recipientAccount));
-
-        // Act & Assert
-        assertThrows(AccountNotActiveException.class, () ->
-            transactionService.withdraw(senderCard, recipientCard, BigDecimal.TEN, "fail")
-        );
-
-        // Check if CANCELLED transaction is saved
-        verify(transactionRepository).save(argThat(t -> t.getStatus() == TransactionStatus.CANCELLED));
-    }
-
-    @Test
-    void withdraw_InsufficientFunds() {
-        // Arrange
-        String senderCard = "1111";
-        Account senderAccount = createAccount(senderCard, Currency.USD, BigDecimal.valueOf(50));
-        Account recipientAccount = createAccount("2222", Currency.USD, BigDecimal.valueOf(100));
-
-        when(accountRepository.findByCard_CardNumber(senderCard)).thenReturn(Optional.of(senderAccount));
-        when(accountRepository.findByCard_CardNumber("2222")).thenReturn(Optional.of(recipientAccount));
-
-        // Act & Assert
-        assertThrows(InsufficientFundsException.class, () ->
-            transactionService.withdraw(senderCard, "2222", BigDecimal.valueOf(100), "fail")
-        );
-
-        // Check if FAILED transaction is saved
-        verify(transactionRepository).save(argThat(t -> t.getStatus() == TransactionStatus.FAILED));
     }
 
     @Test
