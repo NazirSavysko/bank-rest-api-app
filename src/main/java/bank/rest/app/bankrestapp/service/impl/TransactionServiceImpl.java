@@ -8,23 +8,18 @@ import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
 import bank.rest.app.bankrestapp.exception.AccountNotActiveException;
 import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
-import bank.rest.app.bankrestapp.facade.impl.TransactionFacadeImpl;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.TransactionRepository;
 import bank.rest.app.bankrestapp.service.EmailService;
 import bank.rest.app.bankrestapp.service.TransactionService;
 import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.data.web.SpringDataWebProperties;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.stream.Stream;
 
 import static bank.rest.app.bankrestapp.entity.enums.AccountStatus.ACTIVE;
 import static bank.rest.app.bankrestapp.entity.enums.TransactionStatus.*;
@@ -77,8 +72,8 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public List<Transaction> getAllTransactions(final String accountAccountNumber) {
-       return transactionRepository.findAllByAccount_AccountNumberOrToAccount_AccountNumber(accountAccountNumber,accountAccountNumber);
+    public List<Transaction> getAllTransactions(final String accountAccountNumber, final Pageable pageable) {
+       return transactionRepository.findAllByAccount_AccountNumberOrToAccount_AccountNumber(accountAccountNumber,accountAccountNumber,pageable);
     }
     private Account getAccountByCardNumber(final String card) {
         return accountRepository.findByCard_CardNumber(card)
