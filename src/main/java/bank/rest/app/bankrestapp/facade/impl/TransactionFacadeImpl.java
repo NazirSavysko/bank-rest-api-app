@@ -18,15 +18,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 
-import javax.swing.*;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static bank.rest.app.bankrestapp.entity.enums.TransactionStatus.CANCELLED;
-import static bank.rest.app.bankrestapp.entity.enums.TransactionStatus.FAILED;
 import static bank.rest.app.bankrestapp.utils.MapperUtils.mapDto;
-import static java.util.stream.Stream.concat;
 
 @Component
 @AllArgsConstructor
@@ -53,27 +46,16 @@ public class TransactionFacadeImpl implements TransactionFacade {
     @Override
     public Page<GetTransactionDTO> getAllTransactions(final Pageable pageable, final String accountNumber) {
         final Account account = this.accountService.getAccountByNumber(accountNumber);
-        final List<GetTransactionDTO> transactions = getTransactionHistory(this.transactionService.getAllTransactions(accountNumber,pageable),account);
+        Page<Transaction> page = this.transactionService.getAllTransactions(accountNumber, pageable);
 
-        return new PageImpl<>(transactions, pageable, transactions.size());
-    }
+        return page.map(transaction -> {
+            transaction.setAmount(currencyLoader.convert(transaction.getAmount(), transaction.getCurrencyCode().name(), account.getCurrencyCode().name()));
+            transaction.setCurrencyCode(account.getCurrencyCode());
 
-
-    private List<GetTransactionDTO> getTransactionHistory(final @NotNull List<Transaction> transactions, final Account account) {
-        return transactions.stream()
-                .filter(transaction -> test(transaction, account))
-                .peek(transaction -> {
-                    transaction.setAmount(currencyLoader.convert(transaction.getAmount(), transaction.getCurrencyCode().name(), account.getCurrencyCode().name()));
-                    transaction.setCurrencyCode(account.getCurrencyCode());
-
-                    if(transaction.getToAccount().equals(account)) {
-                        transaction.setIsRecipient(Boolean.TRUE);
-                    }
-                }).map(transactionMapper::toDto)
-                .toList();
-    }
-
-    private static boolean test(@NotNull Transaction transaction,final Account account) {
-        return !((transaction.getStatus().equals(CANCELLED) || transaction.getStatus().equals(FAILED)) && transaction.getToAccount().equals(account));
+            if (transaction.getToAccount().equals(account)) {
+                transaction.setIsRecipient(Boolean.TRUE);
+            }
+            return transactionMapper.toDto(transaction);
+        });
     }
 }

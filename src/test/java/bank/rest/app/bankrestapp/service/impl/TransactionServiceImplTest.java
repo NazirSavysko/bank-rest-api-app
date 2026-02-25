@@ -15,6 +15,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
@@ -24,7 +26,9 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -143,14 +147,16 @@ class TransactionServiceImplTest {
         // Arrange
         String accNum = "UA123456";
         Pageable pageable = mock(Pageable.class);
-        when(transactionRepository.findAllByAccount_AccountNumberOrToAccount_AccountNumber(accNum, accNum, pageable))
-                .thenReturn(List.of(new Transaction(), new Transaction()));
+        Page<Transaction> page = new PageImpl<>(List.of(new Transaction(), new Transaction()));
+
+        when(transactionRepository.findAllTransactions(eq(accNum), anyList(), eq(pageable)))
+                .thenReturn(page);
 
         // Act
-        List<Transaction> result = transactionService.getAllTransactions(accNum, pageable);
+        Page<Transaction> result = transactionService.getAllTransactions(accNum, pageable);
 
         // Assert
-        assertEquals(2, result.size());
+        assertEquals(2, result.getTotalElements());
     }
 
     private Account createAccount(String cardNum, Currency currency, BigDecimal balance) {
