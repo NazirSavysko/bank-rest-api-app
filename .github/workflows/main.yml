@@ -64,6 +64,8 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: | 
             cd ~/bank-app
-            docker-compose pull bank-backend 
-            docker-compose up -d bank-backend 
+            docker-compose pull backend
+            docker-compose stop backend
+            docker-compose rm -f backend
+            docker-compose up -d backend
             docker image prune -f
