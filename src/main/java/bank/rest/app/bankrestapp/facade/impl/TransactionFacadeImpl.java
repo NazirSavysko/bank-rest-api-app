@@ -53,7 +53,7 @@ public class TransactionFacadeImpl implements TransactionFacade {
     @Override
     public Page<GetTransactionDTO> getAllTransactions(final Pageable pageable, final String accountNumber) {
         final Account account = this.accountService.getAccountByNumber(accountNumber);
-        final List<GetTransactionDTO> transactions = getTransactionHistory(this.transactionService.getAllTransactions(accountNumber),account);
+        final List<GetTransactionDTO> transactions = getTransactionHistory(this.transactionService.getAllTransactions(accountNumber,pageable),account);
 
         return new PageImpl<>(transactions, pageable, transactions.size());
     }

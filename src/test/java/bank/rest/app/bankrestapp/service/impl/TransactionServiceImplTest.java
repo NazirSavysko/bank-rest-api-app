@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -101,11 +102,12 @@ class TransactionServiceImplTest {
     void getAllTransactions() {
         // Arrange
         String accNum = "UA123456";
-        when(transactionRepository.findAllByAccount_AccountNumberOrToAccount_AccountNumber(accNum, accNum))
+        Pageable pageable = mock(Pageable.class);
+        when(transactionRepository.findAllByAccount_AccountNumberOrToAccount_AccountNumber(accNum, accNum, pageable))
                 .thenReturn(List.of(new Transaction(), new Transaction()));
 
         // Act
-        List<Transaction> result = transactionService.getAllTransactions(accNum);
+        List<Transaction> result = transactionService.getAllTransactions(accNum, pageable);
 
         // Assert
         assertEquals(2, result.size());
