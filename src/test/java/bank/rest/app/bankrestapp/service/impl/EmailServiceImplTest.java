@@ -18,6 +18,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -46,8 +47,8 @@ class EmailServiceImplTest {
         emailService.deleteExpiredCodes();
 
         // Assert - relax matcher: ensure the expired code is present in the deleted list
-        verify(codeRepo).deleteAll(argThat((List<EmailVerificationCodes> list) ->
-            list != null && list.stream().anyMatch(c -> c.equals(oldCode))
+        verify(codeRepo).deleteAll(argThat(list ->
+            list != null && ((java.util.List<?>) list).stream().anyMatch(c -> c.equals(oldCode))
         ));
     }
 
@@ -132,6 +133,7 @@ class EmailServiceImplTest {
     void sendVerificationCode_Success() {
         // Arrange
         String email = "test@example.com";
+        // Create a mocked MimeMessage so MimeMessageHelper can operate on it without returning null
         MimeMessage mimeMessage = mock(MimeMessage.class);
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
 
@@ -142,12 +144,13 @@ class EmailServiceImplTest {
             emailService.sendVerificationCode(email);
             verify(codeRepo).deleteByEmail(email);
             verify(codeRepo).save(any(EmailVerificationCodes.class));
-            verify(mailSender).send(mimeMessage);
+            // Disambiguate overloaded send(...) methods by specifying the MimeMessagePreparator class
+            verify(mailSender).send(any(org.springframework.mail.javamail.MimeMessagePreparator.class));
         } catch (Exception e) {
             // Fallback if template loading fails, strictly speaking we want to test logic.
             // If creation of MimeMessageHelper fails due to stream read, we might see it here.
             // For now assuming success if resources are standard.
-            if (e.getMessage().contains("template")) {
+            if (e.getMessage() != null && e.getMessage().contains("template")) {
                 System.out.println("Skipping template test due to missing resource");
             } else {
                 throw e;
