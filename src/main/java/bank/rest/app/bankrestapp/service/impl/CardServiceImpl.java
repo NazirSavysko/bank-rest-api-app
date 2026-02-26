@@ -31,8 +31,8 @@ public final class CardServiceImpl implements CardService {
         return Card.builder()
                 .cardNumber(cardNumber)
                 .cvv(cvv)
-                .expiryDate(createdAt)
-                .createdAt(expiryDate)
+                .expiryDate(expiryDate)
+                .createdAt(createdAt)
                 .build();
     }
 

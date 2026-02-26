@@ -178,36 +178,33 @@ class TransactionFacadeImplTest {
 
         when(accountService.getAccountByNumber(accountNumber)).thenReturn(account);
 
-        // Create a resilient TransactionService implementation (proxy) that will respond to common
-        // getAllTransactions signatures at runtime by returning our prepared list or a Page when the
-        // method's declared return type is a Spring Data Page. This avoids ClassCastException in CI
-        // where the service signature may differ (returns Page vs List).
-        TransactionService transactionServiceProxy = (TransactionService) Proxy.newProxyInstance(
-                TransactionService.class.getClassLoader(),
-                new Class[]{TransactionService.class},
-                (proxy, method, args) -> {
-                    if ("getAllTransactions".equals(method.getName())) {
-                        // If the declared return type is a Spring Page, return a PageImpl
-                        if (Page.class.isAssignableFrom(method.getReturnType())) {
-                            Pageable requestedPageable = null;
-                            if (args != null) {
-                                for (Object a : args) {
-                                    if (a instanceof Pageable) {
-                                        requestedPageable = (Pageable) a;
-                                        break;
-                                    }
-                                }
+        // Create a resilient TransactionService mock that returns a PageImpl when the declared
+        // return type of the invoked method is a Spring Data Page, otherwise returns a List.
+        // Using a Mockito Answer lets us handle both signatures without relying on compile-time overloads.
+        TransactionService transactionServiceProxy = mock(TransactionService.class, invocation -> {
+            java.lang.reflect.Method method = invocation.getMethod();
+            if ("getAllTransactions".equals(method.getName())) {
+                // If the declared return type is a Spring Page, return a PageImpl
+                if (org.springframework.data.domain.Page.class.isAssignableFrom(method.getReturnType())) {
+                    Pageable requestedPageable = null;
+                    Object[] args = invocation.getArguments();
+                    if (args != null) {
+                        for (Object a : args) {
+                            if (a instanceof Pageable) {
+                                requestedPageable = (Pageable) a;
+                                break;
                             }
-                            Pageable pageToUse = requestedPageable == null ? Pageable.unpaged() : requestedPageable;
-                            return new PageImpl<>(List.of(txIncluded, txExcluded, txOther), pageToUse, 3);
                         }
-                        // otherwise return a List as before
-                        return List.of(txIncluded, txExcluded, txOther);
                     }
-                    // other methods (like withdraw) are not needed for this test => return null / default
-                    return null;
+                    Pageable pageToUse = requestedPageable == null ? Pageable.unpaged() : requestedPageable;
+                    return new PageImpl<>(List.of(txIncluded, txExcluded, txOther), pageToUse, 3);
                 }
-        );
+                // Otherwise return a List
+                return List.of(txIncluded, txExcluded, txOther);
+            }
+            // For other methods return default null (not used in this test)
+            return null;
+        });
 
         // Use a local facade instance backed by the proxy so we don't depend on the mock's compile-time signature.
         TransactionFacadeImpl localSut = new TransactionFacadeImpl(transactionServiceProxy, dtoValidator, transactionMapper, currencyLoader, accountService);
