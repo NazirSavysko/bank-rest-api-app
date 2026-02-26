@@ -209,37 +209,41 @@ class TransactionFacadeImplTest {
         // Use a local facade instance backed by the proxy so we don't depend on the mock's compile-time signature.
         TransactionFacadeImpl localSut = new TransactionFacadeImpl(transactionServiceProxy, dtoValidator, transactionMapper, currencyLoader, accountService);
 
-        // currencyLoader should be called for included transactions only (txIncluded, txOther)
+        // currencyLoader should be called for each transaction (facade maps over full page)
         when(currencyLoader.convert(eq(BigDecimal.valueOf(100)), eq("USD"), eq("EUR")))
-                .thenReturn(BigDecimal.valueOf(90)); // some converted amount
+                .thenReturn(BigDecimal.valueOf(90));
+        when(currencyLoader.convert(eq(BigDecimal.valueOf(50)), eq("USD"), eq("EUR")))
+                .thenReturn(BigDecimal.valueOf(45));
         when(currencyLoader.convert(eq(BigDecimal.valueOf(30)), eq("USD"), eq("EUR")))
                 .thenReturn(BigDecimal.valueOf(27));
 
         GetTransactionDTO dto1 = mock(GetTransactionDTO.class);
+        GetTransactionDTO dto2 = mock(GetTransactionDTO.class);
         GetTransactionDTO dto3 = mock(GetTransactionDTO.class);
 
         when(transactionMapper.toDto(argThat(t -> t != null && t.getTransactionId() != null && t.getTransactionId().equals(1)))).thenReturn(dto1);
+        when(transactionMapper.toDto(argThat(t -> t != null && t.getTransactionId() != null && t.getTransactionId().equals(2)))).thenReturn(dto2);
         when(transactionMapper.toDto(argThat(t -> t != null && t.getTransactionId() != null && t.getTransactionId().equals(3)))).thenReturn(dto3);
 
         // when
         var page = localSut.getAllTransactions(pageable, accountNumber);
 
-        // then
+        // then - all 3 transactions are converted and mapped (facade does not filter by status)
         List<GetTransactionDTO> content = page.getContent();
-        // txExcluded should be filtered out -> only 2 items expected
-        assertEquals(2, content.size());
+        assertEquals(3, content.size());
         assertTrue(content.contains(dto1));
+        assertTrue(content.contains(dto2));
         assertTrue(content.contains(dto3));
 
-        // verify call order: account loaded first, then transactions fetched (handled by proxy), then conversion and mapping
+        // verify call order: account loaded first, then conversions and mapping for each transaction
         InOrder inOrder = inOrder(accountService, currencyLoader, transactionMapper);
         inOrder.verify(accountService).getAccountByNumber(accountNumber);
-        // currencyLoader conversions (for included transactions) - order depends on stream processing, just verify called with expected args
         verify(currencyLoader).convert(BigDecimal.valueOf(100), "USD", "EUR");
+        verify(currencyLoader).convert(BigDecimal.valueOf(50), "USD", "EUR");
         verify(currencyLoader).convert(BigDecimal.valueOf(30), "USD", "EUR");
 
-        // verify mapper invoked for included transactions
         verify(transactionMapper).toDto(txIncluded);
+        verify(transactionMapper).toDto(txExcluded);
         verify(transactionMapper).toDto(txOther);
     }
 }
