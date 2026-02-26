@@ -3,19 +3,14 @@ package bank.rest.app.bankrestapp.service.impl;
 import bank.rest.app.bankrestapp.entity.EmailVerificationCodes;
 import bank.rest.app.bankrestapp.resository.EmailVerificationCodeRepository;
 import bank.rest.app.bankrestapp.service.EmailService;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
-import lombok.AllArgsConstructor;
+import com.resend.Resend;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,17 +19,16 @@ import java.util.NoSuchElementException;
 import static bank.rest.app.bankrestapp.constants.EmailDefaults.EMAIL_CODE_EXPIRATION_MINUTES;
 import static bank.rest.app.bankrestapp.constants.EmailDefaults.EMAIL_CODE_VALIDITY_WINDOW_MINUTES;
 import static bank.rest.app.bankrestapp.constants.MessageError.*;
-import static java.lang.String.valueOf;
 import static java.time.LocalDateTime.now;
-import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class EmailServiceImpl implements EmailService {
 
-    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
-    private final JavaMailSender mailSender;
     private final EmailVerificationCodeRepository codeRepo;
+
+    @Value("${resend.api.key}")
+    private String apiKey;
 
 
     @Override
@@ -60,8 +54,9 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public void sendVerificationCode(final String email) {
         final int generatedCode = (int) (Math.random() * 90000 + 10000);
-        final String code = valueOf((generatedCode));
+        final String code = String.valueOf(generatedCode);
 
+        // 2. Оновлюємо базу даних
         this.codeRepo.deleteByEmail(email);
 
         final EmailVerificationCodes entity = new EmailVerificationCodes();
@@ -72,22 +67,32 @@ public class EmailServiceImpl implements EmailService {
 
         this.codeRepo.save(entity);
 
-        MimeMessage message = this.mailSender.createMimeMessage();
+        Resend resend = new Resend(apiKey);
+
         try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setTo(email);
-            helper.setSubject("Код підтвердження електронної пошти");
-            helper.setText(this.buildEmailContent(code), true);
+            org.springframework.core.io.ClassPathResource resource =
+                    new org.springframework.core.io.ClassPathResource("templates/verification-code-template.html");
 
-        } catch (IOException e) {
+            String htmlContent = new String(resource.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+
+            htmlContent = htmlContent.replace("{{CODE}}", code);
+
+            com.resend.services.emails.model.CreateEmailOptions sendEmailRequest =
+                    com.resend.services.emails.model.CreateEmailOptions.builder()
+                            .from("Bank Emulator <no-reply@bank-emulator.app>")
+                            .to(email)
+                            .subject("Код підтвердження електронної пошти")
+                            .html(htmlContent)
+                            .build();
+
+            resend.emails().send(sendEmailRequest);
+
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException("Не вдалося зчитати HTML шаблон", e);
+        } catch (Exception e) {
             e.printStackTrace();
-            throw new UncheckedIOException("Не вдалося зчитати шаблон листа", e);
-
-        } catch (MessagingException e) {
-            throw new ResponseStatusException(INTERNAL_SERVER_ERROR, "Помилка надсилання листа", e);
+            throw new RuntimeException("Помилка відправки листа через Resend API", e);
         }
-
-        mailSender.send(message);
     }
 
     @Override

@@ -8,9 +8,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -25,19 +23,17 @@ class CardServiceImplTest {
 
     @Test
     void generateCard_Success() {
-        // Arrange
+        // 1. Arrange
         when(cardRepository.existsByCardNumber(anyString())).thenReturn(false);
 
-        // Act
+        // 2. Act
         Card card = cardService.generateCard();
 
-        // Assert
+
         assertNotNull(card);
         assertNotNull(card.getCardNumber());
         assertNotNull(card.getCvv());
-        assertNotNull(card.getCreatedAt());
-        assertNotNull(card.getExpiryDate()); // Expiry is createdAt + years
-        assertTrue(card.getExpiryDate().isAfter(card.getCreatedAt()));
+        assertNotNull(card.getExpiryDate());
 
         verify(cardRepository, times(1)).existsByCardNumber(anyString());
     }

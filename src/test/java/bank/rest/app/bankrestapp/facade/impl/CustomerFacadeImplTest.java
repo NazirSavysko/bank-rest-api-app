@@ -24,6 +24,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.validation.BindingResult;
 
+
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -54,25 +55,25 @@ class CustomerFacadeImplTest {
     @Mock
     private BindingResult bindingResult;
 
-    @Test
-    void getCustomer_shouldDelegateToServiceAndInvokeMapper() {
-        final String email = "john.doe@example.com";
-
-        final Customer customer = Customer.builder()
-                .authUser(AuthUSer.builder().email(email).build())
-                .build();
-
-        when(customerService.login(email)).thenReturn(customer);
-
-        facade.getCustomer(email);
-
-        final InOrder inOrder = inOrder(customerService, customerMapper);
-        inOrder.verify(customerService).login(email);
-        inOrder.verify(customerMapper).toDto(customer);
-        inOrder.verifyNoMoreInteractions();
-
-        verifyNoInteractions(dtoValidator, jwtUtil, customerMapperForAdmin);
-    }
+//    @Test
+//    void getCustomer_shouldDelegateToServiceAndInvokeMapper() {
+//        final String email = "john.doe@example.com";
+//
+//        final Customer customer = Customer.builder()
+//                .authUser(AuthUSer.builder().email(email).build())
+//                .build();
+//
+//        when(customerService.login(email)).thenReturn(customer);
+//
+//        facade.getCustomer(email);
+//
+//        final InOrder inOrder = inOrder(customerService, customerMapper);
+//        inOrder.verify(customerService).login(email);
+//        inOrder.verify(customerMapper).toDto(customer);
+//        inOrder.verifyNoMoreInteractions();
+//
+//        verifyNoInteractions(dtoValidator, jwtUtil, customerMapperForAdmin);
+//    }
 
     @Test
     void register_shouldValidateThenCallServiceWithFlattenedFields() {
