@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -24,7 +25,8 @@ import static bank.rest.app.bankrestapp.constants.AccountDefaults.MAXIMUM_NUMBER
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AccountServiceImplTest {
@@ -124,6 +126,13 @@ class AccountServiceImplTest {
         Account account = new Account();
         // ensure accountNumber is set so entity equals/hashCode implementations that rely on accountNumber do not NPE
         account.setAccountNumber(accNum);
+        account.setAccountId(1);
+        account.setAccountNumber(accNum);
+        account.setCurrencyCode(Currency.USD);
+        account.setCard(new Card());
+        account.setCustomer(new Customer());
+        account.setBalance(new BigDecimal(100));
+        account.setSentTransactions(new ArrayList<>());
         when(accountRepository.findByAccountNumber(accNum)).thenReturn(Optional.of(account));
 
         // Act

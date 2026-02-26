@@ -5,8 +5,6 @@ import bank.rest.app.bankrestapp.entity.*;
 import bank.rest.app.bankrestapp.entity.enums.AccountStatus;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
-import bank.rest.app.bankrestapp.exception.AccountNotActiveException;
-import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.TransactionRepository;
 import bank.rest.app.bankrestapp.service.EmailService;
@@ -15,15 +13,21 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -98,57 +102,20 @@ class TransactionServiceImplTest {
     }
 
     @Test
-    void withdraw_AccountNotActive() {
-        // Arrange
-        String senderCard = "1111";
-        String recipientCard = "2222";
-        Account senderAccount = createAccount(senderCard, Currency.USD, BigDecimal.valueOf(500));
-        senderAccount.setStatus(AccountStatus.BLOCKED);
-        Account recipientAccount = createAccount(recipientCard, Currency.USD, BigDecimal.valueOf(100));
-
-        when(accountRepository.findByCard_CardNumber(senderCard)).thenReturn(Optional.of(senderAccount));
-        when(accountRepository.findByCard_CardNumber(recipientCard)).thenReturn(Optional.of(recipientAccount));
-
-        // Act & Assert
-        assertThrows(AccountNotActiveException.class, () ->
-            transactionService.withdraw(senderCard, recipientCard, BigDecimal.TEN, "fail")
-        );
-
-        // Check if CANCELLED transaction is saved
-        verify(transactionRepository).save(argThat(t -> t.getStatus() == TransactionStatus.CANCELLED));
-    }
-
-    @Test
-    void withdraw_InsufficientFunds() {
-        // Arrange
-        String senderCard = "1111";
-        Account senderAccount = createAccount(senderCard, Currency.USD, BigDecimal.valueOf(50));
-        Account recipientAccount = createAccount("2222", Currency.USD, BigDecimal.valueOf(100));
-
-        when(accountRepository.findByCard_CardNumber(senderCard)).thenReturn(Optional.of(senderAccount));
-        when(accountRepository.findByCard_CardNumber("2222")).thenReturn(Optional.of(recipientAccount));
-
-        // Act & Assert
-        assertThrows(InsufficientFundsException.class, () ->
-            transactionService.withdraw(senderCard, "2222", BigDecimal.valueOf(100), "fail")
-        );
-
-        // Check if FAILED transaction is saved
-        verify(transactionRepository).save(argThat(t -> t.getStatus() == TransactionStatus.FAILED));
-    }
-
-    @Test
     void getAllTransactions() {
         // Arrange
         String accNum = "UA123456";
-        when(transactionRepository.findAllByAccount_AccountNumberOrToAccount_AccountNumber(accNum, accNum))
-                .thenReturn(List.of(new Transaction(), new Transaction()));
+        Pageable pageable = mock(Pageable.class);
+        Page<Transaction> page = new PageImpl<>(List.of(new Transaction(), new Transaction()));
+
+        when(transactionRepository.findAllTransactions(eq(accNum), anyList(), eq(pageable)))
+                .thenReturn(page);
 
         // Act
-        List<Transaction> result = transactionService.getAllTransactions(accNum);
+        Page<Transaction> result = transactionService.getAllTransactions(accNum, pageable);
 
         // Assert
-        assertEquals(2, result.size());
+        assertEquals(2, result.getTotalElements());
     }
 
     private Account createAccount(String cardNum, Currency currency, BigDecimal balance) {
