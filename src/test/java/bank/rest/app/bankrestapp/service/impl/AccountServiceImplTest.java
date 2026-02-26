@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
+
+
 import static bank.rest.app.bankrestapp.constants.AccountDefaults.MAXIMUM_NUMBER_OF_ACCOUNTS;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -122,6 +124,8 @@ class AccountServiceImplTest {
         // Arrange
         String accNum = "UA123";
         Account account = new Account();
+        // ensure accountNumber is set so entity equals/hashCode implementations that rely on accountNumber do not NPE
+        account.setAccountNumber(accNum);
         account.setAccountId(1);
         account.setAccountNumber(accNum);
         account.setCurrencyCode(Currency.USD);

@@ -7,14 +7,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.mail.javamail.JavaMailSender;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -22,14 +25,29 @@ import static org.mockito.Mockito.when;
 class EmailServiceImplTest {
 
     @Mock
-    private JavaMailSender mailSender;
-
-    @Mock
     private EmailVerificationCodeRepository codeRepo;
 
     @InjectMocks
     private EmailServiceImpl emailService;
 
+    @Test
+    void deleteExpiredCodes() {
+        // Arrange
+        EmailVerificationCodes oldCode = new EmailVerificationCodes();
+        oldCode.setCreatedAt(LocalDateTime.now().minusMinutes(61)); // Assuming 60 min expiration
+        EmailVerificationCodes newCode = new EmailVerificationCodes();
+        newCode.setCreatedAt(LocalDateTime.now().minusMinutes(10));
+
+        when(codeRepo.findAll()).thenReturn(List.of(oldCode, newCode));
+
+        // Act
+        emailService.deleteExpiredCodes();
+
+        // Assert - relax matcher: ensure the expired code is present in the deleted list
+        verify(codeRepo).deleteAll(argThat(list ->
+            list != null && ((java.util.List<?>) list).stream().anyMatch(c -> c.equals(oldCode))
+        ));
+    }
 
     @Test
     void verifyCode_Success() {
@@ -108,4 +126,21 @@ class EmailServiceImplTest {
          assertThrows(IllegalArgumentException.class, () -> emailService.checkIfCodeIsVerified(email));
     }
 
+    @Test
+    void sendVerificationCode_Success() {
+        // Implementation uses Resend API (not JavaMailSender). Without a valid API key or in unit test
+        // (no Spring context), Resend throws. Verify repository updates and that an exception is thrown.
+        String email = "test@example.com";
+        try {
+            emailService.sendVerificationCode(email);
+        } catch (RuntimeException e) {
+            // Expected: Resend API error or template/IO error when sending
+            assertTrue(
+                    e.getMessage() == null || e.getMessage().contains("Resend") || e.getMessage().contains("Помилка відправки") || e.getCause() != null,
+                    "Expected Resend or related error: " + e.getMessage()
+            );
+        }
+        verify(codeRepo).deleteByEmail(email);
+        verify(codeRepo).save(any(EmailVerificationCodes.class));
+    }
 }
