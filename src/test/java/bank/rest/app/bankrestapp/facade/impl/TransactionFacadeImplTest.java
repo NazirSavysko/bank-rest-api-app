@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.validation.BindingResult;
 
@@ -176,16 +178,33 @@ class TransactionFacadeImplTest {
 
         when(accountService.getAccountByNumber(accountNumber)).thenReturn(account);
 
-        // Create a resilient TransactionService implementation (proxy) that will respond to any
-        // getAllTransactions signature at runtime by returning our prepared list.
+        // Create a resilient TransactionService implementation (proxy) that will respond to common
+        // getAllTransactions signatures at runtime by returning our prepared list or a Page when the
+        // method's declared return type is a Spring Data Page. This avoids ClassCastException in CI
+        // where the service signature may differ (returns Page vs List).
         TransactionService transactionServiceProxy = (TransactionService) Proxy.newProxyInstance(
                 TransactionService.class.getClassLoader(),
                 new Class[]{TransactionService.class},
                 (proxy, method, args) -> {
                     if ("getAllTransactions".equals(method.getName())) {
+                        // If the declared return type is a Spring Page, return a PageImpl
+                        if (Page.class.isAssignableFrom(method.getReturnType())) {
+                            Pageable requestedPageable = null;
+                            if (args != null) {
+                                for (Object a : args) {
+                                    if (a instanceof Pageable) {
+                                        requestedPageable = (Pageable) a;
+                                        break;
+                                    }
+                                }
+                            }
+                            Pageable pageToUse = requestedPageable == null ? Pageable.unpaged() : requestedPageable;
+                            return new PageImpl<>(List.of(txIncluded, txExcluded, txOther), pageToUse, 3);
+                        }
+                        // otherwise return a List as before
                         return List.of(txIncluded, txExcluded, txOther);
                     }
-                    // other methods (like withdraw) are not needed for this test => return null
+                    // other methods (like withdraw) are not needed for this test => return null / default
                     return null;
                 }
         );
