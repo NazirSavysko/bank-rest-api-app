@@ -25,7 +25,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "payments")
+@Table(name = "payment")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "payment_type", discriminatorType = DiscriminatorType.STRING)
 @Setter
@@ -54,6 +54,12 @@ public abstract class Payment {
 
     @Column
     private String purpose;
+
+    @Column(name = "beneficiary_name")
+    private String beneficiaryName;
+
+    @Column(name = "beneficiary_acc")
+    private String beneficiaryAcc;
 
     @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "account_id", referencedColumnName = "accountId")
