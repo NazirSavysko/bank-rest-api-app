@@ -33,8 +33,7 @@ class TransactionController {
     }
 
     @GetMapping("transactions")
-    public Page<GetTransactionDTO> getAllTransactions(@PageableDefault  org.springframework.data.domain.Pageable pageable,
-                                                      @RequestParam String accountNumber) {
+    public Page<GetTransactionDTO> getAllTransactions(@PageableDefault  org.springframework.data.domain.Pageable pageable, @RequestParam String accountNumber) {
         return this.transactionFacade.getAllTransactions(pageable,accountNumber);
     }
 
