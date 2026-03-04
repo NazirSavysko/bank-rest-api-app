@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -32,6 +34,7 @@ public final class CurrencyLoader {
         updateRates(); // запуск при старте
     }
 
+    @CacheEvict(cacheNames = "currencyRates", allEntries = true)
     @Scheduled(cron = "0 0 0 * * *") // каждый день в 00:00
     public void updateRates() {
         try {
@@ -56,6 +59,7 @@ public final class CurrencyLoader {
         }
     }
 
+    @Cacheable(cacheNames = "currencyRates", key = "#currencyCode.toUpperCase()")
     public @NotNull Optional<CurrencyRate> getRate(String currencyCode) {
         return currentRates.stream()
                 .filter(rate -> rate.getCc().equalsIgnoreCase(currencyCode))

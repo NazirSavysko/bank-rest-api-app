@@ -10,7 +10,6 @@ import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
 import bank.rest.app.bankrestapp.mapper.Mapper;
 import bank.rest.app.bankrestapp.service.AccountService;
 import bank.rest.app.bankrestapp.service.TransactionService;
-import bank.rest.app.bankrestapp.validation.DtoValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,7 +39,6 @@ import static org.mockito.Mockito.*;
 class TransactionFacadeImplTest {
 
     private TransactionService transactionService;
-    private DtoValidator dtoValidator;
     private Mapper<Transaction, GetTransactionDTO> transactionMapper;
     private CurrencyLoader currencyLoader;
     private AccountService accountService;
@@ -50,7 +48,6 @@ class TransactionFacadeImplTest {
     @BeforeEach
     void setUp() {
         this.transactionService = mock(TransactionService.class);
-        this.dtoValidator = mock(DtoValidator.class);
         //noinspection unchecked
         this.transactionMapper = (Mapper<Transaction, GetTransactionDTO>) mock(Mapper.class);
         this.currencyLoader = mock(CurrencyLoader.class);
@@ -58,7 +55,6 @@ class TransactionFacadeImplTest {
 
         this.sut = new TransactionFacadeImpl(
                 transactionService,
-                dtoValidator,
                 transactionMapper,
                 currencyLoader,
                 accountService
@@ -101,17 +97,13 @@ class TransactionFacadeImplTest {
         // then
         assertEquals(mappedDto, result);
 
-        InOrder inOrder = inOrder(dtoValidator, transactionService, transactionMapper);
-        inOrder.verify(dtoValidator).validate(input, bindingResult);
-        inOrder.verify(transactionService).withdraw("1111222233334444", "9999888877776666", BigDecimal.valueOf(50), "Payment");
-        inOrder.verify(transactionMapper).toDto(createdTransaction);
-
+        verify(transactionService).withdraw("1111222233334444", "9999888877776666", BigDecimal.valueOf(50), "Payment");
+        verify(transactionMapper).toDto(createdTransaction);
         verifyNoMoreInteractions(transactionService, transactionMapper);
-        verify(dtoValidator, times(1)).validate(input, bindingResult);
     }
 
     @Test
-    void withdraw_whenValidatorThrows_shouldNotCallServiceOrMapper() {
+    void withdraw_whenServiceThrows_shouldNotCallMapper() {
         // given
         CreateTransaction input = new CreateTransaction(
                 "2222333344445555",
@@ -120,19 +112,17 @@ class TransactionFacadeImplTest {
                 "Invoice"
         );
         BindingResult bindingResult = mock(BindingResult.class);
-
-        RuntimeException validationError = new RuntimeException("validation failed");
-        doThrow(validationError).when(dtoValidator).validate(input, bindingResult);
+        RuntimeException serviceError = new RuntimeException("Service error");
+        doThrow(serviceError).when(transactionService).withdraw(anyString(), anyString(), any(), anyString());
 
         // when / then
         try {
             sut.withdraw(input, bindingResult);
         } catch (RuntimeException ex) {
-            assertEquals(validationError, ex);
+            assertEquals(serviceError, ex);
         }
 
-        verify(dtoValidator).validate(input, bindingResult);
-        verifyNoInteractions(transactionService);
+        verify(transactionService).withdraw(anyString(), anyString(), any(), anyString());
         verifyNoInteractions(transactionMapper);
     }
 
@@ -207,7 +197,7 @@ class TransactionFacadeImplTest {
         });
 
         // Use a local facade instance backed by the proxy so we don't depend on the mock's compile-time signature.
-        TransactionFacadeImpl localSut = new TransactionFacadeImpl(transactionServiceProxy, dtoValidator, transactionMapper, currencyLoader, accountService);
+        TransactionFacadeImpl localSut = new TransactionFacadeImpl(transactionServiceProxy, transactionMapper, currencyLoader, accountService);
 
         // currencyLoader should be called for each transaction (facade maps over full page)
         when(currencyLoader.convert(eq(BigDecimal.valueOf(100)), eq("USD"), eq("EUR")))

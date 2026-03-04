@@ -9,11 +9,9 @@ import bank.rest.app.bankrestapp.facade.TransactionFacade;
 import bank.rest.app.bankrestapp.mapper.Mapper;
 import bank.rest.app.bankrestapp.service.AccountService;
 import bank.rest.app.bankrestapp.service.TransactionService;
-import bank.rest.app.bankrestapp.validation.DtoValidator;
 import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
@@ -25,14 +23,12 @@ import static bank.rest.app.bankrestapp.utils.MapperUtils.mapDto;
 @AllArgsConstructor
 public class TransactionFacadeImpl implements TransactionFacade {
     private final TransactionService transactionService;
-    private final DtoValidator dtoValidator;
     private final Mapper<Transaction, GetTransactionDTO> transactionMapper;
     private final CurrencyLoader currencyLoader;
     private final AccountService accountService;
 
     @Override
     public GetTransactionDTO withdraw(final CreateTransaction transaction, final BindingResult bindingResult) {
-        this.dtoValidator.validate(transaction, bindingResult);
 
         final Transaction getTransaction = this.transactionService.withdraw(
                 transaction.senderCardNumber(),

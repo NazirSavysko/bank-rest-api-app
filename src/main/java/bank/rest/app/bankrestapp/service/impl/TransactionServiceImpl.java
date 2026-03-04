@@ -8,8 +8,8 @@ import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
 import bank.rest.app.bankrestapp.exception.AccountNotActiveException;
 import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
-import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.TransactionRepository;
+import bank.rest.app.bankrestapp.service.AccountService;
 import bank.rest.app.bankrestapp.service.EmailService;
 import bank.rest.app.bankrestapp.service.TransactionService;
 import lombok.AllArgsConstructor;
@@ -17,10 +17,10 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import static bank.rest.app.bankrestapp.entity.enums.AccountStatus.ACTIVE;
 import static bank.rest.app.bankrestapp.entity.enums.TransactionStatus.*;
@@ -32,16 +32,20 @@ import static java.time.LocalDateTime.now;
 @AllArgsConstructor
 public class TransactionServiceImpl implements TransactionService {
 
-    private final AccountRepository accountRepository;
+    private final AccountService accountService;
     private final TransactionRepository transactionRepository;
     private final CurrencyLoader currencyLoader;
     private final EmailService emailService;
 
     @Override
+    @Transactional(
+            rollbackFor = Exception.class,
+            noRollbackFor = {AccountNotActiveException.class, InsufficientFundsException.class}
+    )
     public Transaction withdraw(final String senderCardNumber, final String recipientCardNumber, final BigDecimal amount, final String description) {
 
-        final Account senderAccount = getAccountByCardNumber(senderCardNumber);
-        final Account recipientAccount = getAccountByCardNumber(recipientCardNumber);
+        final Account senderAccount = this.accountService.getAccountByCardNumberForUpdate(senderCardNumber);
+        final Account recipientAccount = this.accountService.getAccountByCardNumberForUpdate(recipientCardNumber);
 
         if (!senderAccount.getStatus().equals(ACTIVE)) {
             this.createTransaction(senderAccount, recipientAccount, amount, description, CANCELLED);
@@ -66,8 +70,14 @@ public class TransactionServiceImpl implements TransactionService {
             amountToReceive = this.currencyLoader.convert(amount, senderCurrency.name(), recipientCurrency.name());
         }
 
-        senderAccount.setBalance(senderAccount.getBalance().subtract(amount));
-        recipientAccount.setBalance(recipientAccount.getBalance().add(amountToReceive));
+        try {
+            this.accountService.debit(senderAccount, amount);
+        } catch (final InsufficientFundsException ex) {
+            this.createTransaction(senderAccount, recipientAccount, amount, description, FAILED);
+            throw ex;
+        }
+
+        this.accountService.credit(recipientAccount, amountToReceive);
 
         return this.createTransaction(senderAccount, recipientAccount, amount, description,COMPLETED);
     }
@@ -75,10 +85,6 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     public Page<Transaction> getAllTransactions(final String accountAccountNumber, final Pageable pageable) {
        return transactionRepository.findAllTransactions(accountAccountNumber, List.of(CANCELLED, FAILED), pageable);
-    }
-    private Account getAccountByCardNumber(final String card) {
-        return accountRepository.findByCard_CardNumber(card)
-                .orElseThrow(() -> new NoSuchElementException("Account not found for the provided card"));
     }
 
     private @NotNull Transaction createTransaction(final @NotNull Account senderAccount, final Account recipientAccount,

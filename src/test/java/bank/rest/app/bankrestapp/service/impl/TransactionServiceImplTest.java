@@ -5,8 +5,8 @@ import bank.rest.app.bankrestapp.entity.*;
 import bank.rest.app.bankrestapp.entity.enums.AccountStatus;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
-import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.TransactionRepository;
+import bank.rest.app.bankrestapp.service.AccountService;
 import bank.rest.app.bankrestapp.service.EmailService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,7 +20,6 @@ import org.springframework.data.domain.Pageable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -34,7 +33,7 @@ import static org.mockito.Mockito.*;
 class TransactionServiceImplTest {
 
     @Mock
-    private AccountRepository accountRepository;
+    private AccountService accountService;
 
     @Mock
     private TransactionRepository transactionRepository;
@@ -59,8 +58,20 @@ class TransactionServiceImplTest {
         Account senderAccount = createAccount(senderCard, Currency.USD, BigDecimal.valueOf(500));
         Account recipientAccount = createAccount(recipientCard, Currency.USD, BigDecimal.valueOf(100));
 
-        when(accountRepository.findByCard_CardNumber(senderCard)).thenReturn(Optional.of(senderAccount));
-        when(accountRepository.findByCard_CardNumber(recipientCard)).thenReturn(Optional.of(recipientAccount));
+        when(accountService.getAccountByCardNumberForUpdate(senderCard)).thenReturn(senderAccount);
+        when(accountService.getAccountByCardNumberForUpdate(recipientCard)).thenReturn(recipientAccount);
+        doAnswer(invocation -> {
+            Account account = invocation.getArgument(0);
+            BigDecimal amountArg = invocation.getArgument(1);
+            account.setBalance(account.getBalance().subtract(amountArg));
+            return null;
+        }).when(accountService).debit(any(Account.class), any(BigDecimal.class));
+        doAnswer(invocation -> {
+            Account account = invocation.getArgument(0);
+            BigDecimal amountArg = invocation.getArgument(1);
+            account.setBalance(account.getBalance().add(amountArg));
+            return null;
+        }).when(accountService).credit(any(Account.class), any(BigDecimal.class));
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
@@ -86,8 +97,20 @@ class TransactionServiceImplTest {
         Account senderAccount = createAccount(senderCard, Currency.USD, BigDecimal.valueOf(500));
         Account recipientAccount = createAccount(recipientCard, Currency.EUR, BigDecimal.valueOf(100));
 
-        when(accountRepository.findByCard_CardNumber(senderCard)).thenReturn(Optional.of(senderAccount));
-        when(accountRepository.findByCard_CardNumber(recipientCard)).thenReturn(Optional.of(recipientAccount));
+        when(accountService.getAccountByCardNumberForUpdate(senderCard)).thenReturn(senderAccount);
+        when(accountService.getAccountByCardNumberForUpdate(recipientCard)).thenReturn(recipientAccount);
+        doAnswer(invocation -> {
+            Account account = invocation.getArgument(0);
+            BigDecimal amountArg = invocation.getArgument(1);
+            account.setBalance(account.getBalance().subtract(amountArg));
+            return null;
+        }).when(accountService).debit(any(Account.class), any(BigDecimal.class));
+        doAnswer(invocation -> {
+            Account account = invocation.getArgument(0);
+            BigDecimal amountArg = invocation.getArgument(1);
+            account.setBalance(account.getBalance().add(amountArg));
+            return null;
+        }).when(accountService).credit(any(Account.class), any(BigDecimal.class));
         when(currencyLoader.convert(amount, "USD", "EUR")).thenReturn(convertedAmount);
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 

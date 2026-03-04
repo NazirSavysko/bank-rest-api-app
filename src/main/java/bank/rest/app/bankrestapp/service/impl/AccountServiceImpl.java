@@ -4,6 +4,7 @@ import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.Card;
 import bank.rest.app.bankrestapp.entity.Customer;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
+import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.CustomerRepository;
 import bank.rest.app.bankrestapp.service.AccountService;
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 
+import java.math.BigDecimal;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -78,6 +80,27 @@ public class AccountServiceImpl implements AccountService {
     public Account getAccountByNumber(final String accountNumber) {
         return this.accountRepository.findByAccountNumber(accountNumber)
                 .orElseThrow(() -> new NoSuchElementException("Account not found for the provided account number"));
+    }
+
+    @Override
+    public Account getAccountByCardNumberForUpdate(final String cardNumber) {
+        return this.accountRepository.findByCard_CardNumber(cardNumber)
+                .orElseThrow(() -> new NoSuchElementException("Account not found for the provided card"));
+    }
+
+    @Override
+    public void debit(final Account account, final BigDecimal amount) {
+        if (account.getBalance().compareTo(amount) < 0) {
+            throw new InsufficientFundsException("Insufficient funds in sender's account");
+        }
+        account.setBalance(account.getBalance().subtract(amount));
+        this.accountRepository.save(account);
+    }
+
+    @Override
+    public void credit(final Account account, final BigDecimal amount) {
+        account.setBalance(account.getBalance().add(amount));
+        this.accountRepository.save(account);
     }
 
     private String generateAccountNumber(String beginningOfWord) {
