@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -18,12 +19,12 @@ public interface TransactionRepository extends JpaRepository<Transaction, Intege
     @Query("""
             SELECT t FROM Transaction t
             WHERE (t.account.accountNumber = :accountNumber OR t.toAccount.accountNumber = :accountNumber)
-              AND FUNCTION('YEAR', t.transactionDate) = :year
-              AND FUNCTION('MONTH', t.transactionDate) = :month
+              AND t.transactionDate >= :startDate
+              AND t.transactionDate < :endDate
               AND t.status = :status
             """)
     List<Transaction> findMonthlyTransactions(@Param("accountNumber") String accountNumber,
-                                              @Param("year") Integer year,
-                                              @Param("month") Integer month,
+                                              @Param("startDate") LocalDateTime startDate,
+                                              @Param("endDate") LocalDateTime endDate,
                                               @Param("status") TransactionStatus status);
 }
