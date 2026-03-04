@@ -13,6 +13,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -41,10 +42,13 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             throw new IllegalArgumentException("Account does not belong to the authenticated user");
         }
 
+        final LocalDateTime startDate = LocalDateTime.of(year, month, 1, 0, 0);
+        final LocalDateTime endDate = startDate.plusMonths(1);
+
         final List<Transaction> transactions = this.transactionRepository.findMonthlyTransactions(
                 accountNumber,
-                year,
-                month,
+                startDate,
+                endDate,
                 TransactionStatus.COMPLETED
         );
 
