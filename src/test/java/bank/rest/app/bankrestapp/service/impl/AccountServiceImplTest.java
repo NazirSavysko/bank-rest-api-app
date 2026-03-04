@@ -152,4 +152,39 @@ class AccountServiceImplTest {
         // Act & Assert
         assertThrows(NoSuchElementException.class, () -> accountService.getAccountByNumber(accNum));
     }
+
+    @Test
+    void getAccountByCardNumber_Success() {
+        String cardNumber = "1111222233334444";
+        Account account = new Account();
+        account.setAccountNumber("UA000000000000000000000000000");
+        account.setAccountId(1);
+        account.setCurrencyCode(Currency.USD);
+        account.setBalance(new BigDecimal("100.00"));
+        account.setCustomer(new Customer());
+        account.setSentTransactions(new ArrayList<>());
+        Card card = new Card();
+        card.setCardNumber(cardNumber);
+        account.setCard(card);
+
+        when(accountRepository.findByCard_CardNumber(cardNumber)).thenReturn(Optional.of(account));
+
+        Account result = accountService.getAccountByCardNumber(cardNumber);
+
+        assertNotNull(result);
+        assertEquals(account, result);
+    }
+
+    @Test
+    void transferAmount_UpdatesBothBalances() {
+        Account sender = new Account();
+        sender.setBalance(new BigDecimal("200.00"));
+        Account recipient = new Account();
+        recipient.setBalance(new BigDecimal("50.00"));
+
+        accountService.transferAmount(sender, recipient, new BigDecimal("25.00"), new BigDecimal("30.00"));
+
+        assertEquals(new BigDecimal("175.00"), sender.getBalance());
+        assertEquals(new BigDecimal("80.00"), recipient.getBalance());
+    }
 }

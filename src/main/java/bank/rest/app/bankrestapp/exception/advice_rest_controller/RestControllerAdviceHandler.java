@@ -80,7 +80,7 @@ public final class RestControllerAdviceHandler {
 
     @ExceptionHandler(AccountNotActiveException.class)
     public @NotNull ResponseEntity<?> handleAccountNotActiveException(@NotNull AccountNotActiveException e) {
-        return ResponseEntity.status(LOCKED)
+        return ResponseEntity.status(FORBIDDEN)
                 .contentType(APPLICATION_JSON)
                 .body(of(
                         "timestamp", now(),
@@ -92,7 +92,7 @@ public final class RestControllerAdviceHandler {
     @ExceptionHandler(InsufficientFundsException.class)
     public @NotNull ResponseEntity<?> handleInsufficientFundsException(@NotNull InsufficientFundsException e) {
 
-        return ResponseEntity.status(BAD_REQUEST)
+        return ResponseEntity.status(PAYMENT_REQUIRED)
                 .contentType(APPLICATION_JSON)
                 .body(of(
                         "timestamp", now(),

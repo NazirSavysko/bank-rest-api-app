@@ -5,8 +5,8 @@ import bank.rest.app.bankrestapp.entity.*;
 import bank.rest.app.bankrestapp.entity.enums.AccountStatus;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
-import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.TransactionRepository;
+import bank.rest.app.bankrestapp.service.AccountService;
 import bank.rest.app.bankrestapp.service.EmailService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,7 +20,6 @@ import org.springframework.data.domain.Pageable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -34,7 +33,7 @@ import static org.mockito.Mockito.*;
 class TransactionServiceImplTest {
 
     @Mock
-    private AccountRepository accountRepository;
+    private AccountService accountService;
 
     @Mock
     private TransactionRepository transactionRepository;
@@ -59,8 +58,17 @@ class TransactionServiceImplTest {
         Account senderAccount = createAccount(senderCard, Currency.USD, BigDecimal.valueOf(500));
         Account recipientAccount = createAccount(recipientCard, Currency.USD, BigDecimal.valueOf(100));
 
-        when(accountRepository.findByCard_CardNumber(senderCard)).thenReturn(Optional.of(senderAccount));
-        when(accountRepository.findByCard_CardNumber(recipientCard)).thenReturn(Optional.of(recipientAccount));
+        when(accountService.getAccountByCardNumber(senderCard)).thenReturn(senderAccount);
+        when(accountService.getAccountByCardNumber(recipientCard)).thenReturn(recipientAccount);
+        doAnswer(invocation -> {
+            Account sender = invocation.getArgument(0);
+            Account recipient = invocation.getArgument(1);
+            BigDecimal senderAmount = invocation.getArgument(2);
+            BigDecimal recipientAmount = invocation.getArgument(3);
+            sender.setBalance(sender.getBalance().subtract(senderAmount));
+            recipient.setBalance(recipient.getBalance().add(recipientAmount));
+            return null;
+        }).when(accountService).transferAmount(any(Account.class), any(Account.class), any(BigDecimal.class), any(BigDecimal.class));
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
@@ -72,6 +80,7 @@ class TransactionServiceImplTest {
         assertEquals(BigDecimal.valueOf(400), senderAccount.getBalance());
         assertEquals(BigDecimal.valueOf(200), recipientAccount.getBalance());
         verify(emailService).checkIfCodeIsVerified(anyString());
+        verify(accountService).transferAmount(senderAccount, recipientAccount, amount, amount);
         verify(transactionRepository).save(any(Transaction.class));
     }
 
@@ -86,8 +95,17 @@ class TransactionServiceImplTest {
         Account senderAccount = createAccount(senderCard, Currency.USD, BigDecimal.valueOf(500));
         Account recipientAccount = createAccount(recipientCard, Currency.EUR, BigDecimal.valueOf(100));
 
-        when(accountRepository.findByCard_CardNumber(senderCard)).thenReturn(Optional.of(senderAccount));
-        when(accountRepository.findByCard_CardNumber(recipientCard)).thenReturn(Optional.of(recipientAccount));
+        when(accountService.getAccountByCardNumber(senderCard)).thenReturn(senderAccount);
+        when(accountService.getAccountByCardNumber(recipientCard)).thenReturn(recipientAccount);
+        doAnswer(invocation -> {
+            Account sender = invocation.getArgument(0);
+            Account recipient = invocation.getArgument(1);
+            BigDecimal senderAmount = invocation.getArgument(2);
+            BigDecimal recipientAmount = invocation.getArgument(3);
+            sender.setBalance(sender.getBalance().subtract(senderAmount));
+            recipient.setBalance(recipient.getBalance().add(recipientAmount));
+            return null;
+        }).when(accountService).transferAmount(any(Account.class), any(Account.class), any(BigDecimal.class), any(BigDecimal.class));
         when(currencyLoader.convert(amount, "USD", "EUR")).thenReturn(convertedAmount);
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -98,6 +116,7 @@ class TransactionServiceImplTest {
         assertEquals(TransactionStatus.COMPLETED, result.getStatus());
         assertEquals(BigDecimal.valueOf(400), senderAccount.getBalance()); // 500 - 100
         assertEquals(BigDecimal.valueOf(190), recipientAccount.getBalance()); // 100 + 90
+        verify(accountService).transferAmount(senderAccount, recipientAccount, amount, convertedAmount);
         verify(currencyLoader).convert(amount, "USD", "EUR");
     }
 

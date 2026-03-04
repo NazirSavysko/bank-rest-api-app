@@ -9,13 +9,12 @@ import bank.rest.app.bankrestapp.resository.CustomerRepository;
 import bank.rest.app.bankrestapp.service.AccountService;
 import bank.rest.app.bankrestapp.service.CardService;
 import lombok.AllArgsConstructor;
-import org.hibernate.mapping.List;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 
+import java.math.BigDecimal;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -78,6 +77,18 @@ public class AccountServiceImpl implements AccountService {
     public Account getAccountByNumber(final String accountNumber) {
         return this.accountRepository.findByAccountNumber(accountNumber)
                 .orElseThrow(() -> new NoSuchElementException("Account not found for the provided account number"));
+    }
+
+    @Override
+    public Account getAccountByCardNumber(final String cardNumber) {
+        return this.accountRepository.findByCard_CardNumber(cardNumber)
+                .orElseThrow(() -> new NoSuchElementException("Account not found for the provided card"));
+    }
+
+    @Override
+    public void transferAmount(final Account senderAccount, final Account recipientAccount, final BigDecimal senderAmount, final BigDecimal recipientAmount) {
+        senderAccount.setBalance(senderAccount.getBalance().subtract(senderAmount));
+        recipientAccount.setBalance(recipientAccount.getBalance().add(recipientAmount));
     }
 
     private String generateAccountNumber(String beginningOfWord) {

@@ -6,7 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -33,6 +34,7 @@ public final class CurrencyLoader {
     }
 
     @Scheduled(cron = "0 0 0 * * *") // каждый день в 00:00
+    @CacheEvict(cacheNames = "currency-conversion", allEntries = true)
     public void updateRates() {
         try {
             CurrencyRate[] rates = restTemplate.getForObject(
@@ -66,6 +68,7 @@ public final class CurrencyLoader {
         return currentRates;
     }
 
+    @Cacheable(cacheNames = "currency-conversion", key = "#amount.toPlainString() + ':' + #from.toUpperCase() + ':' + #to.toUpperCase()")
     public BigDecimal convert(BigDecimal amount, @NotNull String from, String to) {
         if (from.equalsIgnoreCase(to)) return amount;
 
