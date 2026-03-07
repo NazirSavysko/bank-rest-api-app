@@ -1,7 +1,10 @@
 package bank.rest.app.bankrestapp.exception.advice_rest_controller;
 
 import bank.rest.app.bankrestapp.exception.AccountNotActiveException;
+import bank.rest.app.bankrestapp.exception.InvalidAccountCurrencyException;
 import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
+import bank.rest.app.bankrestapp.exception.RecipientNotFoundException;
+import bank.rest.app.bankrestapp.exception.UnsupportedCurrencyException;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -97,6 +100,42 @@ public final class RestControllerAdviceHandler {
                 .body(of(
                         "timestamp", now(),
                         "error", "Insufficient Funds",
+                        "message", e.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(InvalidAccountCurrencyException.class)
+    public @NotNull ResponseEntity<?> handleInvalidAccountCurrencyException(@NotNull InvalidAccountCurrencyException e) {
+
+        return ResponseEntity.status(UNPROCESSABLE_ENTITY)
+                .contentType(APPLICATION_JSON)
+                .body(of(
+                        "timestamp", now(),
+                        "error", "Invalid Account Currency",
+                        "message", e.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(UnsupportedCurrencyException.class)
+    public @NotNull ResponseEntity<?> handleUnsupportedCurrencyException(@NotNull UnsupportedCurrencyException e) {
+
+        return ResponseEntity.status(UNPROCESSABLE_ENTITY)
+                .contentType(APPLICATION_JSON)
+                .body(of(
+                        "timestamp", now(),
+                        "error", "Unsupported Currency",
+                        "message", e.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(RecipientNotFoundException.class)
+    public @NotNull ResponseEntity<?> handleRecipientNotFoundException(@NotNull RecipientNotFoundException e) {
+
+        return ResponseEntity.status(NOT_FOUND)
+                .contentType(APPLICATION_JSON)
+                .body(of(
+                        "timestamp", now(),
+                        "error", "Recipient Not Found",
                         "message", e.getMessage()
                 ));
     }

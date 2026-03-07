@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public record GetAccountDTO(
+        Integer id,
         String accountNumber,
         BigDecimal balance,
         String currency,
