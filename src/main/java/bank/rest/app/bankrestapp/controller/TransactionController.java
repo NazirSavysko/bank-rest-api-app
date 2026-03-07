@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.data.web.SpringDataWebProperties;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -33,7 +34,7 @@ class TransactionController {
     }
 
     @GetMapping("transactions")
-    public Page<GetTransactionDTO> getAllTransactions(@PageableDefault  org.springframework.data.domain.Pageable pageable, @RequestParam String accountNumber) {
+    public Page<GetTransactionDTO> getAllTransactions(@PageableDefault(sort = "transactionDate", direction = Sort.Direction.DESC) org.springframework.data.domain.Pageable pageable, @RequestParam String accountNumber, final Sort sort) {
         return this.transactionFacade.getAllTransactions(pageable,accountNumber);
     }
 
