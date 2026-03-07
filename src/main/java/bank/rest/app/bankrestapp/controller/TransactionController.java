@@ -29,7 +29,7 @@ class TransactionController {
 
     @GetMapping("/history")
     public Page<GetTransactionDTO> getAllTransactions(@RequestParam(defaultValue = "0") int page,
-                                                     @RequestParam(defaultValue = "20") int size,
+                                                     @RequestParam(defaultValue = "10") int size,
                                                      @RequestParam String accountNumber) {
         return this.transactionFacade.getAllTransactions(
                 PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "transactionDate")),
