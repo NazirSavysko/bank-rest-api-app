@@ -53,7 +53,7 @@ public final class AccountController {
     public Page<TransactionHistoryItemDTO> getAccountHistory(
             final @PathVariable Integer accountId,
             final @RequestParam(defaultValue = "ALL") HistoryFilter filter,
-            final @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+            final @PageableDefault(sort = "created_at", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return this.transactionFacade.getTransactionHistory(accountId, filter, pageable);
     }

@@ -35,7 +35,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Intege
                                p.currency_code AS currency,
                                p.payment_date AS created_at,
                                CASE
-                                   WHEN COALESCE(p.beneficiary_acc, '') <> '' THEN 'IBAN_PAYMENT'
+                                   WHEN p.beneficiary_acc IS NOT NULL AND LENGTH(TRIM(p.beneficiary_acc)) > 0 THEN 'IBAN_PAYMENT'
                                    ELSE 'INTERNET_PAYMENT'
                                END AS type,
                                p.account_id AS sender_account_id,
@@ -45,7 +45,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, Intege
                         WHERE (:filter = 'ALL' OR :filter = 'PAYMENTS')
                           AND p.account_id = :accountId
                     ) AS history_items
-                    ORDER BY created_at DESC
                     """,
             countQuery = """
                     SELECT COUNT(*) FROM (
