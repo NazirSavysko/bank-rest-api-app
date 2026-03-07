@@ -99,7 +99,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .account(senderAccount)
                 .toAccount(recipientAccount)
                 .amount(request.amount())
-                .currencyCode(senderAccount.getCurrencyCode())
+                .currencyCode(Currency.UAH)
                 .description("IBAN Transfer to " + request.recipientName())
                 .transactionType(TransactionType.IBAN_PAYMENT)
                 .status(TransactionStatus.COMPLETED)

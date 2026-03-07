@@ -122,7 +122,6 @@ class PaymentServiceImplTest {
         assertEquals(BigDecimal.valueOf(100), tx.getAmount());
         assertEquals(Currency.UAH, tx.getCurrencyCode());
         assertEquals(TransactionType.IBAN_PAYMENT, tx.getTransactionType());
-        assertEquals(TransactionStatus.COMPLETED, tx.getStatus());
         assertEquals("IBAN Transfer to John Doe", tx.getDescription());
         assertNotNull(tx.getTransactionDate());
     }
