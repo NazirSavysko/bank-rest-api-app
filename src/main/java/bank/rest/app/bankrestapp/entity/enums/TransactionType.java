@@ -10,6 +10,9 @@ package bank.rest.app.bankrestapp.entity.enums;
  * <ul>
  *   <li>TRANSFER - Moving funds between accounts (internal or external transfers)</li>
  *   <li>PAYMENT - Outgoing payments for services, bills, or purchases</li>
+ *   <li>IBAN_PAYMENT - Outgoing payment by IBAN details</li>
+ *   <li>INTERNET_PAYMENT - Outgoing internet provider payment</li>
+ *   <li>UTILITY_PAYMENT - Outgoing utility bill payment</li>
  * </ul>
  *
  * <p>Each transaction type may have different validation rules, fees, and
@@ -26,5 +29,14 @@ public enum TransactionType {
     TRANSFER,
 
     /** Payment transaction - outgoing payment for services or purchases */
-    PAYMENT
+    PAYMENT,
+
+    /** Payment transaction created from IBAN payment flow */
+    IBAN_PAYMENT,
+
+    /** Payment transaction created from internet payment flow */
+    INTERNET_PAYMENT,
+
+    /** Payment transaction created from utility payment flow */
+    UTILITY_PAYMENT
 }

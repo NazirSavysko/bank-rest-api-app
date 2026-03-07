@@ -246,4 +246,39 @@ class TransactionFacadeImplTest {
         verify(transactionMapper).toDto(txExcluded);
         verify(transactionMapper).toDto(txOther);
     }
+
+    @Test
+    void getAllTransactions_whenTransactionHasNoRecipientAccount_shouldStillMap() {
+        final String accountNumber = "ACC-100";
+        Pageable pageable = Pageable.unpaged();
+
+        Account account = Account.builder()
+                .accountId(10)
+                .accountNumber(accountNumber)
+                .currencyCode(Currency.UAH)
+                .build();
+
+        Transaction internetPaymentTransaction = Transaction.builder()
+                .transactionId(100)
+                .amount(BigDecimal.valueOf(200))
+                .currencyCode(Currency.UAH)
+                .status(TransactionStatus.COMPLETED)
+                .build();
+        internetPaymentTransaction.setToAccount(null);
+
+        GetTransactionDTO dto = mock(GetTransactionDTO.class);
+
+        when(accountService.getAccountByNumber(accountNumber)).thenReturn(account);
+        when(transactionService.getAllTransactions(accountNumber, pageable))
+                .thenReturn(new PageImpl<>(List.of(internetPaymentTransaction), pageable, 1));
+        when(currencyLoader.convert(BigDecimal.valueOf(200), "UAH", "UAH"))
+                .thenReturn(BigDecimal.valueOf(200));
+        when(transactionMapper.toDto(internetPaymentTransaction)).thenReturn(dto);
+
+        Page<GetTransactionDTO> result = sut.getAllTransactions(pageable, accountNumber);
+
+        assertEquals(1, result.getTotalElements());
+        assertEquals(dto, result.getContent().get(0));
+        verify(transactionMapper).toDto(internetPaymentTransaction);
+    }
 }

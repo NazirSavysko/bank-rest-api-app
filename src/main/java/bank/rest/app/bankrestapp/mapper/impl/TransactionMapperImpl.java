@@ -1,26 +1,15 @@
 package bank.rest.app.bankrestapp.mapper.impl;
 
-import bank.rest.app.bankrestapp.currency.CurrencyLoader;
 import bank.rest.app.bankrestapp.dto.get.GetShortCustomerDTO;
 import bank.rest.app.bankrestapp.dto.get.GetTransactionDTO;
-import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.Customer;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.mapper.Mapper;
-import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.stream.Stream;
-
-import static bank.rest.app.bankrestapp.entity.enums.TransactionStatus.CANCELLED;
-import static bank.rest.app.bankrestapp.entity.enums.TransactionStatus.FAILED;
 import static bank.rest.app.bankrestapp.utils.MapperUtils.mapDto;
-import static java.util.stream.Stream.concat;
 
 /**
  * Implementation of the Mapper interface for converting Transaction entities to GetTransactionDTO objects.
@@ -106,7 +95,7 @@ public final class TransactionMapperImpl implements Mapper<Transaction, GetTrans
 
         return new GetTransactionDTO(
                 mapDto(entity.getAccount().getCustomer(), customerMapper::toDto),
-                mapDto(entity.getToAccount().getCustomer(), customerMapper::toDto),
+                entity.getToAccount() == null ? null : mapDto(entity.getToAccount().getCustomer(), customerMapper::toDto),
                 entity.getAmount(),
                 entity.getDescription(),
                 entity.getTransactionDate().toString(),
@@ -115,7 +104,7 @@ public final class TransactionMapperImpl implements Mapper<Transaction, GetTrans
                 entity.getStatus().name(),
                 entity.getAccount().getCard().getCardNumber(),
                 entity.getIsRecipient(),
-                entity.getToAccount().getCard().getCardNumber()
+                entity.getToAccount() == null ? null : entity.getToAccount().getCard().getCardNumber()
         );
     }
 }

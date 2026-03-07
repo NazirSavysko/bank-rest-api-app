@@ -7,9 +7,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 public interface PaymentService {
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     Payment processIbanPayment(IbanPaymentRequestDTO request, String authenticatedUserEmail);
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     Payment processInternetPayment(InternetPaymentRequestDTO request, String authenticatedUserEmail);
 }
