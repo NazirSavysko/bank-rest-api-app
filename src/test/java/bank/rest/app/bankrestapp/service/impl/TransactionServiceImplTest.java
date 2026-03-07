@@ -183,5 +183,14 @@ class TransactionServiceImplTest {
             Integer senderAccountId,
             Integer receiverAccountId,
             String details
-    ) implements HistoryItemProjection {}
+    ) implements HistoryItemProjection {
+        @Override public Integer getId() { return id; }
+        @Override public BigDecimal getAmount() { return amount; }
+        @Override public String getCurrency() { return currency; }
+        @Override public LocalDateTime getCreatedAt() { return createdAt; }
+        @Override public String getType() { return type; }
+        @Override public Integer getSenderAccountId() { return senderAccountId; }
+        @Override public Integer getReceiverAccountId() { return receiverAccountId; }
+        @Override public String getDetails() { return details; }
+    }
 }
