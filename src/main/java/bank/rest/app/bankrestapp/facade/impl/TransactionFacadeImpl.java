@@ -52,7 +52,7 @@ public class TransactionFacadeImpl implements TransactionFacade {
             transaction.setAmount(currencyLoader.convert(transaction.getAmount(), transaction.getCurrencyCode().name(), account.getCurrencyCode().name()));
             transaction.setCurrencyCode(account.getCurrencyCode());
 
-            if (transaction.getToAccount().equals(account)) {
+            if (transaction.getToAccount() != null && transaction.getToAccount().equals(account)) {
                 transaction.setIsRecipient(Boolean.TRUE);
             }
             return transactionMapper.toDto(transaction);

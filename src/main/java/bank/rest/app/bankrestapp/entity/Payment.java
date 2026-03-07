@@ -15,6 +15,7 @@ import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -64,4 +65,8 @@ public abstract class Payment {
     @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "account_id", referencedColumnName = "accountId")
     private Account account;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "transaction_id", referencedColumnName = "transactionId")
+    private Transaction transaction;
 }

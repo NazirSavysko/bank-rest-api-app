@@ -7,20 +7,23 @@ import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.IbanPayment;
 import bank.rest.app.bankrestapp.entity.InternetPayment;
 import bank.rest.app.bankrestapp.entity.Payment;
+import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
+import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
+import bank.rest.app.bankrestapp.entity.enums.TransactionType;
 import bank.rest.app.bankrestapp.exception.InvalidAccountCurrencyException;
 import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
 import bank.rest.app.bankrestapp.exception.RecipientNotFoundException;
 import bank.rest.app.bankrestapp.exception.UnsupportedCurrencyException;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.PaymentRepository;
+import bank.rest.app.bankrestapp.resository.TransactionRepository;
 import bank.rest.app.bankrestapp.service.PaymentService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.EnumSet;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -36,10 +39,11 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final AccountRepository accountRepository;
     private final PaymentRepository paymentRepository;
+    private final TransactionRepository transactionRepository;
     private final CurrencyLoader currencyLoader;
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Payment processIbanPayment(final IbanPaymentRequestDTO request, final String authenticatedUserEmail) {
         if (!request.recipientIban().startsWith("UA")) {
             throw new IllegalArgumentException("Recipient IBAN must start with UA");
@@ -76,12 +80,19 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setPurpose(request.purpose());
         payment.setRecipientName(request.recipientName());
         payment.setRecipientIban(request.recipientIban());
+        payment.setTransaction(createTransaction(
+                senderAccount,
+                recipientAccount,
+                request.amount(),
+                TransactionType.IBAN_PAYMENT,
+                "Переказ за реквізитами IBAN: " + request.recipientIban()
+        ));
 
         return this.paymentRepository.save(payment);
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Payment processInternetPayment(final InternetPaymentRequestDTO request, final String authenticatedUserEmail) {
         final Account account = getValidOwnedAccount(request.accountId(), authenticatedUserEmail);
         validateInternetCurrency(account.getCurrencyCode());
@@ -103,8 +114,34 @@ public class PaymentServiceImpl implements PaymentService {
                 + request.providerName()
                 + ", дог. "
                 + request.contractNumber());
+        payment.setTransaction(createTransaction(
+                account,
+                null,
+                request.amount(),
+                TransactionType.INTERNET_PAYMENT,
+                "Оплата інтернету (провайдер: " + request.providerName() + ")"
+        ));
 
         return this.paymentRepository.save(payment);
+    }
+
+    private Transaction createTransaction(final Account senderAccount,
+                                          final Account recipientAccount,
+                                          final BigDecimal amount,
+                                          final TransactionType transactionType,
+                                          final String description) {
+        final Transaction transaction = Transaction.builder()
+                .amount(amount)
+                .currencyCode(senderAccount.getCurrencyCode())
+                .transactionType(transactionType)
+                .status(TransactionStatus.COMPLETED)
+                .description(description)
+                .transactionDate(now())
+                .account(senderAccount)
+                .toAccount(recipientAccount)
+                .build();
+
+        return this.transactionRepository.save(transaction);
     }
 
     private Account getValidOwnedAccount(final Long accountId, final String authenticatedUserEmail) {
