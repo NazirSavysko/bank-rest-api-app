@@ -51,12 +51,16 @@ public class PaymentServiceImpl implements PaymentService {
         validateIbanSupportedCurrency(senderAccount.getCurrencyCode());
         validateIbanSupportedCurrency(recipientAccount.getCurrencyCode());
 
-        final BigDecimal deductionAmount = calculateIbanDeductionAmount(request.amount(), senderAccount.getCurrencyCode());
         final BigDecimal additionAmount = request.amount();
-        validateSufficientFunds(senderAccount, deductionAmount);
+        validateSufficientFunds(senderAccount, additionAmount);
 
-        senderAccount.setBalance(senderAccount.getBalance().subtract(deductionAmount));
-        recipientAccount.setBalance(recipientAccount.getBalance().add(additionAmount));
+        senderAccount.setBalance(senderAccount.getBalance().subtract(additionAmount));
+        if (!senderAccount.getCurrencyCode().equals(Currency.UAH)) {
+            final BigDecimal convertedSum = this.currencyLoader.convert(additionAmount, senderAccount.getCurrencyCode().name(), recipientAccount.getCurrencyCode().name());
+            recipientAccount.setBalance(recipientAccount.getBalance().add(convertedSum));
+        }else {
+            recipientAccount.setBalance(recipientAccount.getBalance().add(additionAmount));
+        }
         this.accountRepository.save(senderAccount);
         this.accountRepository.save(recipientAccount);
 
@@ -133,17 +137,6 @@ public class PaymentServiceImpl implements PaymentService {
         if (currency == null || !SUPPORTED_IBAN_CURRENCIES.contains(currency)) {
             throw new UnsupportedCurrencyException("Unsupported account currency for IBAN payment");
         }
-    }
-
-    private BigDecimal calculateIbanDeductionAmount(final BigDecimal targetAmountUah, final Currency senderCurrency) {
-        if (Currency.UAH.equals(senderCurrency)) {
-            return targetAmountUah;
-        }
-
-        final CurrencyLoader.CurrencyRate senderRate = this.currencyLoader.getRate(senderCurrency.name())
-                .orElseThrow(() -> new IllegalArgumentException("Exchange rate not found for currency: " + senderCurrency.name()));
-
-        return targetAmountUah.divide(BigDecimal.valueOf(senderRate.getRate()), 2, RoundingMode.HALF_UP);
     }
 
     private void validateSufficientFunds(final Account account, final BigDecimal amount) {

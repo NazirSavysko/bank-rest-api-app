@@ -43,6 +43,7 @@ public final class AccountMapperImpl implements Mapper<Account, GetAccountDTO> {
     @Override
     public @NotNull GetAccountDTO toDto(final @NotNull Account entity) {
         return new GetAccountDTO(
+                entity.getAccountId(),
                 entity.getAccountNumber(),
                 entity.getBalance(),
                 entity.getCurrencyCode().name(),

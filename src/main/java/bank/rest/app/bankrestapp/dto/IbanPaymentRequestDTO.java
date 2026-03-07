@@ -17,7 +17,7 @@ public record IbanPaymentRequestDTO(
         String recipientName,
         @NotBlank(message = "Recipient IBAN is required")
         @Pattern(
-                regexp = "^UA[A-Z0-9]{27}$",
+                regexp = "^UA[A-Z0-9]{32}$",
                 message = "Recipient IBAN must start with UA and contain 29 characters"
         )
         String recipientIban,
