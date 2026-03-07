@@ -43,18 +43,25 @@ public class PaymentServiceImpl implements PaymentService {
             throw new IllegalArgumentException("Recipient IBAN must start with UA");
         }
 
-        final Account account = getValidOwnedAccount(request.accountId(), authenticatedUserEmail);
-        validateIbanSupportedCurrency(account.getCurrencyCode());
+        final Account senderAccount = getValidOwnedAccount(request.accountId(), authenticatedUserEmail);
+        final Account recipientAccount = this.accountRepository.findByAccountNumber(request.recipientIban())
+                .orElseThrow(() -> new NoSuchElementException("Recipient IBAN not found in the system"));
+        validateIbanSupportedCurrency(senderAccount.getCurrencyCode());
+        validateIbanSupportedCurrency(recipientAccount.getCurrencyCode());
 
-        final BigDecimal deductionAmount = calculateIbanDeductionAmount(request.amount(), account.getCurrencyCode());
-        validateSufficientFunds(account, deductionAmount);
-        account.setBalance(account.getBalance().subtract(deductionAmount));
-        this.accountRepository.save(account);
+        final BigDecimal deductionAmount = calculateIbanConvertedAmount(request.amount(), senderAccount.getCurrencyCode());
+        final BigDecimal additionAmount = calculateIbanConvertedAmount(request.amount(), recipientAccount.getCurrencyCode());
+        validateSufficientFunds(senderAccount, deductionAmount);
+
+        senderAccount.setBalance(senderAccount.getBalance().subtract(deductionAmount));
+        recipientAccount.setBalance(recipientAccount.getBalance().add(additionAmount));
+        this.accountRepository.save(senderAccount);
+        this.accountRepository.save(recipientAccount);
 
         final IbanPayment payment = new IbanPayment();
-        payment.setAccount(account);
+        payment.setAccount(senderAccount);
         payment.setAmount(deductionAmount);
-        payment.setCurrencyCode(account.getCurrencyCode().name());
+        payment.setCurrencyCode(senderAccount.getCurrencyCode().name());
         payment.setPaymentDate(now());
         payment.setStatus(COMPLETED);
         payment.setBeneficiaryName(request.recipientName());
@@ -126,7 +133,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
     }
 
-    private BigDecimal calculateIbanDeductionAmount(final BigDecimal targetAmountUah, final Currency sourceCurrency) {
+    private BigDecimal calculateIbanConvertedAmount(final BigDecimal targetAmountUah, final Currency sourceCurrency) {
         if (!Currency.UAH.equals(sourceCurrency)) {
             return this.currencyLoader.convert(targetAmountUah, Currency.UAH.name(), sourceCurrency.name());
         }
