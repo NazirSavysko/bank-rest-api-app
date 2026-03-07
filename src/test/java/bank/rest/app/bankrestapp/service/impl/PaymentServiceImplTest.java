@@ -9,15 +9,20 @@ import bank.rest.app.bankrestapp.entity.Customer;
 import bank.rest.app.bankrestapp.entity.IbanPayment;
 import bank.rest.app.bankrestapp.entity.InternetPayment;
 import bank.rest.app.bankrestapp.entity.Payment;
+import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
+import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
+import bank.rest.app.bankrestapp.entity.enums.TransactionType;
 import bank.rest.app.bankrestapp.exception.InvalidAccountCurrencyException;
 import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
 import bank.rest.app.bankrestapp.exception.RecipientNotFoundException;
 import bank.rest.app.bankrestapp.exception.UnsupportedCurrencyException;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.PaymentRepository;
+import bank.rest.app.bankrestapp.resository.TransactionRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -40,6 +45,9 @@ class PaymentServiceImplTest {
     private PaymentRepository paymentRepository;
 
     @Mock
+    private TransactionRepository transactionRepository;
+
+    @Mock
     private CurrencyLoader currencyLoader;
 
     @InjectMocks
@@ -53,6 +61,7 @@ class PaymentServiceImplTest {
         when(accountRepository.findByAccountNumber("UA123456789012345678901234567")).thenReturn(Optional.of(recipientAccount));
         when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         final IbanPaymentRequestDTO request = new IbanPaymentRequestDTO(
                 10L,
@@ -80,6 +89,42 @@ class PaymentServiceImplTest {
         verify(accountRepository).save(senderAccount);
         verify(accountRepository).save(recipientAccount);
         verify(paymentRepository).save(any(IbanPayment.class));
+        verify(transactionRepository).save(any(Transaction.class));
+    }
+
+    @Test
+    void processIbanPayment_CreatesTransactionWithCorrectFields() {
+        final Account senderAccount = createAccount(10, Currency.UAH, BigDecimal.valueOf(500), "user@example.com", "UA_SENDER");
+        final Account recipientAccount = createAccount(20, Currency.UAH, BigDecimal.valueOf(200), "recipient@example.com", "UA123456789012345678901234567");
+        when(accountRepository.findById(10)).thenReturn(Optional.of(senderAccount));
+        when(accountRepository.findByAccountNumber("UA123456789012345678901234567")).thenReturn(Optional.of(recipientAccount));
+        when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        final IbanPaymentRequestDTO request = new IbanPaymentRequestDTO(
+                10L,
+                BigDecimal.valueOf(100),
+                "John Doe",
+                "UA123456789012345678901234567",
+                "1234567890",
+                "Purpose"
+        );
+
+        paymentService.processIbanPayment(request, "user@example.com");
+
+        final ArgumentCaptor<Transaction> txCaptor = ArgumentCaptor.forClass(Transaction.class);
+        verify(transactionRepository).save(txCaptor.capture());
+        final Transaction tx = txCaptor.getValue();
+
+        assertEquals(senderAccount, tx.getAccount());
+        assertEquals(recipientAccount, tx.getToAccount());
+        assertEquals(BigDecimal.valueOf(100), tx.getAmount());
+        assertEquals(Currency.UAH, tx.getCurrencyCode());
+        assertEquals(TransactionType.IBAN_PAYMENT, tx.getTransactionType());
+        assertEquals(TransactionStatus.COMPLETED, tx.getStatus());
+        assertEquals("IBAN Transfer to John Doe", tx.getDescription());
+        assertNotNull(tx.getTransactionDate());
     }
 
     @Test
@@ -88,6 +133,7 @@ class PaymentServiceImplTest {
         when(accountRepository.findById(11)).thenReturn(Optional.of(account));
         when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         final InternetPaymentRequestDTO request = new InternetPaymentRequestDTO(
                 11L,
@@ -108,6 +154,38 @@ class PaymentServiceImplTest {
 
         verify(accountRepository).save(account);
         verify(paymentRepository).save(any(InternetPayment.class));
+        verify(transactionRepository).save(any(Transaction.class));
+    }
+
+    @Test
+    void processInternetPayment_CreatesTransactionWithCorrectFields() {
+        final Account account = createAccount(11, Currency.UAH, BigDecimal.valueOf(300), "user@example.com", "UA_INTERNET_1");
+        when(accountRepository.findById(11)).thenReturn(Optional.of(account));
+        when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        final InternetPaymentRequestDTO request = new InternetPaymentRequestDTO(
+                11L,
+                BigDecimal.valueOf(75),
+                "Kyivstar",
+                "CONTRACT-42"
+        );
+
+        paymentService.processInternetPayment(request, "user@example.com");
+
+        final ArgumentCaptor<Transaction> txCaptor = ArgumentCaptor.forClass(Transaction.class);
+        verify(transactionRepository).save(txCaptor.capture());
+        final Transaction tx = txCaptor.getValue();
+
+        assertEquals(account, tx.getAccount());
+        assertNull(tx.getToAccount());
+        assertEquals(BigDecimal.valueOf(75), tx.getAmount());
+        assertEquals(Currency.UAH, tx.getCurrencyCode());
+        assertEquals(TransactionType.PAYMENT, tx.getTransactionType());
+        assertEquals(TransactionStatus.COMPLETED, tx.getStatus());
+        assertEquals("Internet Payment: Kyivstar, contract CONTRACT-42", tx.getDescription());
+        assertNotNull(tx.getTransactionDate());
     }
 
     @Test
@@ -118,6 +196,7 @@ class PaymentServiceImplTest {
         when(accountRepository.findByAccountNumber("UA123456789012345678901234567")).thenReturn(Optional.of(recipientAccount));
         when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(currencyLoader.getRate("USD"))
                 .thenReturn(Optional.of(new CurrencyLoader.CurrencyRate("USD", 40.0)));
 
@@ -141,6 +220,7 @@ class PaymentServiceImplTest {
         verify(accountRepository).save(senderAccount);
         verify(accountRepository).save(recipientAccount);
         verify(paymentRepository).save(any(IbanPayment.class));
+        verify(transactionRepository).save(any(Transaction.class));
     }
 
     @Test
@@ -151,6 +231,7 @@ class PaymentServiceImplTest {
         when(accountRepository.findByAccountNumber("UA123456789012345678901234567")).thenReturn(Optional.of(recipientAccount));
         when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(currencyLoader.getRate("EUR"))
                 .thenReturn(Optional.of(new CurrencyLoader.CurrencyRate("EUR", 42.0)));
 
@@ -171,6 +252,7 @@ class PaymentServiceImplTest {
         assertEquals(BigDecimal.valueOf(1000), result.getAmount());
         assertEquals("UAH", result.getCurrencyCode());
         verify(currencyLoader).getRate("EUR");
+        verify(transactionRepository).save(any(Transaction.class));
     }
 
     @Test
@@ -190,6 +272,7 @@ class PaymentServiceImplTest {
 
         verify(accountRepository, never()).save(any(Account.class));
         verify(paymentRepository, never()).save(any(Payment.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
     }
 
     @Test
@@ -211,6 +294,7 @@ class PaymentServiceImplTest {
 
         verify(accountRepository, never()).save(any(Account.class));
         verify(paymentRepository, never()).save(any(Payment.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
     }
 
     @Test
@@ -227,7 +311,7 @@ class PaymentServiceImplTest {
         assertThrows(IllegalArgumentException.class,
                 () -> paymentService.processIbanPayment(request, "user@example.com"));
 
-        verifyNoInteractions(accountRepository, paymentRepository);
+        verifyNoInteractions(accountRepository, paymentRepository, transactionRepository);
     }
 
     @Test
@@ -251,6 +335,7 @@ class PaymentServiceImplTest {
 
         verify(accountRepository, never()).save(any(Account.class));
         verify(paymentRepository, never()).save(any(Payment.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
         verifyNoInteractions(currencyLoader);
     }
 
@@ -275,6 +360,7 @@ class PaymentServiceImplTest {
 
         verify(accountRepository, never()).save(any(Account.class));
         verify(paymentRepository, never()).save(any(Payment.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
         verifyNoInteractions(currencyLoader);
     }
 
@@ -299,3 +385,4 @@ class PaymentServiceImplTest {
         return account;
     }
 }
+

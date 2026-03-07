@@ -7,13 +7,17 @@ import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.IbanPayment;
 import bank.rest.app.bankrestapp.entity.InternetPayment;
 import bank.rest.app.bankrestapp.entity.Payment;
+import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
+import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
+import bank.rest.app.bankrestapp.entity.enums.TransactionType;
 import bank.rest.app.bankrestapp.exception.InvalidAccountCurrencyException;
 import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
 import bank.rest.app.bankrestapp.exception.RecipientNotFoundException;
 import bank.rest.app.bankrestapp.exception.UnsupportedCurrencyException;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.PaymentRepository;
+import bank.rest.app.bankrestapp.resository.TransactionRepository;
 import bank.rest.app.bankrestapp.service.PaymentService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -36,6 +40,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final AccountRepository accountRepository;
     private final PaymentRepository paymentRepository;
+    private final TransactionRepository transactionRepository;
     private final CurrencyLoader currencyLoader;
 
     @Override
@@ -52,14 +57,25 @@ public class PaymentServiceImpl implements PaymentService {
         validateIbanSupportedCurrency(recipientAccount.getCurrencyCode());
 
         final BigDecimal additionAmount = request.amount();
-        validateSufficientFunds(senderAccount, additionAmount);
 
-        senderAccount.setBalance(senderAccount.getBalance().subtract(additionAmount));
-        if (!senderAccount.getCurrencyCode().equals(Currency.UAH)) {
-            final BigDecimal convertedSum = this.currencyLoader.convert(additionAmount, senderAccount.getCurrencyCode().name(), recipientAccount.getCurrencyCode().name());
-            recipientAccount.setBalance(recipientAccount.getBalance().add(convertedSum));
-        }else {
+        // Calculate the amount to deduct from sender's balance (in sender's currency)
+        final BigDecimal senderDeduction;
+        if (senderAccount.getCurrencyCode().equals(Currency.UAH)) {
+            senderDeduction = additionAmount;
+        } else {
+            final CurrencyLoader.CurrencyRate senderRate = this.currencyLoader.getRate(senderAccount.getCurrencyCode().name())
+                    .orElseThrow(() -> new UnsupportedCurrencyException("Exchange rate not available for " + senderAccount.getCurrencyCode()));
+            senderDeduction = additionAmount.divide(BigDecimal.valueOf(senderRate.getRate()), 2, RoundingMode.HALF_UP);
+        }
+        validateSufficientFunds(senderAccount, senderDeduction);
+        senderAccount.setBalance(senderAccount.getBalance().subtract(senderDeduction));
+
+        // Calculate the amount to add to recipient's balance (in recipient's currency)
+        if (recipientAccount.getCurrencyCode().equals(Currency.UAH)) {
             recipientAccount.setBalance(recipientAccount.getBalance().add(additionAmount));
+        } else {
+            final BigDecimal convertedForRecipient = this.currencyLoader.convert(additionAmount, Currency.UAH.name(), recipientAccount.getCurrencyCode().name());
+            recipientAccount.setBalance(recipientAccount.getBalance().add(convertedForRecipient));
         }
         this.accountRepository.save(senderAccount);
         this.accountRepository.save(recipientAccount);
@@ -77,7 +93,21 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setRecipientName(request.recipientName());
         payment.setRecipientIban(request.recipientIban());
 
-        return this.paymentRepository.save(payment);
+        final Payment savedPayment = this.paymentRepository.save(payment);
+
+        final Transaction ibanTransaction = Transaction.builder()
+                .account(senderAccount)
+                .toAccount(recipientAccount)
+                .amount(request.amount())
+                .currencyCode(senderAccount.getCurrencyCode())
+                .description("IBAN Transfer to " + request.recipientName())
+                .transactionType(TransactionType.IBAN_PAYMENT)
+                .status(TransactionStatus.COMPLETED)
+                .transactionDate(savedPayment.getPaymentDate())
+                .build();
+        this.transactionRepository.save(ibanTransaction);
+
+        return savedPayment;
     }
 
     @Override
@@ -104,7 +134,21 @@ public class PaymentServiceImpl implements PaymentService {
                 + ", дог. "
                 + request.contractNumber());
 
-        return this.paymentRepository.save(payment);
+        final Payment savedPayment = this.paymentRepository.save(payment);
+
+        final Transaction internetTransaction = Transaction.builder()
+                .account(account)
+                .toAccount(null)
+                .amount(request.amount())
+                .currencyCode(account.getCurrencyCode())
+                .description("Internet Payment: " + request.providerName() + ", contract " + request.contractNumber())
+                .transactionType(TransactionType.PAYMENT)
+                .status(TransactionStatus.COMPLETED)
+                .transactionDate(savedPayment.getPaymentDate())
+                .build();
+        this.transactionRepository.save(internetTransaction);
+
+        return savedPayment;
     }
 
     private Account getValidOwnedAccount(final Long accountId, final String authenticatedUserEmail) {
@@ -145,3 +189,4 @@ public class PaymentServiceImpl implements PaymentService {
         }
     }
 }
+
