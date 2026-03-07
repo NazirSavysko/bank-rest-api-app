@@ -2,6 +2,8 @@ package bank.rest.app.bankrestapp.facade;
 
 import bank.rest.app.bankrestapp.dto.CreateTransaction;
 import bank.rest.app.bankrestapp.dto.get.GetTransactionDTO;
+import bank.rest.app.bankrestapp.dto.get.TransactionHistoryItemDTO;
+import bank.rest.app.bankrestapp.entity.enums.HistoryFilter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,4 +15,7 @@ public interface TransactionFacade {
 
     @Transactional(readOnly = true)
     Page<GetTransactionDTO> getAllTransactions(Pageable pageable, final String accountNumber);
+
+    @Transactional(readOnly = true)
+    Page<TransactionHistoryItemDTO> getTransactionHistory(Integer accountId, HistoryFilter filter, Pageable pageable);
 }

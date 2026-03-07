@@ -80,6 +80,12 @@ public class AccountServiceImpl implements AccountService {
                 .orElseThrow(() -> new NoSuchElementException("Account not found for the provided account number"));
     }
 
+    @Override
+    public Account getAccountById(final Integer accountId) {
+        return this.accountRepository.findById(accountId)
+                .orElseThrow(() -> new NoSuchElementException("Account not found for the provided id"));
+    }
+
     private String generateAccountNumber(String beginningOfWord) {
         String accountNumber;
 

@@ -12,4 +12,6 @@ public interface AccountService {
     Account createAccount(String accountType,String customerEmail);
 
     Account getAccountByNumber(String accountNumber);
+
+    Account getAccountById(Integer accountId);
 }

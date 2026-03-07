@@ -2,11 +2,15 @@ package bank.rest.app.bankrestapp.service.impl;
 
 import bank.rest.app.bankrestapp.currency.CurrencyLoader;
 import bank.rest.app.bankrestapp.entity.*;
+import bank.rest.app.bankrestapp.dto.get.TransactionHistoryItemDTO;
 import bank.rest.app.bankrestapp.entity.enums.AccountStatus;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
+import bank.rest.app.bankrestapp.entity.enums.HistoryDirection;
+import bank.rest.app.bankrestapp.entity.enums.HistoryFilter;
 import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.TransactionRepository;
+import bank.rest.app.bankrestapp.resository.projection.HistoryItemProjection;
 import bank.rest.app.bankrestapp.service.EmailService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +22,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -118,6 +123,36 @@ class TransactionServiceImplTest {
         assertEquals(2, result.getTotalElements());
     }
 
+    @Test
+    void getTransactionHistory_shouldMapDirectionAndProjection() {
+        // Arrange
+        Integer accountId = 5;
+        Pageable pageable = Pageable.unpaged();
+        LocalDateTime now = LocalDateTime.now();
+
+        HistoryItemProjection outgoing = new TestHistoryItemProjection(
+                1, BigDecimal.TEN, "USD", now,
+                "TRANSFER", accountId, 42, "transfer out");
+        HistoryItemProjection incoming = new TestHistoryItemProjection(
+                2, BigDecimal.ONE, "USD", now.minusHours(1),
+                "TRANSFER", 99, accountId, "transfer in");
+        HistoryItemProjection payment = new TestHistoryItemProjection(
+                3, BigDecimal.valueOf(7), "USD", now.minusHours(2),
+                "IBAN_PAYMENT", accountId, null, "iban payment");
+
+        when(transactionRepository.findAccountHistory(eq(accountId), eq("ALL"), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(outgoing, incoming, payment), pageable, 3));
+
+        // Act
+        Page<TransactionHistoryItemDTO> result = transactionService.getTransactionHistory(accountId, HistoryFilter.ALL, pageable);
+
+        // Assert
+        assertEquals(3, result.getTotalElements());
+        assertEquals(HistoryDirection.EXPENSE, result.getContent().get(0).direction());
+        assertEquals(HistoryDirection.INCOME, result.getContent().get(1).direction());
+        assertEquals(HistoryDirection.EXPENSE, result.getContent().get(2).direction());
+    }
+
     private Account createAccount(String cardNum, Currency currency, BigDecimal balance) {
         AuthUSer authUser = new AuthUSer();
         authUser.setEmail("test@example.com");
@@ -138,4 +173,15 @@ class TransactionServiceImplTest {
 
         return account;
     }
+
+    private record TestHistoryItemProjection(
+            Integer id,
+            BigDecimal amount,
+            String currency,
+            LocalDateTime createdAt,
+            String type,
+            Integer senderAccountId,
+            Integer receiverAccountId,
+            String details
+    ) implements HistoryItemProjection {}
 }

@@ -1,15 +1,20 @@
 package bank.rest.app.bankrestapp.service.impl;
 
 import bank.rest.app.bankrestapp.currency.CurrencyLoader;
+import bank.rest.app.bankrestapp.dto.get.TransactionHistoryItemDTO;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.Customer;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
+import bank.rest.app.bankrestapp.entity.enums.HistoryDirection;
+import bank.rest.app.bankrestapp.entity.enums.HistoryFilter;
+import bank.rest.app.bankrestapp.entity.enums.HistoryItemType;
 import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
 import bank.rest.app.bankrestapp.exception.AccountNotActiveException;
 import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.TransactionRepository;
+import bank.rest.app.bankrestapp.resository.projection.HistoryItemProjection;
 import bank.rest.app.bankrestapp.service.EmailService;
 import bank.rest.app.bankrestapp.service.TransactionService;
 import lombok.AllArgsConstructor;
@@ -21,6 +26,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 import static bank.rest.app.bankrestapp.entity.enums.AccountStatus.ACTIVE;
 import static bank.rest.app.bankrestapp.entity.enums.TransactionStatus.*;
@@ -75,6 +81,44 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     public Page<Transaction> getAllTransactions(final String accountAccountNumber, final Pageable pageable) {
        return transactionRepository.findAllTransactions(accountAccountNumber, List.of(CANCELLED, FAILED), pageable);
+    }
+
+    @Override
+    public Page<TransactionHistoryItemDTO> getTransactionHistory(final Integer accountId,
+                                                                 final HistoryFilter filter,
+                                                                 final Pageable pageable) {
+        final HistoryFilter effectiveFilter = filter == null ? HistoryFilter.ALL : filter;
+        Page<HistoryItemProjection> historyPage = this.transactionRepository
+                .findAccountHistory(accountId, effectiveFilter.name(), pageable);
+
+        return historyPage.map(item -> mapHistoryItem(accountId, item));
+    }
+
+    private TransactionHistoryItemDTO mapHistoryItem(final Integer accountId, final HistoryItemProjection item) {
+        final HistoryItemType itemType = HistoryItemType.valueOf(item.getType());
+        final HistoryDirection direction = determineDirection(accountId, item, itemType);
+
+        return new TransactionHistoryItemDTO(
+                item.getId(),
+                item.getAmount(),
+                item.getCurrency(),
+                item.getCreatedAt(),
+                itemType,
+                item.getSenderAccountId(),
+                item.getReceiverAccountId(),
+                item.getDetails(),
+                direction
+        );
+    }
+
+    private HistoryDirection determineDirection(final Integer accountId,
+                                                final HistoryItemProjection item,
+                                                final HistoryItemType itemType) {
+        if (itemType == HistoryItemType.TRANSFER &&
+                Objects.equals(accountId, item.getReceiverAccountId())) {
+            return HistoryDirection.INCOME;
+        }
+        return HistoryDirection.EXPENSE;
     }
     private Account getAccountByCardNumber(final String card) {
         return accountRepository.findByCard_CardNumber(card)

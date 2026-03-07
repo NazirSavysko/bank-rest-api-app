@@ -3,8 +3,10 @@ package bank.rest.app.bankrestapp.facade.impl;
 import bank.rest.app.bankrestapp.currency.CurrencyLoader;
 import bank.rest.app.bankrestapp.dto.CreateTransaction;
 import bank.rest.app.bankrestapp.dto.get.GetTransactionDTO;
+import bank.rest.app.bankrestapp.dto.get.TransactionHistoryItemDTO;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.Transaction;
+import bank.rest.app.bankrestapp.entity.enums.HistoryFilter;
 import bank.rest.app.bankrestapp.facade.TransactionFacade;
 import bank.rest.app.bankrestapp.mapper.Mapper;
 import bank.rest.app.bankrestapp.service.AccountService;
@@ -57,5 +59,13 @@ public class TransactionFacadeImpl implements TransactionFacade {
             }
             return transactionMapper.toDto(transaction);
         });
+    }
+
+    @Override
+    public Page<TransactionHistoryItemDTO> getTransactionHistory(final Integer accountId,
+                                                                 final HistoryFilter filter,
+                                                                 final Pageable pageable) {
+        this.accountService.getAccountById(accountId);
+        return this.transactionService.getTransactionHistory(accountId, filter, pageable);
     }
 }

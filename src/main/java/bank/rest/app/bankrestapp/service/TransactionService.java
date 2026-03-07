@@ -3,6 +3,8 @@ package bank.rest.app.bankrestapp.service;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.exception.AccountNotActiveException;
 import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
+import bank.rest.app.bankrestapp.dto.get.TransactionHistoryItemDTO;
+import bank.rest.app.bankrestapp.entity.enums.HistoryFilter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,4 +21,6 @@ public interface TransactionService {
     Transaction withdraw(String senderCardNumber, String recipientCardNumber, BigDecimal amount, final String description);
 
     Page<Transaction> getAllTransactions(String accountAccountNumber, final Pageable pageable);
+
+    Page<TransactionHistoryItemDTO> getTransactionHistory(Integer accountId, HistoryFilter filter, Pageable pageable);
 }

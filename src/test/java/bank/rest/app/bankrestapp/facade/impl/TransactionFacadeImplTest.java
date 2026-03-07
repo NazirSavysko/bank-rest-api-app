@@ -3,9 +3,11 @@ package bank.rest.app.bankrestapp.facade.impl;
 import bank.rest.app.bankrestapp.currency.CurrencyLoader;
 import bank.rest.app.bankrestapp.dto.CreateTransaction;
 import bank.rest.app.bankrestapp.dto.get.GetTransactionDTO;
+import bank.rest.app.bankrestapp.dto.get.TransactionHistoryItemDTO;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
+import bank.rest.app.bankrestapp.entity.enums.HistoryFilter;
 import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
 import bank.rest.app.bankrestapp.mapper.Mapper;
 import bank.rest.app.bankrestapp.service.AccountService;
@@ -245,5 +247,24 @@ class TransactionFacadeImplTest {
         verify(transactionMapper).toDto(txIncluded);
         verify(transactionMapper).toDto(txExcluded);
         verify(transactionMapper).toDto(txOther);
+    }
+
+    @Test
+    void getTransactionHistory_shouldLoadAccount_thenDelegateToService() {
+        // given
+        Integer accountId = 7;
+        Pageable pageable = Pageable.unpaged();
+        Page<TransactionHistoryItemDTO> historyPage = new PageImpl<>(List.of(mock(TransactionHistoryItemDTO.class)));
+
+        when(accountService.getAccountById(accountId)).thenReturn(Account.builder().accountId(accountId).build());
+        when(transactionService.getTransactionHistory(accountId, HistoryFilter.PAYMENTS, pageable)).thenReturn(historyPage);
+
+        // when
+        Page<TransactionHistoryItemDTO> result = sut.getTransactionHistory(accountId, HistoryFilter.PAYMENTS, pageable);
+
+        // then
+        assertEquals(historyPage, result);
+        verify(accountService).getAccountById(accountId);
+        verify(transactionService).getTransactionHistory(accountId, HistoryFilter.PAYMENTS, pageable);
     }
 }
