@@ -99,7 +99,7 @@ public final class TransactionMapperImpl implements Mapper<Transaction, GetTrans
                 entity.getAmount(),
                 entity.getDescription(),
                 entity.getTransactionDate().toString(),
-                entity.getTransactionType(),
+                entity.getTransactionType().name(),
                 entity.getCurrencyCode().name(),
                 entity.getStatus().name(),
                 entity.getAccount().getCard().getCardNumber(),

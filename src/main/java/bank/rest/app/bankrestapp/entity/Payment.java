@@ -66,7 +66,7 @@ public abstract class Payment {
     @JoinColumn(name = "account_id", referencedColumnName = "accountId")
     private Account account;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne
     @JoinColumn(name = "transaction_id", referencedColumnName = "transactionId")
     private Transaction transaction;
 }

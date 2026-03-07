@@ -1,5 +1,5 @@
 ALTER TABLE payment
-    ADD COLUMN IF NOT EXISTS transaction_id INTEGER;
+    ADD COLUMN transaction_id INTEGER;
 
 ALTER TABLE payment
     ADD CONSTRAINT fk_payment_transaction

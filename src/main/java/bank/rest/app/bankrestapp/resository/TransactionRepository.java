@@ -16,7 +16,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Intege
     @Query("""
             SELECT t FROM Transaction t
             WHERE t.account.accountNumber = :accountNumber
-               OR (t.toAccount.accountNumber = :accountNumber AND t.status NOT IN :statuses)
+               OR (t.toAccount IS NOT NULL AND t.toAccount.accountNumber = :accountNumber AND t.status NOT IN :statuses)
             ORDER BY t.transactionDate DESC, t.transactionId DESC
             """)
     Page<Transaction> findAllTransactions(@Param("accountNumber") String accountNumber, @Param("statuses") Collection<TransactionStatus> statuses, Pageable pageable);

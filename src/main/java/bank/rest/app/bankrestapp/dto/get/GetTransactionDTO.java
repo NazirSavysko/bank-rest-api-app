@@ -1,7 +1,5 @@
 package bank.rest.app.bankrestapp.dto.get;
 
-import bank.rest.app.bankrestapp.entity.enums.TransactionType;
-
 import java.math.BigDecimal;
 
 public record GetTransactionDTO(
@@ -10,7 +8,7 @@ public record GetTransactionDTO(
         BigDecimal amount,
         String description,
         String transactionDate,
-        TransactionType transactionType,
+        String transactionType,
         String currencyCode,
         String status,
         String senderCardNumber,

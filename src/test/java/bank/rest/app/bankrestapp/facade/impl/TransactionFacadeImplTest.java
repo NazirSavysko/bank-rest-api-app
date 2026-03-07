@@ -266,7 +266,6 @@ class TransactionFacadeImplTest {
                 .build();
         internetPaymentTransaction.setToAccount(null);
 
-        @SuppressWarnings("unchecked")
         GetTransactionDTO dto = mock(GetTransactionDTO.class);
 
         when(accountService.getAccountByNumber(accountNumber)).thenReturn(account);

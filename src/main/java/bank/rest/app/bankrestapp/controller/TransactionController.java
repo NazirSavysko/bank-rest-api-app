@@ -28,8 +28,8 @@ class TransactionController {
     }
 
     @GetMapping("transactions")
-    public Page<GetTransactionDTO> getAllTransactions(@PageableDefault(sort = "transactionDate", direction = Sort.Direction.DESC) org.springframework.data.domain.Pageable pageable,
-                                                      @RequestParam String accountNumber) {
+    public Page<GetTransactionDTO> getAllTransactions(@PageableDefault(sort = {"transactionDate", "transactionId"}, direction = Sort.Direction.DESC) org.springframework.data.domain.Pageable pageable,
+                                                       @RequestParam String accountNumber) {
         return this.transactionFacade.getAllTransactions(pageable,accountNumber);
     }
 

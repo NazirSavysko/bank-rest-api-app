@@ -10,7 +10,7 @@ package bank.rest.app.bankrestapp.entity.enums;
  * <ul>
  *   <li>TRANSFER - Moving funds between accounts (internal or external transfers)</li>
  *   <li>PAYMENT - Outgoing payments for services, bills, or purchases</li>
- *   <li>IBAN_PAYMENT - Outgoing payment by IBAN реквізитами</li>
+ *   <li>IBAN_PAYMENT - Outgoing payment by IBAN details</li>
  *   <li>INTERNET_PAYMENT - Outgoing internet provider payment</li>
  *   <li>UTILITY_PAYMENT - Outgoing utility bill payment</li>
  * </ul>
