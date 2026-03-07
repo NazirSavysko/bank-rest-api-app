@@ -4,6 +4,7 @@ import bank.rest.app.bankrestapp.currency.CurrencyLoader;
 import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
 import bank.rest.app.bankrestapp.entity.Account;
+import bank.rest.app.bankrestapp.entity.Customer;
 import bank.rest.app.bankrestapp.entity.IbanPayment;
 import bank.rest.app.bankrestapp.entity.InternetPayment;
 import bank.rest.app.bankrestapp.entity.Payment;
@@ -93,17 +94,31 @@ public class PaymentServiceImpl implements PaymentService {
 
         final Payment savedPayment = this.paymentRepository.save(payment);
 
-        final Transaction ibanTransaction = Transaction.builder()
-                .description("Переказ по IBAN на рахунок " + request.recipientIban())
+        final String senderDisplayName = getSenderDisplayName(senderAccount);
+
+        final Transaction ibanSenderTransaction = Transaction.builder()
+                .description("Переказ за реквізитами (IBAN): " + request.recipientName())
                 .amount(requestAmountUah)
                 .account(senderAccount)
-                .toAccount(recipientAccount)
+                .toAccount(null)
                 .transactionDate(now())
                 .currencyCode(Currency.UAH)
                 .status(TransactionStatus.COMPLETED)
                 .transactionType(TransactionType.IBAN_PAYMENT)
                 .build();
-        this.transactionRepository.save(ibanTransaction);
+        this.transactionRepository.save(ibanSenderTransaction);
+
+        final Transaction ibanRecipientTransaction = Transaction.builder()
+                .description("Зарахування по IBAN: " + senderDisplayName)
+                .amount(requestAmountUah)
+                .account(recipientAccount)
+                .toAccount(null)
+                .transactionDate(now())
+                .currencyCode(Currency.UAH)
+                .status(TransactionStatus.COMPLETED)
+                .transactionType(TransactionType.IBAN_PAYMENT)
+                .build();
+        this.transactionRepository.save(ibanRecipientTransaction);
 
         return savedPayment;
     }
@@ -137,7 +152,7 @@ public class PaymentServiceImpl implements PaymentService {
         final Payment savedPayment = this.paymentRepository.save(payment);
 
         final Transaction internetTransaction = Transaction.builder()
-                .description(purpose)
+                .description("Оплата інтернету: " + request.providerName())
                 .amount(request.amount())
                 .account(account)
                 .toAccount(null)
@@ -149,6 +164,17 @@ public class PaymentServiceImpl implements PaymentService {
         this.transactionRepository.save(internetTransaction);
 
         return savedPayment;
+    }
+
+    private String getSenderDisplayName(final Account senderAccount) {
+        final Customer customer = senderAccount.getCustomer();
+        if (customer == null) {
+            return senderAccount.getAccountNumber();
+        }
+        final String firstName = customer.getFirstName() != null ? customer.getFirstName().trim() : "";
+        final String lastName = customer.getLastName() != null ? customer.getLastName().trim() : "";
+        final String fullName = firstName.isEmpty() ? lastName : (lastName.isEmpty() ? firstName : firstName + " " + lastName);
+        return fullName.isEmpty() ? senderAccount.getAccountNumber() : fullName;
     }
 
     private Account getValidOwnedAccount(final Long accountId, final String authenticatedUserEmail) {

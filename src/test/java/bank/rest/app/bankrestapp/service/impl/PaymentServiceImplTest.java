@@ -86,7 +86,19 @@ class PaymentServiceImplTest {
         verify(accountRepository).save(senderAccount);
         verify(accountRepository).save(recipientAccount);
         verify(paymentRepository).save(any(IbanPayment.class));
-        verify(transactionRepository).save(any(Transaction.class));
+        verify(transactionRepository, times(2)).save(any(Transaction.class));
+        verify(transactionRepository).save(argThat(t ->
+                t.getTransactionType() == TransactionType.IBAN_PAYMENT
+                && t.getDescription() != null
+                && t.getDescription().startsWith("Переказ за реквізитами (IBAN):")
+                && t.getAccount().equals(senderAccount)
+                && t.getToAccount() == null));
+        verify(transactionRepository).save(argThat(t ->
+                t.getTransactionType() == TransactionType.IBAN_PAYMENT
+                && t.getDescription() != null
+                && t.getDescription().startsWith("Зарахування по IBAN:")
+                && t.getAccount().equals(recipientAccount)
+                && t.getToAccount() == null));
     }
 
     @Test
@@ -117,7 +129,9 @@ class PaymentServiceImplTest {
         verify(paymentRepository).save(any(InternetPayment.class));
         verify(transactionRepository).save(argThat(t ->
                 t.getTransactionType() == TransactionType.INTERNET_PAYMENT
-                && t.getToAccount() == null));
+                && t.getToAccount() == null
+                && t.getDescription() != null
+                && t.getDescription().equals("Оплата інтернету: Lanet")));
     }
 
     @Test

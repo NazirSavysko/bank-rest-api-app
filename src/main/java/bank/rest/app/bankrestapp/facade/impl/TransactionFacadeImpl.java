@@ -24,6 +24,9 @@ import static bank.rest.app.bankrestapp.utils.MapperUtils.mapDto;
 @Component
 @AllArgsConstructor
 public class TransactionFacadeImpl implements TransactionFacade {
+
+    private static final String INCOMING_DESCRIPTION_PREFIX = "Зарахування";
+
     private final TransactionService transactionService;
     private final DtoValidator dtoValidator;
     private final Mapper<Transaction, GetTransactionDTO> transactionMapper;
@@ -53,6 +56,9 @@ public class TransactionFacadeImpl implements TransactionFacade {
             transaction.setCurrencyCode(account.getCurrencyCode());
 
             if (transaction.getToAccount() != null && transaction.getToAccount().equals(account)) {
+                transaction.setIsRecipient(Boolean.TRUE);
+            } else if (transaction.getDescription() != null
+                    && transaction.getDescription().startsWith(INCOMING_DESCRIPTION_PREFIX)) {
                 transaction.setIsRecipient(Boolean.TRUE);
             }
             return transactionMapper.toDto(transaction);
