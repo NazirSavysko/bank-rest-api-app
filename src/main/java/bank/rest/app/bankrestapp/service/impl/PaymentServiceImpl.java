@@ -143,7 +143,7 @@ public class PaymentServiceImpl implements PaymentService {
                                                  final Boolean isRecipient) {
         final Transaction transaction = Transaction.builder()
                 .amount(amount)
-                .currencyCode(Currency.UAH)
+                .currencyCode(account.getCurrencyCode())
                 .description(description)
                 .transactionType(PAYMENT)
                 .status(bank.rest.app.bankrestapp.entity.enums.TransactionStatus.COMPLETED)

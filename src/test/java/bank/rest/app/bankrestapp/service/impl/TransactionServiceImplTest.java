@@ -118,7 +118,8 @@ class TransactionServiceImplTest {
         // Assert
         assertEquals(2, result.getTotalElements());
         verify(transactionRepository).findAllTransactions(eq(accNum), anyList(), argThat(pageable ->
-                pageable.getPageNumber() == pageNumber && pageable.getPageSize() == size
+                pageable.getPageNumber() == pageNumber
+                        && pageable.getPageSize() == size
         ));
     }
 
