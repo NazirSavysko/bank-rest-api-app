@@ -122,7 +122,7 @@ class PaymentServiceImplTest {
         assertEquals(BigDecimal.valueOf(100), tx.getAmount());
         assertEquals(Currency.UAH, tx.getCurrencyCode());
         assertEquals(TransactionType.IBAN_PAYMENT, tx.getTransactionType());
-        assertEquals("IBAN Transfer to John Doe", tx.getDescription());
+        assertEquals("Платіж по IBAN: John Doe", tx.getDescription());
         assertNotNull(tx.getTransactionDate());
     }
 
@@ -183,7 +183,7 @@ class PaymentServiceImplTest {
         assertEquals(Currency.UAH, tx.getCurrencyCode());
         assertEquals(TransactionType.PAYMENT, tx.getTransactionType());
         assertEquals(TransactionStatus.COMPLETED, tx.getStatus());
-        assertEquals("Internet Payment: Kyivstar, contract CONTRACT-42", tx.getDescription());
+        assertEquals("Оплата інтернету: Kyivstar", tx.getDescription());
         assertNotNull(tx.getTransactionDate());
     }
 

@@ -70,7 +70,7 @@ public final class TransactionMapperImpl implements Mapper<Transaction, GetTrans
                 mapDto(entity.getAccount().getCustomer(), customerMapper::toDto),
                 receiverDto,
                 entity.getAmount(),
-                entity.getDescription(),
+                computeDisplayDescription(entity),
                 entity.getTransactionDate().toString(),
                 entity.getTransactionType().name(),
                 entity.getCurrencyCode().name(),
@@ -80,6 +80,33 @@ public final class TransactionMapperImpl implements Mapper<Transaction, GetTrans
                 receiverCardNumber,
                 computePaymentSubtype(entity)
         );
+    }
+
+    /**
+     * Computes the user-facing description for a transaction.
+     *
+     * <p>For an IBAN payment seen by the recipient ({@code isRecipient=true}), the stored description
+     * contains the sender's outgoing wording ("Платіж по IBAN: …"). This method replaces it with
+     * the incoming wording ("Зарахування по IBAN: {senderName}") so that each party sees a
+     * direction-appropriate label.</p>
+     *
+     * @param entity the transaction entity; must not be null
+     * @return display description appropriate for the viewing party
+     */
+    @NotNull
+    private static String computeDisplayDescription(final @NotNull Transaction entity) {
+        if (entity.getTransactionType() == TransactionType.IBAN_PAYMENT
+                && Boolean.TRUE.equals(entity.getIsRecipient())) {
+            final Account senderAccount = entity.getAccount();
+            if (senderAccount != null && senderAccount.getCustomer() != null) {
+                final Customer sender = senderAccount.getCustomer();
+                final String senderName = java.util.stream.Stream.of(sender.getFirstName(), sender.getLastName())
+                        .filter(s -> s != null && !s.isBlank())
+                        .collect(java.util.stream.Collectors.joining(" "));
+                return "Зарахування по IBAN: " + senderName;
+            }
+        }
+        return entity.getDescription() != null ? entity.getDescription() : "";
     }
 
     @Nullable
