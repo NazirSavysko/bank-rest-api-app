@@ -113,15 +113,13 @@ class PaymentServiceImplTest {
     @Test
     void processIbanPayment_UsdAccount_ShouldConvertAndDeductConvertedAmount() {
         final Account senderAccount = createAccount(12, Currency.USD, BigDecimal.valueOf(500), "user@example.com", "UA_SENDER");
-        final Account recipientAccount = createAccount(22, Currency.EUR, BigDecimal.valueOf(100), "recipient@example.com", "UA123456789012345678901234567");
+        final Account recipientAccount = createAccount(22, Currency.UAH, BigDecimal.valueOf(100), "recipient@example.com", "UA123456789012345678901234567");
         when(accountRepository.findById(12)).thenReturn(Optional.of(senderAccount));
         when(accountRepository.findByAccountNumber("UA123456789012345678901234567")).thenReturn(Optional.of(recipientAccount));
         when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(currencyLoader.convert(BigDecimal.valueOf(400), "UAH", "USD"))
-                .thenReturn(BigDecimal.TEN);
-        when(currencyLoader.convert(BigDecimal.valueOf(400), "UAH", "EUR"))
-                .thenReturn(BigDecimal.valueOf(8));
+        when(currencyLoader.getRate("USD"))
+                .thenReturn(Optional.of(new CurrencyLoader.CurrencyRate("USD", 40.0)));
 
         final IbanPaymentRequestDTO request = new IbanPaymentRequestDTO(
                 12L,
@@ -135,15 +133,44 @@ class PaymentServiceImplTest {
         final Payment result = paymentService.processIbanPayment(request, "user@example.com");
 
         assertInstanceOf(IbanPayment.class, result);
-        assertEquals(BigDecimal.valueOf(490), senderAccount.getBalance());
-        assertEquals(BigDecimal.valueOf(108), recipientAccount.getBalance());
-        assertEquals(BigDecimal.TEN, result.getAmount());
-        assertEquals("USD", result.getCurrencyCode());
-        verify(currencyLoader).convert(BigDecimal.valueOf(400), "UAH", "USD");
-        verify(currencyLoader).convert(BigDecimal.valueOf(400), "UAH", "EUR");
+        assertEquals(new BigDecimal("490.00"), senderAccount.getBalance());
+        assertEquals(BigDecimal.valueOf(500), recipientAccount.getBalance());
+        assertEquals(BigDecimal.valueOf(400), result.getAmount());
+        assertEquals("UAH", result.getCurrencyCode());
+        verify(currencyLoader).getRate("USD");
         verify(accountRepository).save(senderAccount);
         verify(accountRepository).save(recipientAccount);
         verify(paymentRepository).save(any(IbanPayment.class));
+    }
+
+    @Test
+    void processIbanPayment_EurAccount_ShouldDivideUahByRateAndRoundHalfUp() {
+        final Account senderAccount = createAccount(19, Currency.EUR, BigDecimal.valueOf(100), "user@example.com", "UA_SENDER");
+        final Account recipientAccount = createAccount(29, Currency.UAH, BigDecimal.valueOf(50), "recipient@example.com", "UA123456789012345678901234567");
+        when(accountRepository.findById(19)).thenReturn(Optional.of(senderAccount));
+        when(accountRepository.findByAccountNumber("UA123456789012345678901234567")).thenReturn(Optional.of(recipientAccount));
+        when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(currencyLoader.getRate("EUR"))
+                .thenReturn(Optional.of(new CurrencyLoader.CurrencyRate("EUR", 42.0)));
+
+        final IbanPaymentRequestDTO request = new IbanPaymentRequestDTO(
+                19L,
+                BigDecimal.valueOf(1000),
+                "Name",
+                "UA123456789012345678901234567",
+                "123",
+                "Purpose"
+        );
+
+        final Payment result = paymentService.processIbanPayment(request, "user@example.com");
+
+        assertInstanceOf(IbanPayment.class, result);
+        assertEquals(new BigDecimal("76.19"), senderAccount.getBalance());
+        assertEquals(BigDecimal.valueOf(1050), recipientAccount.getBalance());
+        assertEquals(BigDecimal.valueOf(1000), result.getAmount());
+        assertEquals("UAH", result.getCurrencyCode());
+        verify(currencyLoader).getRate("EUR");
     }
 
     @Test

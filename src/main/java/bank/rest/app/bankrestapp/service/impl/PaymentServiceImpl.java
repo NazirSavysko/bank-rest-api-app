@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.EnumSet;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -50,8 +51,8 @@ public class PaymentServiceImpl implements PaymentService {
         validateIbanSupportedCurrency(senderAccount.getCurrencyCode());
         validateIbanSupportedCurrency(recipientAccount.getCurrencyCode());
 
-        final BigDecimal deductionAmount = calculateIbanConvertedAmount(request.amount(), senderAccount.getCurrencyCode());
-        final BigDecimal additionAmount = calculateIbanConvertedAmount(request.amount(), recipientAccount.getCurrencyCode());
+        final BigDecimal deductionAmount = calculateIbanDeductionAmount(request.amount(), senderAccount.getCurrencyCode());
+        final BigDecimal additionAmount = request.amount();
         validateSufficientFunds(senderAccount, deductionAmount);
 
         senderAccount.setBalance(senderAccount.getBalance().subtract(deductionAmount));
@@ -61,8 +62,8 @@ public class PaymentServiceImpl implements PaymentService {
 
         final IbanPayment payment = new IbanPayment();
         payment.setAccount(senderAccount);
-        payment.setAmount(deductionAmount);
-        payment.setCurrencyCode(senderAccount.getCurrencyCode().name());
+        payment.setAmount(request.amount());
+        payment.setCurrencyCode(Currency.UAH.name());
         payment.setPaymentDate(now());
         payment.setStatus(COMPLETED);
         payment.setBeneficiaryName(request.recipientName());
@@ -134,12 +135,15 @@ public class PaymentServiceImpl implements PaymentService {
         }
     }
 
-    private BigDecimal calculateIbanConvertedAmount(final BigDecimal targetAmountUah, final Currency sourceCurrency) {
-        if (!Currency.UAH.equals(sourceCurrency)) {
-            return this.currencyLoader.convert(targetAmountUah, Currency.UAH.name(), sourceCurrency.name());
+    private BigDecimal calculateIbanDeductionAmount(final BigDecimal targetAmountUah, final Currency senderCurrency) {
+        if (Currency.UAH.equals(senderCurrency)) {
+            return targetAmountUah;
         }
 
-        return targetAmountUah;
+        final CurrencyLoader.CurrencyRate senderRate = this.currencyLoader.getRate(senderCurrency.name())
+                .orElseThrow(() -> new IllegalArgumentException("Exchange rate not found for currency: " + senderCurrency.name()));
+
+        return targetAmountUah.divide(BigDecimal.valueOf(senderRate.getRate()), 2, RoundingMode.HALF_UP);
     }
 
     private void validateSufficientFunds(final Account account, final BigDecimal amount) {
