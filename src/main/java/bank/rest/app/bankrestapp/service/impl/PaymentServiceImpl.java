@@ -1,5 +1,6 @@
 package bank.rest.app.bankrestapp.service.impl;
 
+import bank.rest.app.bankrestapp.currency.CurrencyLoader;
 import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
 import bank.rest.app.bankrestapp.entity.Account;
@@ -9,6 +10,7 @@ import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.exception.InvalidAccountCurrencyException;
 import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
+import bank.rest.app.bankrestapp.exception.UnsupportedCurrencyException;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.PaymentRepository;
 import bank.rest.app.bankrestapp.service.PaymentService;
@@ -16,6 +18,8 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.util.EnumSet;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
@@ -26,8 +30,11 @@ import static java.time.LocalDateTime.now;
 @AllArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
 
+    private static final EnumSet<Currency> SUPPORTED_IBAN_CURRENCIES = EnumSet.of(Currency.UAH, Currency.USD, Currency.EUR);
+
     private final AccountRepository accountRepository;
     private final PaymentRepository paymentRepository;
+    private final CurrencyLoader currencyLoader;
 
     @Override
     @Transactional
@@ -36,14 +43,17 @@ public class PaymentServiceImpl implements PaymentService {
             throw new IllegalArgumentException("Recipient IBAN must start with UA");
         }
 
-        final Account account = getValidOwnedUahAccount(request.accountId(), authenticatedUserEmail);
-        validateSufficientFunds(account, request.amount());
-        account.setBalance(account.getBalance().subtract(request.amount()));
+        final Account account = getValidOwnedAccount(request.accountId(), authenticatedUserEmail);
+        validateIbanSupportedCurrency(account.getCurrencyCode());
+
+        final BigDecimal deductionAmount = calculateIbanDeductionAmount(request.amount(), account.getCurrencyCode());
+        validateSufficientFunds(account, deductionAmount);
+        account.setBalance(account.getBalance().subtract(deductionAmount));
         this.accountRepository.save(account);
 
         final IbanPayment payment = new IbanPayment();
         payment.setAccount(account);
-        payment.setAmount(request.amount());
+        payment.setAmount(deductionAmount);
         payment.setCurrencyCode(account.getCurrencyCode().name());
         payment.setPaymentDate(now());
         payment.setStatus(COMPLETED);
@@ -60,7 +70,8 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public Payment processInternetPayment(final InternetPaymentRequestDTO request, final String authenticatedUserEmail) {
-        final Account account = getValidOwnedUahAccount(request.accountId(), authenticatedUserEmail);
+        final Account account = getValidOwnedAccount(request.accountId(), authenticatedUserEmail);
+        validateInternetCurrency(account.getCurrencyCode());
         validateSufficientFunds(account, request.amount());
         account.setBalance(account.getBalance().subtract(request.amount()));
         this.accountRepository.save(account);
@@ -83,7 +94,7 @@ public class PaymentServiceImpl implements PaymentService {
         return this.paymentRepository.save(payment);
     }
 
-    private Account getValidOwnedUahAccount(final Long accountId, final String authenticatedUserEmail) {
+    private Account getValidOwnedAccount(final Long accountId, final String authenticatedUserEmail) {
         final Integer id;
         try {
             id = Math.toIntExact(accountId);
@@ -100,14 +111,30 @@ public class PaymentServiceImpl implements PaymentService {
             throw new IllegalArgumentException("Account does not belong to the authenticated user");
         }
 
-        if (!Currency.UAH.equals(account.getCurrencyCode())) {
-            throw new InvalidAccountCurrencyException("Payments are allowed only from UAH accounts");
-        }
-
         return account;
     }
 
-    private void validateSufficientFunds(final Account account, final java.math.BigDecimal amount) {
+    private void validateInternetCurrency(final Currency currency) {
+        if (!Currency.UAH.equals(currency)) {
+            throw new InvalidAccountCurrencyException("Payments are allowed only from UAH accounts");
+        }
+    }
+
+    private void validateIbanSupportedCurrency(final Currency currency) {
+        if (currency == null || !SUPPORTED_IBAN_CURRENCIES.contains(currency)) {
+            throw new UnsupportedCurrencyException("Unsupported account currency for IBAN payment");
+        }
+    }
+
+    private BigDecimal calculateIbanDeductionAmount(final BigDecimal targetAmountUah, final Currency sourceCurrency) {
+        if (!Currency.UAH.equals(sourceCurrency)) {
+            return this.currencyLoader.convert(targetAmountUah, Currency.UAH.name(), sourceCurrency.name());
+        }
+
+        return targetAmountUah;
+    }
+
+    private void validateSufficientFunds(final Account account, final BigDecimal amount) {
         if (account.getBalance().compareTo(amount) < 0) {
             throw new InsufficientFundsException("Insufficient funds in account");
         }

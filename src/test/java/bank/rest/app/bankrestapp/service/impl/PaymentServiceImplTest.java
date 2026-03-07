@@ -1,5 +1,6 @@
 package bank.rest.app.bankrestapp.service.impl;
 
+import bank.rest.app.bankrestapp.currency.CurrencyLoader;
 import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
 import bank.rest.app.bankrestapp.entity.Account;
@@ -11,6 +12,7 @@ import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.exception.InvalidAccountCurrencyException;
 import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
+import bank.rest.app.bankrestapp.exception.UnsupportedCurrencyException;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.PaymentRepository;
 import org.junit.jupiter.api.Test;
@@ -35,6 +37,9 @@ class PaymentServiceImplTest {
 
     @Mock
     private PaymentRepository paymentRepository;
+
+    @Mock
+    private CurrencyLoader currencyLoader;
 
     @InjectMocks
     private PaymentServiceImpl paymentService;
@@ -101,24 +106,32 @@ class PaymentServiceImplTest {
     }
 
     @Test
-    void processIbanPayment_NonUahAccount_ShouldThrow() {
+    void processIbanPayment_UsdAccount_ShouldConvertAndDeductConvertedAmount() {
         final Account account = createAccount(12, Currency.USD, BigDecimal.valueOf(500), "user@example.com");
         when(accountRepository.findById(12)).thenReturn(Optional.of(account));
+        when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(currencyLoader.convert(BigDecimal.valueOf(400), "UAH", "USD"))
+                .thenReturn(BigDecimal.TEN);
 
         final IbanPaymentRequestDTO request = new IbanPaymentRequestDTO(
                 12L,
-                BigDecimal.valueOf(100),
+                BigDecimal.valueOf(400),
                 "Name",
                 "UA123456789012345678901234567",
                 "123",
                 "Purpose"
         );
 
-        assertThrows(InvalidAccountCurrencyException.class,
-                () -> paymentService.processIbanPayment(request, "user@example.com"));
+        final Payment result = paymentService.processIbanPayment(request, "user@example.com");
 
-        verify(accountRepository, never()).save(any(Account.class));
-        verify(paymentRepository, never()).save(any(Payment.class));
+        assertInstanceOf(IbanPayment.class, result);
+        assertEquals(BigDecimal.valueOf(490), account.getBalance());
+        assertEquals(BigDecimal.TEN, result.getAmount());
+        assertEquals("USD", result.getCurrencyCode());
+        verify(currencyLoader).convert(BigDecimal.valueOf(400), "UAH", "USD");
+        verify(accountRepository).save(account);
+        verify(paymentRepository).save(any(IbanPayment.class));
     }
 
     @Test
@@ -176,6 +189,28 @@ class PaymentServiceImplTest {
                 () -> paymentService.processIbanPayment(request, "user@example.com"));
 
         verifyNoInteractions(accountRepository, paymentRepository);
+    }
+
+    @Test
+    void processIbanPayment_UnsupportedCurrency_ShouldThrow() {
+        final Account account = createAccount(16, null, BigDecimal.valueOf(200), "user@example.com");
+        when(accountRepository.findById(16)).thenReturn(Optional.of(account));
+
+        final IbanPaymentRequestDTO request = new IbanPaymentRequestDTO(
+                16L,
+                BigDecimal.valueOf(100),
+                "Name",
+                "UA123456789012345678901234567",
+                "123",
+                "Purpose"
+        );
+
+        assertThrows(UnsupportedCurrencyException.class,
+                () -> paymentService.processIbanPayment(request, "user@example.com"));
+
+        verify(accountRepository, never()).save(any(Account.class));
+        verify(paymentRepository, never()).save(any(Payment.class));
+        verifyNoInteractions(currencyLoader);
     }
 
     private Account createAccount(final Integer id,
