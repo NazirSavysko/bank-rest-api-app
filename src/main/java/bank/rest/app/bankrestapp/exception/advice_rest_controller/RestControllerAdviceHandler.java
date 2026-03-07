@@ -3,6 +3,7 @@ package bank.rest.app.bankrestapp.exception.advice_rest_controller;
 import bank.rest.app.bankrestapp.exception.AccountNotActiveException;
 import bank.rest.app.bankrestapp.exception.InvalidAccountCurrencyException;
 import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
+import bank.rest.app.bankrestapp.exception.RecipientNotFoundException;
 import bank.rest.app.bankrestapp.exception.UnsupportedCurrencyException;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.ResponseEntity;
@@ -123,6 +124,18 @@ public final class RestControllerAdviceHandler {
                 .body(of(
                         "timestamp", now(),
                         "error", "Unsupported Currency",
+                        "message", e.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(RecipientNotFoundException.class)
+    public @NotNull ResponseEntity<?> handleRecipientNotFoundException(@NotNull RecipientNotFoundException e) {
+
+        return ResponseEntity.status(NOT_FOUND)
+                .contentType(APPLICATION_JSON)
+                .body(of(
+                        "timestamp", now(),
+                        "error", "Recipient Not Found",
                         "message", e.getMessage()
                 ));
     }

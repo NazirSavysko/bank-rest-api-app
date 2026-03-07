@@ -12,6 +12,7 @@ import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.exception.InvalidAccountCurrencyException;
 import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
+import bank.rest.app.bankrestapp.exception.RecipientNotFoundException;
 import bank.rest.app.bankrestapp.exception.UnsupportedCurrencyException;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.PaymentRepository;
@@ -22,7 +23,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static bank.rest.app.bankrestapp.entity.enums.PaymentStatus.COMPLETED;
@@ -242,7 +242,7 @@ class PaymentServiceImplTest {
                 "Purpose"
         );
 
-        final NoSuchElementException exception = assertThrows(NoSuchElementException.class,
+        final RecipientNotFoundException exception = assertThrows(RecipientNotFoundException.class,
                 () -> paymentService.processIbanPayment(request, "user@example.com"));
         assertEquals("Recipient IBAN not found in the system", exception.getMessage());
 

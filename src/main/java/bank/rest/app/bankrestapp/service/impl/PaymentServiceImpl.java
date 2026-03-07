@@ -10,6 +10,7 @@ import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.exception.InvalidAccountCurrencyException;
 import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
+import bank.rest.app.bankrestapp.exception.RecipientNotFoundException;
 import bank.rest.app.bankrestapp.exception.UnsupportedCurrencyException;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.PaymentRepository;
@@ -45,7 +46,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         final Account senderAccount = getValidOwnedAccount(request.accountId(), authenticatedUserEmail);
         final Account recipientAccount = this.accountRepository.findByAccountNumber(request.recipientIban())
-                .orElseThrow(() -> new NoSuchElementException("Recipient IBAN not found in the system"));
+                .orElseThrow(() -> new RecipientNotFoundException("Recipient IBAN not found in the system"));
         validateIbanSupportedCurrency(senderAccount.getCurrencyCode());
         validateIbanSupportedCurrency(recipientAccount.getCurrencyCode());
 
