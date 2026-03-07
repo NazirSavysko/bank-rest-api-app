@@ -13,7 +13,12 @@ import java.util.Collection;
 import java.util.List;
 
 public interface TransactionRepository extends JpaRepository<Transaction, Integer> {
-    @Query("SELECT t FROM Transaction t WHERE t.account.accountNumber = :accountNumber OR (t.toAccount.accountNumber = :accountNumber AND t.status NOT IN :statuses)")
+    @Query("""
+        SELECT t FROM Transaction t
+        LEFT JOIN t.toAccount toAcc
+        WHERE t.account.accountNumber = :accountNumber
+           OR (toAcc.accountNumber = :accountNumber AND t.status NOT IN :statuses)
+        """)
     Page<Transaction> findAllTransactions(@Param("accountNumber") String accountNumber, @Param("statuses") Collection<TransactionStatus> statuses, Pageable pageable);
 
     @Query("""

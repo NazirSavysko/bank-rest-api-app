@@ -14,8 +14,11 @@ import bank.rest.app.bankrestapp.exception.InvalidAccountCurrencyException;
 import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
 import bank.rest.app.bankrestapp.exception.RecipientNotFoundException;
 import bank.rest.app.bankrestapp.exception.UnsupportedCurrencyException;
+import bank.rest.app.bankrestapp.entity.Transaction;
+import bank.rest.app.bankrestapp.entity.enums.TransactionType;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.PaymentRepository;
+import bank.rest.app.bankrestapp.resository.TransactionRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -38,6 +41,9 @@ class PaymentServiceImplTest {
 
     @Mock
     private PaymentRepository paymentRepository;
+
+    @Mock
+    private TransactionRepository transactionRepository;
 
     @Mock
     private CurrencyLoader currencyLoader;
@@ -80,6 +86,7 @@ class PaymentServiceImplTest {
         verify(accountRepository).save(senderAccount);
         verify(accountRepository).save(recipientAccount);
         verify(paymentRepository).save(any(IbanPayment.class));
+        verify(transactionRepository).save(any(Transaction.class));
     }
 
     @Test
@@ -108,6 +115,9 @@ class PaymentServiceImplTest {
 
         verify(accountRepository).save(account);
         verify(paymentRepository).save(any(InternetPayment.class));
+        verify(transactionRepository).save(argThat(t ->
+                t.getTransactionType() == TransactionType.INTERNET_PAYMENT
+                && t.getToAccount() == null));
     }
 
     @Test
@@ -190,6 +200,7 @@ class PaymentServiceImplTest {
 
         verify(accountRepository, never()).save(any(Account.class));
         verify(paymentRepository, never()).save(any(Payment.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
     }
 
     @Test
@@ -211,6 +222,7 @@ class PaymentServiceImplTest {
 
         verify(accountRepository, never()).save(any(Account.class));
         verify(paymentRepository, never()).save(any(Payment.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
     }
 
     @Test
@@ -227,7 +239,7 @@ class PaymentServiceImplTest {
         assertThrows(IllegalArgumentException.class,
                 () -> paymentService.processIbanPayment(request, "user@example.com"));
 
-        verifyNoInteractions(accountRepository, paymentRepository);
+        verifyNoInteractions(accountRepository, paymentRepository, transactionRepository);
     }
 
     @Test
@@ -251,6 +263,7 @@ class PaymentServiceImplTest {
 
         verify(accountRepository, never()).save(any(Account.class));
         verify(paymentRepository, never()).save(any(Payment.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
         verifyNoInteractions(currencyLoader);
     }
 
@@ -275,6 +288,7 @@ class PaymentServiceImplTest {
 
         verify(accountRepository, never()).save(any(Account.class));
         verify(paymentRepository, never()).save(any(Payment.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
         verifyNoInteractions(currencyLoader);
     }
 

@@ -26,5 +26,11 @@ public enum TransactionType {
     TRANSFER,
 
     /** Payment transaction - outgoing payment for services or purchases */
-    PAYMENT
+    PAYMENT,
+
+    /** IBAN payment - outgoing transfer to an account identified by IBAN */
+    IBAN_PAYMENT,
+
+    /** Internet payment - outgoing payment to an internet service provider */
+    INTERNET_PAYMENT
 }
