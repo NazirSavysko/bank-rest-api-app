@@ -1,6 +1,7 @@
 package bank.rest.app.bankrestapp.exception.advice_rest_controller;
 
 import bank.rest.app.bankrestapp.exception.AccountNotActiveException;
+import bank.rest.app.bankrestapp.exception.InvalidAccountCurrencyException;
 import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.ResponseEntity;
@@ -97,6 +98,18 @@ public final class RestControllerAdviceHandler {
                 .body(of(
                         "timestamp", now(),
                         "error", "Insufficient Funds",
+                        "message", e.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(InvalidAccountCurrencyException.class)
+    public @NotNull ResponseEntity<?> handleInvalidAccountCurrencyException(@NotNull InvalidAccountCurrencyException e) {
+
+        return ResponseEntity.status(UNPROCESSABLE_ENTITY)
+                .contentType(APPLICATION_JSON)
+                .body(of(
+                        "timestamp", now(),
+                        "error", "Invalid Account Currency",
                         "message", e.getMessage()
                 ));
     }
