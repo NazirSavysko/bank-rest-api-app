@@ -1,11 +1,15 @@
 package bank.rest.app.bankrestapp.service.impl;
 
 import bank.rest.app.bankrestapp.currency.CurrencyLoader;
+import bank.rest.app.bankrestapp.dto.get.TransactionHistoryDirection;
+import bank.rest.app.bankrestapp.dto.get.TransactionHistoryItemDTO;
+import bank.rest.app.bankrestapp.dto.get.TransactionHistoryType;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.Customer;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
+import bank.rest.app.bankrestapp.resository.projection.TransactionHistoryProjection;
 import bank.rest.app.bankrestapp.exception.AccountNotActiveException;
 import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
@@ -76,6 +80,16 @@ public class TransactionServiceImpl implements TransactionService {
     public Page<Transaction> getAllTransactions(final String accountAccountNumber, final Pageable pageable) {
        return transactionRepository.findAllTransactions(accountAccountNumber, List.of(CANCELLED, FAILED), pageable);
     }
+
+    @Override
+    public Page<TransactionHistoryItemDTO> getTransactionHistory(final Integer accountId, final Pageable pageable) {
+        this.accountRepository.findById(accountId)
+                .orElseThrow(() -> new NoSuchElementException("Account not found"));
+
+        return this.transactionRepository.findAccountHistory(accountId, pageable)
+                .map(historyItem -> toTransactionHistoryItem(historyItem, accountId));
+    }
+
     private Account getAccountByCardNumber(final String card) {
         return accountRepository.findByCard_CardNumber(card)
                 .orElseThrow(() -> new NoSuchElementException("Account not found for the provided card"));
@@ -100,5 +114,29 @@ public class TransactionServiceImpl implements TransactionService {
         recipientAccount.getReceivedTransactions().add(transaction);
 
         return this.transactionRepository.save(transaction);
+    }
+
+    private TransactionHistoryItemDTO toTransactionHistoryItem(final TransactionHistoryProjection projection, final Integer accountId) {
+        return new TransactionHistoryItemDTO(
+                projection.getOperationId(),
+                TransactionHistoryType.valueOf(projection.getItemType()),
+                resolveDirection(projection, accountId),
+                projection.getAmount(),
+                projection.getCurrencyCode(),
+                projection.getStatus(),
+                projection.getDescription(),
+                projection.getCreatedAt(),
+                projection.getRecipientIban(),
+                projection.getRecipientName(),
+                projection.getProviderName(),
+                projection.getContractNumber()
+        );
+    }
+
+    private TransactionHistoryDirection resolveDirection(final TransactionHistoryProjection projection, final Integer accountId) {
+        if (accountId.equals(projection.getSenderAccountId())) {
+            return TransactionHistoryDirection.EXPENSE;
+        }
+        return TransactionHistoryDirection.INCOME;
     }
 }

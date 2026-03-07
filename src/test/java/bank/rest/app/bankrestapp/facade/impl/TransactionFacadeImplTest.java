@@ -3,6 +3,9 @@ package bank.rest.app.bankrestapp.facade.impl;
 import bank.rest.app.bankrestapp.currency.CurrencyLoader;
 import bank.rest.app.bankrestapp.dto.CreateTransaction;
 import bank.rest.app.bankrestapp.dto.get.GetTransactionDTO;
+import bank.rest.app.bankrestapp.dto.get.TransactionHistoryDirection;
+import bank.rest.app.bankrestapp.dto.get.TransactionHistoryItemDTO;
+import bank.rest.app.bankrestapp.dto.get.TransactionHistoryType;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
@@ -245,5 +248,34 @@ class TransactionFacadeImplTest {
         verify(transactionMapper).toDto(txIncluded);
         verify(transactionMapper).toDto(txExcluded);
         verify(transactionMapper).toDto(txOther);
+    }
+
+    @Test
+    void getTransactionHistory_shouldDelegateToService() {
+        final Integer accountId = 55;
+        final Pageable pageable = Pageable.unpaged();
+        final TransactionHistoryItemDTO item = new TransactionHistoryItemDTO(
+                77L,
+                TransactionHistoryType.INTERNET_PAYMENT,
+                TransactionHistoryDirection.EXPENSE,
+                BigDecimal.TEN,
+                "UAH",
+                "COMPLETED",
+                "Internet payment",
+                null,
+                null,
+                null,
+                "Provider",
+                "CN-1"
+        );
+        final Page<TransactionHistoryItemDTO> expectedPage = new PageImpl<>(List.of(item), pageable, 1);
+
+        when(transactionService.getTransactionHistory(accountId, pageable)).thenReturn(expectedPage);
+
+        final Page<TransactionHistoryItemDTO> result = sut.getTransactionHistory(pageable, accountId);
+
+        assertEquals(expectedPage, result);
+        verify(transactionService).getTransactionHistory(accountId, pageable);
+        verifyNoInteractions(accountService, currencyLoader, transactionMapper);
     }
 }

@@ -3,6 +3,7 @@ package bank.rest.app.bankrestapp.facade.impl;
 import bank.rest.app.bankrestapp.currency.CurrencyLoader;
 import bank.rest.app.bankrestapp.dto.CreateTransaction;
 import bank.rest.app.bankrestapp.dto.get.GetTransactionDTO;
+import bank.rest.app.bankrestapp.dto.get.TransactionHistoryItemDTO;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.facade.TransactionFacade;
@@ -11,14 +12,11 @@ import bank.rest.app.bankrestapp.service.AccountService;
 import bank.rest.app.bankrestapp.service.TransactionService;
 import bank.rest.app.bankrestapp.validation.DtoValidator;
 import lombok.AllArgsConstructor;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 
-import java.util.List;
 import static bank.rest.app.bankrestapp.utils.MapperUtils.mapDto;
 
 @Component
@@ -57,5 +55,10 @@ public class TransactionFacadeImpl implements TransactionFacade {
             }
             return transactionMapper.toDto(transaction);
         });
+    }
+
+    @Override
+    public Page<TransactionHistoryItemDTO> getTransactionHistory(final Pageable pageable, final Integer accountId) {
+        return this.transactionService.getTransactionHistory(accountId, pageable);
     }
 }

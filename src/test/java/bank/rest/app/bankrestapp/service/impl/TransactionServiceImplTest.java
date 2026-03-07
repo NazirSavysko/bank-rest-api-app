@@ -1,12 +1,15 @@
 package bank.rest.app.bankrestapp.service.impl;
 
 import bank.rest.app.bankrestapp.currency.CurrencyLoader;
+import bank.rest.app.bankrestapp.dto.get.TransactionHistoryDirection;
+import bank.rest.app.bankrestapp.dto.get.TransactionHistoryType;
 import bank.rest.app.bankrestapp.entity.*;
 import bank.rest.app.bankrestapp.entity.enums.AccountStatus;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.TransactionRepository;
+import bank.rest.app.bankrestapp.resository.projection.TransactionHistoryProjection;
 import bank.rest.app.bankrestapp.service.EmailService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -116,6 +119,51 @@ class TransactionServiceImplTest {
 
         // Assert
         assertEquals(2, result.getTotalElements());
+    }
+
+    @Test
+    void getTransactionHistory_shouldMapProjectionAndDirection() {
+        // Arrange
+        Integer accountId = 10;
+        Pageable pageable = Pageable.unpaged();
+
+        final Account account = new Account();
+        account.setAccountId(accountId);
+
+        TransactionHistoryProjection transferIncome = mock(TransactionHistoryProjection.class);
+        when(transferIncome.getOperationId()).thenReturn(101L);
+        when(transferIncome.getItemType()).thenReturn(TransactionHistoryType.TRANSFER.name());
+        when(transferIncome.getSenderAccountId()).thenReturn(33);
+        when(transferIncome.getAmount()).thenReturn(BigDecimal.valueOf(50));
+        when(transferIncome.getCurrencyCode()).thenReturn("USD");
+        when(transferIncome.getStatus()).thenReturn("COMPLETED");
+        when(transferIncome.getDescription()).thenReturn("Incoming transfer");
+
+        TransactionHistoryProjection ibanExpense = mock(TransactionHistoryProjection.class);
+        when(ibanExpense.getOperationId()).thenReturn(102L);
+        when(ibanExpense.getItemType()).thenReturn(TransactionHistoryType.IBAN_PAYMENT.name());
+        when(ibanExpense.getSenderAccountId()).thenReturn(accountId);
+        when(ibanExpense.getAmount()).thenReturn(BigDecimal.valueOf(15));
+        when(ibanExpense.getCurrencyCode()).thenReturn("UAH");
+        when(ibanExpense.getStatus()).thenReturn("COMPLETED");
+        when(ibanExpense.getRecipientIban()).thenReturn("UA123456789012345678901234567");
+        when(ibanExpense.getRecipientName()).thenReturn("Recipient Name");
+
+        when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
+        when(transactionRepository.findAccountHistory(accountId, pageable))
+                .thenReturn(new PageImpl<>(List.of(transferIncome, ibanExpense), pageable, 2));
+
+        // Act
+        final var result = transactionService.getTransactionHistory(accountId, pageable);
+
+        // Assert
+        assertEquals(2, result.getTotalElements());
+        assertEquals(TransactionHistoryDirection.INCOME, result.getContent().get(0).direction());
+        assertEquals(TransactionHistoryType.TRANSFER, result.getContent().get(0).type());
+        assertEquals(TransactionHistoryDirection.EXPENSE, result.getContent().get(1).direction());
+        assertEquals("UA123456789012345678901234567", result.getContent().get(1).recipientIban());
+        verify(accountRepository).findById(accountId);
+        verify(transactionRepository).findAccountHistory(accountId, pageable);
     }
 
     private Account createAccount(String cardNum, Currency currency, BigDecimal balance) {
