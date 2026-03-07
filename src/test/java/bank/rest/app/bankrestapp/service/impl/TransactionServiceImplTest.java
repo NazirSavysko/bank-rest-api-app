@@ -102,20 +102,24 @@ class TransactionServiceImplTest {
     }
 
     @Test
-    void getAllTransactions() {
+    void getTransactionHistory() {
         // Arrange
         String accNum = "UA123456";
-        Pageable pageable = mock(Pageable.class);
-        Page<Transaction> page = new PageImpl<>(List.of(new Transaction(), new Transaction()));
+        int pageNumber = 1;
+        int size = 10;
+        Page<Transaction> transactionsPage = new PageImpl<>(List.of(new Transaction(), new Transaction()));
 
-        when(transactionRepository.findAllTransactions(eq(accNum), anyList(), eq(pageable)))
-                .thenReturn(page);
+        when(transactionRepository.findAllTransactions(eq(accNum), anyList(), any(Pageable.class)))
+                .thenReturn(transactionsPage);
 
         // Act
-        Page<Transaction> result = transactionService.getAllTransactions(accNum, pageable);
+        Page<Transaction> result = transactionService.getTransactionHistory(accNum, pageNumber, size);
 
         // Assert
         assertEquals(2, result.getTotalElements());
+        verify(transactionRepository).findAllTransactions(eq(accNum), anyList(), argThat(pageable ->
+                pageable.getPageNumber() == pageNumber && pageable.getPageSize() == size
+        ));
     }
 
     private Account createAccount(String cardNum, Currency currency, BigDecimal balance) {

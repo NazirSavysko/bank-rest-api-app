@@ -9,13 +9,16 @@ import bank.rest.app.bankrestapp.entity.Customer;
 import bank.rest.app.bankrestapp.entity.IbanPayment;
 import bank.rest.app.bankrestapp.entity.InternetPayment;
 import bank.rest.app.bankrestapp.entity.Payment;
+import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
+import bank.rest.app.bankrestapp.entity.enums.TransactionType;
 import bank.rest.app.bankrestapp.exception.InvalidAccountCurrencyException;
 import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
 import bank.rest.app.bankrestapp.exception.RecipientNotFoundException;
 import bank.rest.app.bankrestapp.exception.UnsupportedCurrencyException;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.PaymentRepository;
+import bank.rest.app.bankrestapp.resository.TransactionRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -40,6 +43,9 @@ class PaymentServiceImplTest {
     private PaymentRepository paymentRepository;
 
     @Mock
+    private TransactionRepository transactionRepository;
+
+    @Mock
     private CurrencyLoader currencyLoader;
 
     @InjectMocks
@@ -53,6 +59,7 @@ class PaymentServiceImplTest {
         when(accountRepository.findByAccountNumber("UA123456789012345678901234567")).thenReturn(Optional.of(recipientAccount));
         when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         final IbanPaymentRequestDTO request = new IbanPaymentRequestDTO(
                 10L,
@@ -80,6 +87,20 @@ class PaymentServiceImplTest {
         verify(accountRepository).save(senderAccount);
         verify(accountRepository).save(recipientAccount);
         verify(paymentRepository).save(any(IbanPayment.class));
+        verify(transactionRepository, times(2)).save(any(Transaction.class));
+        verify(transactionRepository).save(argThat(transaction ->
+                "Переказ за реквізитами (IBAN): ТОВ Тест".equals(transaction.getDescription())
+                        && TransactionType.PAYMENT.equals(transaction.getTransactionType())
+                        && Boolean.FALSE.equals(transaction.getIsRecipient())
+                        && transaction.getTransactionDate() != null
+        ));
+        verify(transactionRepository).save(argThat(transaction ->
+                transaction.getDescription() != null
+                        && transaction.getDescription().startsWith("Поповнення через IBAN:")
+                        && TransactionType.PAYMENT.equals(transaction.getTransactionType())
+                        && Boolean.TRUE.equals(transaction.getIsRecipient())
+                        && transaction.getTransactionDate() != null
+        ));
     }
 
     @Test
@@ -88,6 +109,7 @@ class PaymentServiceImplTest {
         when(accountRepository.findById(11)).thenReturn(Optional.of(account));
         when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         final InternetPaymentRequestDTO request = new InternetPaymentRequestDTO(
                 11L,
@@ -108,6 +130,12 @@ class PaymentServiceImplTest {
 
         verify(accountRepository).save(account);
         verify(paymentRepository).save(any(InternetPayment.class));
+        verify(transactionRepository).save(argThat(transaction ->
+                "Оплата інтернету: Lanet".equals(transaction.getDescription())
+                        && TransactionType.PAYMENT.equals(transaction.getTransactionType())
+                        && Boolean.FALSE.equals(transaction.getIsRecipient())
+                        && transaction.getTransactionDate() != null
+        ));
     }
 
     @Test

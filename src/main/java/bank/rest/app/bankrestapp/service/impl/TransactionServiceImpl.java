@@ -15,6 +15,7 @@ import bank.rest.app.bankrestapp.service.TransactionService;
 import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
@@ -73,8 +74,11 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public Page<Transaction> getAllTransactions(final String accountAccountNumber, final Pageable pageable) {
-       return transactionRepository.findAllTransactions(accountAccountNumber, List.of(CANCELLED, FAILED), pageable);
+    public Page<Transaction> getTransactionHistory(final String accountAccountNumber, final int page, final int size) {
+        final int pageNumber = Math.max(page, 0);
+        final int pageSize = size > 0 ? size : 10;
+        final Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        return transactionRepository.findAllTransactions(accountAccountNumber, List.of(CANCELLED, FAILED), pageable);
     }
     private Account getAccountByCardNumber(final String card) {
         return accountRepository.findByCard_CardNumber(card)

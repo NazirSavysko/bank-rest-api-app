@@ -137,10 +137,11 @@ class TransactionFacadeImplTest {
     }
 
     @Test
-    void getAllTransactions_shouldLoadAccount_thenFilterConvertAndMap() {
+    void getTransactionHistory_shouldLoadAccount_thenFilterConvertAndMap() {
         // given
         final String accountNumber = "ACC-123";
-        Pageable pageable = Pageable.unpaged();
+        int page = 0;
+        int size = 10;
 
         Account account = Account.builder()
                 .accountId(1)
@@ -183,7 +184,7 @@ class TransactionFacadeImplTest {
         // Using a Mockito Answer lets us handle both signatures without relying on compile-time overloads.
         TransactionService transactionServiceProxy = mock(TransactionService.class, invocation -> {
             java.lang.reflect.Method method = invocation.getMethod();
-            if ("getAllTransactions".equals(method.getName())) {
+            if ("getTransactionHistory".equals(method.getName())) {
                 // If the declared return type is a Spring Page, return a PageImpl
                 if (org.springframework.data.domain.Page.class.isAssignableFrom(method.getReturnType())) {
                     Pageable requestedPageable = null;
@@ -226,10 +227,10 @@ class TransactionFacadeImplTest {
         when(transactionMapper.toDto(argThat(t -> t != null && t.getTransactionId() != null && t.getTransactionId().equals(3)))).thenReturn(dto3);
 
         // when
-        var page = localSut.getAllTransactions(pageable, accountNumber);
+        var transactionPage = localSut.getTransactionHistory(accountNumber, page, size);
 
         // then - all 3 transactions are converted and mapped (facade does not filter by status)
-        List<GetTransactionDTO> content = page.getContent();
+        List<GetTransactionDTO> content = transactionPage.getContent();
         assertEquals(3, content.size());
         assertTrue(content.contains(dto1));
         assertTrue(content.contains(dto2));

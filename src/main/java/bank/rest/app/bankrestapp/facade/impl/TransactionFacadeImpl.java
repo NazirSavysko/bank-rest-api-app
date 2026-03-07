@@ -13,12 +13,9 @@ import bank.rest.app.bankrestapp.validation.DtoValidator;
 import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 
-import java.util.List;
 import static bank.rest.app.bankrestapp.utils.MapperUtils.mapDto;
 
 @Component
@@ -44,15 +41,15 @@ public class TransactionFacadeImpl implements TransactionFacade {
     }
 
     @Override
-    public Page<GetTransactionDTO> getAllTransactions(final Pageable pageable, final String accountNumber) {
+    public Page<GetTransactionDTO> getTransactionHistory(final String accountNumber, final int page, final int size) {
         final Account account = this.accountService.getAccountByNumber(accountNumber);
-        Page<Transaction> page = this.transactionService.getAllTransactions(accountNumber, pageable);
+        Page<Transaction> transactionPage = this.transactionService.getTransactionHistory(accountNumber, page, size);
 
-        return page.map(transaction -> {
+        return transactionPage.map(transaction -> {
             transaction.setAmount(currencyLoader.convert(transaction.getAmount(), transaction.getCurrencyCode().name(), account.getCurrencyCode().name()));
             transaction.setCurrencyCode(account.getCurrencyCode());
 
-            if (transaction.getToAccount().equals(account)) {
+            if (Boolean.TRUE.equals(transaction.getIsRecipient()) || transaction.getToAccount().equals(account)) {
                 transaction.setIsRecipient(Boolean.TRUE);
             }
             return transactionMapper.toDto(transaction);

@@ -4,11 +4,9 @@ import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.exception.AccountNotActiveException;
 import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 public interface TransactionService {
 
@@ -18,5 +16,5 @@ public interface TransactionService {
     )
     Transaction withdraw(String senderCardNumber, String recipientCardNumber, BigDecimal amount, final String description);
 
-    Page<Transaction> getAllTransactions(String accountAccountNumber, final Pageable pageable);
+    Page<Transaction> getTransactionHistory(String accountAccountNumber, int page, int size);
 }

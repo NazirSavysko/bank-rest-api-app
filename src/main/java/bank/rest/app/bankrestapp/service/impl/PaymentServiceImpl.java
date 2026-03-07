@@ -7,6 +7,7 @@ import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.IbanPayment;
 import bank.rest.app.bankrestapp.entity.InternetPayment;
 import bank.rest.app.bankrestapp.entity.Payment;
+import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.exception.InvalidAccountCurrencyException;
 import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
@@ -14,6 +15,7 @@ import bank.rest.app.bankrestapp.exception.RecipientNotFoundException;
 import bank.rest.app.bankrestapp.exception.UnsupportedCurrencyException;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.PaymentRepository;
+import bank.rest.app.bankrestapp.resository.TransactionRepository;
 import bank.rest.app.bankrestapp.service.PaymentService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import static bank.rest.app.bankrestapp.entity.enums.PaymentStatus.COMPLETED;
+import static bank.rest.app.bankrestapp.entity.enums.TransactionType.PAYMENT;
 import static java.time.LocalDateTime.now;
 
 @Service
@@ -36,6 +39,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final AccountRepository accountRepository;
     private final PaymentRepository paymentRepository;
+    private final TransactionRepository transactionRepository;
     private final CurrencyLoader currencyLoader;
 
     @Override
@@ -77,7 +81,23 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setRecipientName(request.recipientName());
         payment.setRecipientIban(request.recipientIban());
 
-        return this.paymentRepository.save(payment);
+        final Payment savedPayment = this.paymentRepository.save(payment);
+        this.transactionRepository.save(createPaymentTransaction(
+                senderAccount,
+                senderAccount,
+                request.amount(),
+                "Переказ за реквізитами (IBAN): " + request.recipientName(),
+                Boolean.FALSE
+        ));
+        this.transactionRepository.save(createPaymentTransaction(
+                recipientAccount,
+                recipientAccount,
+                request.amount(),
+                "Поповнення через IBAN: " + getCustomerName(senderAccount),
+                Boolean.TRUE
+        ));
+
+        return savedPayment;
     }
 
     @Override
@@ -104,7 +124,45 @@ public class PaymentServiceImpl implements PaymentService {
                 + ", дог. "
                 + request.contractNumber());
 
-        return this.paymentRepository.save(payment);
+        final Payment savedPayment = this.paymentRepository.save(payment);
+        this.transactionRepository.save(createPaymentTransaction(
+                account,
+                account,
+                request.amount(),
+                "Оплата інтернету: " + request.providerName(),
+                Boolean.FALSE
+        ));
+
+        return savedPayment;
+    }
+
+    private Transaction createPaymentTransaction(final Account account,
+                                                 final Account toAccount,
+                                                 final BigDecimal amount,
+                                                 final String description,
+                                                 final Boolean isRecipient) {
+        final Transaction transaction = Transaction.builder()
+                .amount(amount)
+                .currencyCode(Currency.UAH)
+                .description(description)
+                .transactionType(PAYMENT)
+                .status(bank.rest.app.bankrestapp.entity.enums.TransactionStatus.COMPLETED)
+                .transactionDate(now())
+                .account(account)
+                .toAccount(toAccount)
+                .build();
+        transaction.setIsRecipient(isRecipient);
+        return transaction;
+    }
+
+    private String getCustomerName(final Account account) {
+        if (account.getCustomer() == null) {
+            return "Невідомий відправник";
+        }
+        final String firstName = account.getCustomer().getFirstName() == null ? "" : account.getCustomer().getFirstName().trim();
+        final String lastName = account.getCustomer().getLastName() == null ? "" : account.getCustomer().getLastName().trim();
+        final String fullName = (firstName + " " + lastName).trim();
+        return fullName.isBlank() ? "Невідомий відправник" : fullName;
     }
 
     private Account getValidOwnedAccount(final Long accountId, final String authenticatedUserEmail) {
