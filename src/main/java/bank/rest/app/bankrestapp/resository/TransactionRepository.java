@@ -64,17 +64,20 @@ public interface TransactionRepository extends JpaRepository<Transaction, Intege
                                p.payment_date AS created_at,
                                p.account_id AS sender_account_id,
                                CASE
-                                   WHEN p.beneficiary_acc = (SELECT a.account_number FROM account a WHERE a.account_id = :accountId) THEN :accountId
-                               END AS receiver_account_id,
+                                    WHEN p.beneficiary_acc = acc.account_number THEN :accountId
+                                    ELSE NULL
+                                END AS receiver_account_id,
                                p.recipient_iban AS recipient_iban,
                                p.recipient_name AS recipient_name,
                                p.provider_name AS provider_name,
                                p.contract_number AS contract_number
                         FROM payment p
+                        CROSS JOIN account acc
                         WHERE p.payment_type IN ('IBAN', 'INTERNET')
+                          AND acc.account_id = :accountId
                           AND (
                                 p.account_id = :accountId
-                                OR p.beneficiary_acc = (SELECT a.account_number FROM account a WHERE a.account_id = :accountId)
+                                OR p.beneficiary_acc = acc.account_number
                               )
                     ) history
                     ORDER BY history.created_at DESC, history.operation_id DESC
@@ -90,10 +93,12 @@ public interface TransactionRepository extends JpaRepository<Transaction, Intege
 
                         SELECT p.payment_id
                         FROM payment p
+                        CROSS JOIN account acc
                         WHERE p.payment_type IN ('IBAN', 'INTERNET')
+                          AND acc.account_id = :accountId
                           AND (
                                 p.account_id = :accountId
-                                OR p.beneficiary_acc = (SELECT a.account_number FROM account a WHERE a.account_id = :accountId)
+                                OR p.beneficiary_acc = acc.account_number
                               )
                     ) history_count
                     """,

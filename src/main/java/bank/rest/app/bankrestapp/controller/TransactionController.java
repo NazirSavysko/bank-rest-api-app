@@ -6,6 +6,7 @@ import bank.rest.app.bankrestapp.dto.get.TransactionHistoryItemDTO;
 import bank.rest.app.bankrestapp.facade.TransactionFacade;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
@@ -29,13 +30,13 @@ class TransactionController {
     }
 
     @GetMapping("transactions")
-    public Page<GetTransactionDTO> getAllTransactions(@PageableDefault(sort = "transactionDate", direction = Sort.Direction.DESC) org.springframework.data.domain.Pageable pageable, @RequestParam String accountNumber) {
+    public Page<GetTransactionDTO> getAllTransactions(@PageableDefault(sort = "transactionDate", direction = Sort.Direction.DESC) Pageable pageable, @RequestParam String accountNumber) {
         return this.transactionFacade.getAllTransactions(pageable,accountNumber);
     }
 
     @GetMapping("/history")
     public Page<TransactionHistoryItemDTO> getTransactionHistory(
-            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) org.springframework.data.domain.Pageable pageable,
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam Integer accountId
     ) {
         return this.transactionFacade.getTransactionHistory(pageable, accountId);

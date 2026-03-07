@@ -134,6 +134,7 @@ class TransactionServiceImplTest {
         when(transferIncome.getOperationId()).thenReturn(101L);
         when(transferIncome.getItemType()).thenReturn(TransactionHistoryType.TRANSFER.name());
         when(transferIncome.getSenderAccountId()).thenReturn(33);
+        when(transferIncome.getReceiverAccountId()).thenReturn(accountId);
         when(transferIncome.getAmount()).thenReturn(BigDecimal.valueOf(50));
         when(transferIncome.getCurrencyCode()).thenReturn("USD");
         when(transferIncome.getStatus()).thenReturn("COMPLETED");

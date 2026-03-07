@@ -137,6 +137,9 @@ public class TransactionServiceImpl implements TransactionService {
         if (accountId.equals(projection.getSenderAccountId())) {
             return TransactionHistoryDirection.EXPENSE;
         }
-        return TransactionHistoryDirection.INCOME;
+        if (accountId.equals(projection.getReceiverAccountId())) {
+            return TransactionHistoryDirection.INCOME;
+        }
+        throw new IllegalStateException("Unable to resolve transaction direction for account " + accountId);
     }
 }
