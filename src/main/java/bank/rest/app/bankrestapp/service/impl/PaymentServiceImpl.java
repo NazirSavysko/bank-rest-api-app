@@ -182,7 +182,7 @@ public class PaymentServiceImpl implements PaymentService {
                 || recipientIban.length() != 32
                 || !recipientIban.startsWith("UA")
                 || !recipientIban.substring(2).chars().allMatch(Character::isDigit)) {
-            throw new IllegalArgumentException("Recipient IBAN must start with UA and contain exactly 32 characters");
+            throw new IllegalArgumentException("Recipient IBAN must start with UA and be 32 characters long (UA + 30 digits)");
         }
     }
 

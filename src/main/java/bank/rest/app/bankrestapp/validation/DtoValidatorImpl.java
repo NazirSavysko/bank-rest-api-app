@@ -147,8 +147,7 @@ public final class DtoValidatorImpl implements DtoValidator {
                             }
                         } else if (field.isAnnotationPresent(Currency.class)) {
                             final String value = (String) field.get(dto);
-                            if (dto instanceof CreateAccountDTO createAccountDTO
-                                    && "FOP".equals(createAccountDTO.accountType())) {
+                            if (isFopAccountRequest(dto)) {
                                 return;
                             }
                             if (value == null || !(value.equals("UAH") || value.equals("USD") || value.equals("EUR"))) {
@@ -177,5 +176,10 @@ public final class DtoValidatorImpl implements DtoValidator {
 
             throw new IllegalArgumentException(message);
         }
+    }
+
+    private boolean isFopAccountRequest(final Object dto) {
+        return dto instanceof CreateAccountDTO createAccountDTO
+                && "FOP".equals(createAccountDTO.accountType());
     }
 }
