@@ -84,6 +84,7 @@ public class TransactionServiceImpl implements TransactionService {
                         if (transaction.getToAccount().equals(account)) {
                             transaction.setIsRecipient(Boolean.TRUE);
                             transaction.setAmount(currencyLoader.convert(transaction.getAmount(), transaction.getCurrencyCode().name(), account.getCurrencyCode().name()));
+                            transaction.setCurrencyCode(account.getCurrencyCode());
                         }
                     }
 

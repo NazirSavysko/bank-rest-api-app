@@ -89,10 +89,7 @@ public class PaymentServiceImpl implements PaymentService {
                 recipient,
                 originalAmount,
                 TransactionType.IBAN_PAYMENT,
-                "Переказ за IBAN: " + request.recipientIban()
-                        + ". До зарахування: "
-                        + amountInUah.setScale(2, RoundingMode.HALF_UP)
-                        + " UAH"
+                "Переказ за IBAN"
         ));
 
         return this.paymentRepository.save(payment);

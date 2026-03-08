@@ -18,14 +18,12 @@ public interface TransactionRepository extends JpaRepository<Transaction, Intege
     Page<Transaction> findAllByAccount_AccountNumberOrToAccount_AccountNumber(String accountAccountNumber, String toAccountAccountNumber, Pageable pageable);
 
     @Query("""
-            SELECT t FROM Transaction t
-            JOIN t.account acc
-            LEFT JOIN t.toAccount toAcc
-            WHERE acc.accountNumber = :accountNumber
-                        OR CASE WHEN toAcc IS NOT NULL THEN (toAcc.accountNumber = :accountNumber AND t.status NOT IN :statuses)
-                        ELSE true END
-            ORDER BY t.transactionDate DESC, t.transactionId DESC
-            """)
+        SELECT t FROM Transaction t
+        LEFT JOIN t.toAccount toAcc
+        WHERE t.account.accountNumber = :accountNumber
+           OR (toAcc.accountNumber = :accountNumber AND t.status NOT IN :statuses)
+        ORDER BY t.transactionDate DESC, t.transactionId DESC
+        """)
     Page<Transaction> findAllTransactions(@Param("accountNumber") String accountNumber, @Param("statuses") Collection<TransactionStatus> statuses, Pageable pageable);
 
     @Query("""
