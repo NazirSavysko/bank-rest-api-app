@@ -46,16 +46,8 @@ public class TransactionFacadeImpl implements TransactionFacade {
     @Override
     public Page<GetTransactionDTO> getAllTransactions(final Pageable pageable, final String accountNumber) {
         final Account account = this.accountService.getAccountByNumber(accountNumber);
-        Page<Transaction> page = this.transactionService.getAllTransactions(accountNumber, pageable);
+        Page<Transaction> page = this.transactionService.getAllTransactions(accountNumber,account, pageable);
 
-        return page.map(transaction -> {
-            transaction.setAmount(currencyLoader.convert(transaction.getAmount(), transaction.getCurrencyCode().name(), account.getCurrencyCode().name()));
-            transaction.setCurrencyCode(account.getCurrencyCode());
-
-            if (transaction.getToAccount().equals(account)) {
-                transaction.setIsRecipient(Boolean.TRUE);
-            }
-            return transactionMapper.toDto(transaction);
-        });
+        return page.map(transactionMapper::toDto);
     }
 }

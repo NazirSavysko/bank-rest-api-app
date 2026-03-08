@@ -57,12 +57,6 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 TransactionStatus.COMPLETED
         );
 
-        final List<Payment> payments = this.paymentRepository.findMonthlyPayments(
-                accountNumber,
-                startDate,
-                endDate,
-                PaymentStatus.COMPLETED
-        );
 
         BigDecimal incoming = BigDecimal.ZERO;
         BigDecimal outgoing = BigDecimal.ZERO;
@@ -81,11 +75,8 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             }
         }
 
-        for (Payment payment : payments) {
-            outgoing = outgoing.add(normalizeAmount(payment, account.getCurrencyCode()));
-        }
 
-        return new AnalyticsSummaryDTO(incoming, outgoing, transactions.size() + payments.size());
+        return new AnalyticsSummaryDTO(incoming, outgoing, transactions.size());
     }
 
     private BigDecimal normalizeAmount(final Transaction transaction, final Currency targetCurrency) {
@@ -97,26 +88,5 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         }
 
         return this.currencyLoader.convert(amount, transactionCurrency.name(), targetCurrency.name());
-    }
-
-    private BigDecimal normalizeAmount(final Payment payment, final Currency targetCurrency) {
-        final BigDecimal amount = payment.getAmount() == null ? BigDecimal.ZERO : payment.getAmount();
-
-        if (payment.getCurrencyCode() == null || targetCurrency == null) {
-            return amount;
-        }
-
-        final Currency paymentCurrency;
-        try {
-            paymentCurrency = Currency.valueOf(payment.getCurrencyCode().trim().toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException ex) {
-            return amount;
-        }
-
-        if (paymentCurrency.equals(targetCurrency)) {
-            return amount;
-        }
-
-        return this.currencyLoader.convert(amount, paymentCurrency.name(), targetCurrency.name());
     }
 }
