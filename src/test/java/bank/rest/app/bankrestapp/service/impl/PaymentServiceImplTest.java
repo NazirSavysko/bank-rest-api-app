@@ -147,7 +147,7 @@ class PaymentServiceImplTest {
 
         assertInstanceOf(IbanPayment.class, result);
         final IbanPayment ibanPayment = (IbanPayment) result;
-        assertEquals(new BigDecimal("100"), senderAccount.getBalance());
+        assertEquals(BigDecimal.valueOf(100), senderAccount.getBalance());
         assertEquals(BigDecimal.valueOf(400), result.getAmount());
         assertEquals("USD", result.getCurrencyCode());
         assertEquals("Переказ за IBAN: UA123456789012345678901234567. До зарахування: 16000.00 UAH", ibanPayment.getTransaction().getDescription());
@@ -182,7 +182,7 @@ class PaymentServiceImplTest {
 
         assertInstanceOf(IbanPayment.class, result);
         final IbanPayment ibanPayment = (IbanPayment) result;
-        assertEquals(new BigDecimal("90"), senderAccount.getBalance());
+        assertEquals(BigDecimal.valueOf(90), senderAccount.getBalance());
         assertEquals(BigDecimal.valueOf(10), result.getAmount());
         assertEquals("EUR", result.getCurrencyCode());
         assertEquals("Переказ за IBAN: UA123456789012345678901234567. До зарахування: 420.00 UAH", ibanPayment.getTransaction().getDescription());

@@ -57,7 +57,7 @@ public class PaymentServiceImpl implements PaymentService {
         final BigDecimal amountInUah;
         if (!Currency.UAH.equals(senderAccount.getCurrencyCode())) {
             final CurrencyLoader.CurrencyRate exchangeRate = this.currencyLoader.getRate(senderAccount.getCurrencyCode().name())
-                    .orElseThrow(() -> new RuntimeException("Не найден курс для: " + senderAccount.getCurrencyCode().name()));
+                    .orElseThrow(() -> new UnsupportedCurrencyException("Не найден курс для: " + senderAccount.getCurrencyCode().name()));
             amountInUah = originalAmount.multiply(BigDecimal.valueOf(exchangeRate.getRate()));
         } else {
             amountInUah = originalAmount;
@@ -81,7 +81,7 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setTransaction(createTransaction(
                 senderAccount,
                 null,
-                request.amount(),
+                originalAmount,
                 TransactionType.IBAN_PAYMENT,
                 "Переказ за IBAN: " + request.recipientIban()
                         + ". До зарахування: "
