@@ -63,8 +63,12 @@ public class PaymentServiceImpl implements PaymentService {
             amountInUah = originalAmount;
         }
 
+        final Account recipient = this.accountRepository.findByAccountNumber(request.recipientIban())
+                .orElseThrow(() -> new NoSuchElementException("Account not found"));
         senderAccount.setBalance(senderAccount.getBalance().subtract(originalAmount));
+        recipient.setBalance(recipient.getBalance().add(amountInUah));
         this.accountRepository.save(senderAccount);
+        this.accountRepository.save(recipient);
 
         final IbanPayment payment = new IbanPayment();
         payment.setAccount(senderAccount);
@@ -80,7 +84,7 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setRecipientIban(request.recipientIban());
         payment.setTransaction(createTransaction(
                 senderAccount,
-                null,
+                recipient,
                 originalAmount,
                 TransactionType.IBAN_PAYMENT,
                 "Переказ за IBAN: " + request.recipientIban()
