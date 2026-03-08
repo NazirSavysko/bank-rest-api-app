@@ -14,7 +14,6 @@ import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.entity.enums.TransactionType;
 import bank.rest.app.bankrestapp.exception.InvalidAccountCurrencyException;
 import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
-import bank.rest.app.bankrestapp.exception.RecipientNotFoundException;
 import bank.rest.app.bankrestapp.exception.UnsupportedCurrencyException;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.PaymentRepository;
@@ -54,9 +53,7 @@ class PaymentServiceImplTest {
     @Test
     void processIbanPayment_Successful() {
         final Account senderAccount = createAccount(10, Currency.UAH, BigDecimal.valueOf(500), "user@example.com", "UA_SENDER");
-        final Account recipientAccount = createAccount(20, Currency.UAH, BigDecimal.valueOf(200), "recipient@example.com", "UA123456789012345678901234567");
         when(accountRepository.findById(10)).thenReturn(Optional.of(senderAccount));
-        when(accountRepository.findByAccountNumber("UA123456789012345678901234567")).thenReturn(Optional.of(recipientAccount));
         when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -75,7 +72,6 @@ class PaymentServiceImplTest {
         assertInstanceOf(IbanPayment.class, result);
         final IbanPayment ibanPayment = (IbanPayment) result;
         assertEquals(BigDecimal.valueOf(400), senderAccount.getBalance());
-        assertEquals(BigDecimal.valueOf(300), recipientAccount.getBalance());
         assertEquals(COMPLETED, ibanPayment.getStatus());
         assertEquals("UAH", ibanPayment.getCurrencyCode());
         assertEquals("ТОВ Тест", ibanPayment.getBeneficiaryName());
@@ -85,11 +81,11 @@ class PaymentServiceImplTest {
         assertNotNull(ibanPayment.getPaymentDate());
         assertNotNull(ibanPayment.getTransaction());
         assertEquals(TransactionType.IBAN_PAYMENT, ibanPayment.getTransaction().getTransactionType());
-        assertEquals("Переказ за реквізитами IBAN: UA123456789012345678901234567", ibanPayment.getTransaction().getDescription());
-        assertEquals(recipientAccount, ibanPayment.getTransaction().getToAccount());
+        assertEquals("Переказ за IBAN: UA123456789012345678901234567. До зарахування: 100.00 UAH", ibanPayment.getTransaction().getDescription());
+        assertNull(ibanPayment.getTransaction().getToAccount());
 
         verify(accountRepository).save(senderAccount);
-        verify(accountRepository).save(recipientAccount);
+        verify(accountRepository, never()).findByAccountNumber(anyString());
         verify(transactionRepository).save(any(Transaction.class));
         verify(paymentRepository).save(any(IbanPayment.class));
     }
@@ -129,11 +125,9 @@ class PaymentServiceImplTest {
     }
 
     @Test
-    void processIbanPayment_UsdAccount_ShouldConvertAndDeductConvertedAmount() {
+    void processIbanPayment_UsdAccount_ShouldDeductOriginalAmount_AndSetUahAmountInDescription() {
         final Account senderAccount = createAccount(12, Currency.USD, BigDecimal.valueOf(500), "user@example.com", "UA_SENDER");
-        final Account recipientAccount = createAccount(22, Currency.UAH, BigDecimal.valueOf(100), "recipient@example.com", "UA123456789012345678901234567");
         when(accountRepository.findById(12)).thenReturn(Optional.of(senderAccount));
-        when(accountRepository.findByAccountNumber("UA123456789012345678901234567")).thenReturn(Optional.of(recipientAccount));
         when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -152,23 +146,23 @@ class PaymentServiceImplTest {
         final Payment result = paymentService.processIbanPayment(request, "user@example.com");
 
         assertInstanceOf(IbanPayment.class, result);
-        assertEquals(new BigDecimal("490.00"), senderAccount.getBalance());
-        assertEquals(BigDecimal.valueOf(500), recipientAccount.getBalance());
+        final IbanPayment ibanPayment = (IbanPayment) result;
+        assertEquals(new BigDecimal("100"), senderAccount.getBalance());
         assertEquals(BigDecimal.valueOf(400), result.getAmount());
-        assertEquals("UAH", result.getCurrencyCode());
+        assertEquals("USD", result.getCurrencyCode());
+        assertEquals("Переказ за IBAN: UA123456789012345678901234567. До зарахування: 16000.00 UAH", ibanPayment.getTransaction().getDescription());
+        assertNull(ibanPayment.getTransaction().getToAccount());
         verify(currencyLoader).getRate("USD");
         verify(accountRepository).save(senderAccount);
-        verify(accountRepository).save(recipientAccount);
+        verify(accountRepository, never()).findByAccountNumber(anyString());
         verify(transactionRepository).save(any(Transaction.class));
         verify(paymentRepository).save(any(IbanPayment.class));
     }
 
     @Test
-    void processIbanPayment_EurAccount_ShouldDivideUahByRateAndRoundHalfUp() {
+    void processIbanPayment_EurAccount_ShouldSetUahAmountInDescription() {
         final Account senderAccount = createAccount(19, Currency.EUR, BigDecimal.valueOf(100), "user@example.com", "UA_SENDER");
-        final Account recipientAccount = createAccount(29, Currency.UAH, BigDecimal.valueOf(50), "recipient@example.com", "UA123456789012345678901234567");
         when(accountRepository.findById(19)).thenReturn(Optional.of(senderAccount));
-        when(accountRepository.findByAccountNumber("UA123456789012345678901234567")).thenReturn(Optional.of(recipientAccount));
         when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -177,7 +171,7 @@ class PaymentServiceImplTest {
 
         final IbanPaymentRequestDTO request = new IbanPaymentRequestDTO(
                 19L,
-                BigDecimal.valueOf(1000),
+                BigDecimal.valueOf(10),
                 "Name",
                 "UA123456789012345678901234567",
                 "123",
@@ -187,10 +181,12 @@ class PaymentServiceImplTest {
         final Payment result = paymentService.processIbanPayment(request, "user@example.com");
 
         assertInstanceOf(IbanPayment.class, result);
-        assertEquals(new BigDecimal("76.19"), senderAccount.getBalance());
-        assertEquals(BigDecimal.valueOf(1050), recipientAccount.getBalance());
-        assertEquals(BigDecimal.valueOf(1000), result.getAmount());
-        assertEquals("UAH", result.getCurrencyCode());
+        final IbanPayment ibanPayment = (IbanPayment) result;
+        assertEquals(new BigDecimal("90"), senderAccount.getBalance());
+        assertEquals(BigDecimal.valueOf(10), result.getAmount());
+        assertEquals("EUR", result.getCurrencyCode());
+        assertEquals("Переказ за IBAN: UA123456789012345678901234567. До зарахування: 420.00 UAH", ibanPayment.getTransaction().getDescription());
+        assertNull(ibanPayment.getTransaction().getToAccount());
         verify(currencyLoader).getRate("EUR");
         verify(transactionRepository).save(any(Transaction.class));
     }
@@ -257,9 +253,7 @@ class PaymentServiceImplTest {
     @Test
     void processIbanPayment_UnsupportedCurrency_ShouldThrow() {
         final Account senderAccount = createAccount(16, null, BigDecimal.valueOf(200), "user@example.com", "UA_SENDER");
-        final Account recipientAccount = createAccount(17, Currency.UAH, BigDecimal.valueOf(200), "recipient@example.com", "UA123456789012345678901234567");
         when(accountRepository.findById(16)).thenReturn(Optional.of(senderAccount));
-        when(accountRepository.findByAccountNumber("UA123456789012345678901234567")).thenReturn(Optional.of(recipientAccount));
 
         final IbanPaymentRequestDTO request = new IbanPaymentRequestDTO(
                 16L,
@@ -280,10 +274,14 @@ class PaymentServiceImplTest {
     }
 
     @Test
-    void processIbanPayment_RecipientIbanNotFound_ShouldThrow() {
+    void processIbanPayment_ExternalRecipientIban_ShouldNotLookupRecipientAccount() {
         final Account senderAccount = createAccount(18, Currency.USD, BigDecimal.valueOf(200), "user@example.com", "UA_SENDER");
         when(accountRepository.findById(18)).thenReturn(Optional.of(senderAccount));
-        when(accountRepository.findByAccountNumber("UA123456789012345678901234567")).thenReturn(Optional.empty());
+        when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(currencyLoader.getRate("USD"))
+                .thenReturn(Optional.of(new CurrencyLoader.CurrencyRate("USD", 40.0)));
 
         final IbanPaymentRequestDTO request = new IbanPaymentRequestDTO(
                 18L,
@@ -294,14 +292,13 @@ class PaymentServiceImplTest {
                 "Purpose"
         );
 
-        final RecipientNotFoundException exception = assertThrows(RecipientNotFoundException.class,
-                () -> paymentService.processIbanPayment(request, "user@example.com"));
-        assertEquals("Recipient IBAN not found in the system", exception.getMessage());
+        final Payment payment = paymentService.processIbanPayment(request, "user@example.com");
 
-        verify(accountRepository, never()).save(any(Account.class));
-        verify(transactionRepository, never()).save(any(Transaction.class));
-        verify(paymentRepository, never()).save(any(Payment.class));
-        verifyNoInteractions(currencyLoader);
+        assertInstanceOf(IbanPayment.class, payment);
+        verify(accountRepository).save(senderAccount);
+        verify(accountRepository, never()).findByAccountNumber(anyString());
+        verify(transactionRepository).save(any(Transaction.class));
+        verify(paymentRepository).save(any(IbanPayment.class));
     }
 
     private Account createAccount(final Integer id,

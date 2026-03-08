@@ -13,7 +13,6 @@ import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
 import bank.rest.app.bankrestapp.entity.enums.TransactionType;
 import bank.rest.app.bankrestapp.exception.InvalidAccountCurrencyException;
 import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
-import bank.rest.app.bankrestapp.exception.RecipientNotFoundException;
 import bank.rest.app.bankrestapp.exception.UnsupportedCurrencyException;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.PaymentRepository;
@@ -24,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.EnumSet;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -50,28 +50,26 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         final Account senderAccount = getValidOwnedAccount(request.accountId(), authenticatedUserEmail);
-        final Account recipientAccount = this.accountRepository.findByAccountNumber(request.recipientIban())
-                .orElseThrow(() -> new RecipientNotFoundException("Recipient IBAN not found in the system"));
         validateIbanSupportedCurrency(senderAccount.getCurrencyCode());
-        validateIbanSupportedCurrency(recipientAccount.getCurrencyCode());
 
-        final BigDecimal additionAmount = request.amount();
-        validateSufficientFunds(senderAccount, additionAmount);
-
-        senderAccount.setBalance(senderAccount.getBalance().subtract(additionAmount));
-        if (!senderAccount.getCurrencyCode().equals(Currency.UAH)) {
-            final BigDecimal convertedSum = this.currencyLoader.convert(additionAmount, senderAccount.getCurrencyCode().name(), recipientAccount.getCurrencyCode().name());
-            recipientAccount.setBalance(recipientAccount.getBalance().add(convertedSum));
-        }else {
-            recipientAccount.setBalance(recipientAccount.getBalance().add(additionAmount));
+        final BigDecimal originalAmount = request.amount();
+        validateSufficientFunds(senderAccount, originalAmount);
+        final BigDecimal amountInUah;
+        if (!Currency.UAH.equals(senderAccount.getCurrencyCode())) {
+            final CurrencyLoader.CurrencyRate exchangeRate = this.currencyLoader.getRate(senderAccount.getCurrencyCode().name())
+                    .orElseThrow(() -> new RuntimeException("Не найден курс для: " + senderAccount.getCurrencyCode().name()));
+            amountInUah = originalAmount.multiply(BigDecimal.valueOf(exchangeRate.getRate()));
+        } else {
+            amountInUah = originalAmount;
         }
+
+        senderAccount.setBalance(senderAccount.getBalance().subtract(originalAmount));
         this.accountRepository.save(senderAccount);
-        this.accountRepository.save(recipientAccount);
 
         final IbanPayment payment = new IbanPayment();
         payment.setAccount(senderAccount);
         payment.setAmount(request.amount());
-        payment.setCurrencyCode(Currency.UAH.name());
+        payment.setCurrencyCode(senderAccount.getCurrencyCode().name());
         payment.setPaymentDate(now());
         payment.setStatus(COMPLETED);
         payment.setBeneficiaryName(request.recipientName());
@@ -82,10 +80,13 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setRecipientIban(request.recipientIban());
         payment.setTransaction(createTransaction(
                 senderAccount,
-                recipientAccount,
+                null,
                 request.amount(),
                 TransactionType.IBAN_PAYMENT,
-                "Переказ за реквізитами IBAN: " + request.recipientIban()
+                "Переказ за IBAN: " + request.recipientIban()
+                        + ". До зарахування: "
+                        + amountInUah.setScale(2, RoundingMode.HALF_UP)
+                        + " UAH"
         ));
 
         return this.paymentRepository.save(payment);
