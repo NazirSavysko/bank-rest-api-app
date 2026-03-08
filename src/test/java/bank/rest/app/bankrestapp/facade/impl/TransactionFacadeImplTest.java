@@ -21,8 +21,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.validation.BindingResult;
 
-import java.lang.reflect.Proxy;
-
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -269,7 +267,7 @@ class TransactionFacadeImplTest {
         GetTransactionDTO dto = mock(GetTransactionDTO.class);
 
         when(accountService.getAccountByNumber(accountNumber)).thenReturn(account);
-        when(transactionService.getAllTransactions(accountNumber, pageable))
+        when(transactionService.getAllTransactions(accountNumber, account, pageable))
                 .thenReturn(new PageImpl<>(List.of(internetPaymentTransaction), pageable, 1));
         when(currencyLoader.convert(BigDecimal.valueOf(200), "UAH", "UAH"))
                 .thenReturn(BigDecimal.valueOf(200));
