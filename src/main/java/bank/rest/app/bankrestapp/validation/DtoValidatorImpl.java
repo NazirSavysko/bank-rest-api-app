@@ -142,7 +142,7 @@ public final class DtoValidatorImpl implements DtoValidator {
                             }
                         } else if (field.isAnnotationPresent(Currency.class)) {
                             final String value = (String) field.get(dto);
-                            if (value == null || !(value.equals("UAH") || value.equals("USD") || value.equals("EUR"))) {
+                            if (value == null || !(value.equals("UAH") || value.equals("USD") || value.equals("EUR") || value.equals("FOP"))) {
                                 result.rejectValue(field.getName(), "currency.invalid", "неправильний кол валют");
                             }
                         }else if (field.isAnnotationPresent(AccountStatus.class)) {

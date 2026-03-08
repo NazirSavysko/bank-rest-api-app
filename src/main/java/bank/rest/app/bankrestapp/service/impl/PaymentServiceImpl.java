@@ -8,6 +8,7 @@ import bank.rest.app.bankrestapp.entity.IbanPayment;
 import bank.rest.app.bankrestapp.entity.InternetPayment;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.entity.Transaction;
+import bank.rest.app.bankrestapp.entity.enums.AccountType;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
 import bank.rest.app.bankrestapp.entity.enums.TransactionType;
@@ -50,6 +51,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         final Account senderAccount = getValidOwnedAccount(request.accountId(), authenticatedUserEmail);
+        validateFopAccount(senderAccount);
         validateIbanSupportedCurrency(senderAccount.getCurrencyCode());
 
         final BigDecimal originalAmount = request.amount();
@@ -178,6 +180,13 @@ public class PaymentServiceImpl implements PaymentService {
     private void validateIbanSupportedCurrency(final Currency currency) {
         if (currency == null || !SUPPORTED_IBAN_CURRENCIES.contains(currency)) {
             throw new UnsupportedCurrencyException("Unsupported account currency for IBAN payment");
+        }
+    }
+
+    private void validateFopAccount(final Account account) {
+        if (AccountType.FOP.equals(account.getAccountType())
+                && (account.getEdrpou() == null || account.getEdrpou().isBlank())) {
+            throw new IllegalStateException("FOP account must have EDRPOU");
         }
     }
 

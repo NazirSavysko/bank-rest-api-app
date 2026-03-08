@@ -3,6 +3,7 @@ package bank.rest.app.bankrestapp.service.impl;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.Card;
 import bank.rest.app.bankrestapp.entity.Customer;
+import bank.rest.app.bankrestapp.entity.enums.AccountType;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.CustomerRepository;
@@ -77,9 +78,39 @@ class AccountServiceImplTest {
 
         // Assert
         assertNotNull(created);
+        assertEquals(AccountType.CURRENT, created.getAccountType());
         assertEquals(Currency.EUR, created.getCurrencyCode());
+        assertNull(created.getEdrpou());
         assertEquals(customer, created.getCustomer());
         assertNotNull(created.getCard());
+        verify(accountRepository).save(any(Account.class));
+    }
+
+    @Test
+    void createAccount_Fop_ShouldForceUahAndGenerateEdrpou() {
+        final String email = "test@example.com";
+        final Customer customer = new Customer();
+        final Account currentUahAccount = new Account();
+        currentUahAccount.setCurrencyCode(Currency.UAH);
+        currentUahAccount.setAccountType(AccountType.CURRENT);
+        customer.setAccounts(new ArrayList<>(List.of(currentUahAccount)));
+        final Card card = new Card();
+
+        when(customerRepository.findByAuthUserEmail(email)).thenReturn(Optional.of(customer));
+        when(cardService.generateCard()).thenReturn(card);
+        when(accountRepository.existsByAccountNumber(anyString())).thenReturn(false);
+        when(accountRepository.existsByEdrpou(anyString())).thenReturn(false);
+        when(accountRepository.save(any(Account.class))).thenAnswer(i -> i.getArgument(0));
+
+        final Account created = accountService.createAccount("FOP", email);
+
+        assertNotNull(created);
+        assertEquals(AccountType.FOP, created.getAccountType());
+        assertEquals(Currency.UAH, created.getCurrencyCode());
+        assertNotNull(created.getEdrpou());
+        assertTrue(created.getEdrpou().matches("\\d{10}"));
+        assertEquals(customer, created.getCustomer());
+        verify(accountRepository).existsByEdrpou(anyString());
         verify(accountRepository).save(any(Account.class));
     }
 

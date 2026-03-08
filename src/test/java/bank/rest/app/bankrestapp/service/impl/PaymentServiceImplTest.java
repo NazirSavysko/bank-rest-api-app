@@ -10,6 +10,7 @@ import bank.rest.app.bankrestapp.entity.IbanPayment;
 import bank.rest.app.bankrestapp.entity.InternetPayment;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.entity.Transaction;
+import bank.rest.app.bankrestapp.entity.enums.AccountType;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.entity.enums.TransactionType;
 import bank.rest.app.bankrestapp.exception.InvalidAccountCurrencyException;
@@ -274,6 +275,30 @@ class PaymentServiceImplTest {
     }
 
     @Test
+    void processIbanPayment_FopWithoutEdrpou_ShouldThrow() {
+        final Account senderAccount = createAccount(17, Currency.UAH, BigDecimal.valueOf(200), "user@example.com", "UA_SENDER");
+        senderAccount.setAccountType(AccountType.FOP);
+        senderAccount.setEdrpou(null);
+        when(accountRepository.findById(17)).thenReturn(Optional.of(senderAccount));
+
+        final IbanPaymentRequestDTO request = new IbanPaymentRequestDTO(
+                17L,
+                BigDecimal.valueOf(100),
+                "Name",
+                "UA123456789012345678901234567",
+                "123",
+                "Purpose"
+        );
+
+        assertThrows(IllegalStateException.class,
+                () -> paymentService.processIbanPayment(request, "user@example.com"));
+
+        verify(accountRepository, never()).save(any(Account.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
     void processIbanPayment_ExternalRecipientIban_ShouldNotLookupRecipientAccount() {
         final Account senderAccount = createAccount(18, Currency.USD, BigDecimal.valueOf(200), "user@example.com", "UA_SENDER");
         when(accountRepository.findById(18)).thenReturn(Optional.of(senderAccount));
@@ -315,6 +340,7 @@ class PaymentServiceImplTest {
         final Account account = new Account();
         account.setAccountId(id);
         account.setAccountNumber(accountNumber);
+        account.setAccountType(AccountType.CURRENT);
         account.setCurrencyCode(currency);
         account.setBalance(balance);
         account.setCustomer(customer);
