@@ -33,6 +33,7 @@ public class AccountFacadeImpl implements AccountFacade {
 
         final Account account = this.accountService.createAccount(
                 createAccountDTO.accountType(),
+                createAccountDTO.currency(),
                 createAccountDTO.customerEmail()
         );
 

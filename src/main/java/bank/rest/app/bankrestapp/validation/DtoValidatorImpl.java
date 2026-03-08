@@ -1,5 +1,6 @@
 package bank.rest.app.bankrestapp.validation;
 
+import bank.rest.app.bankrestapp.dto.CreateAccountDTO;
 import bank.rest.app.bankrestapp.entity.annotation.AccountStatus;
 import bank.rest.app.bankrestapp.entity.annotation.AccountType;
 import bank.rest.app.bankrestapp.entity.annotation.Currency;
@@ -146,12 +147,16 @@ public final class DtoValidatorImpl implements DtoValidator {
                             }
                         } else if (field.isAnnotationPresent(Currency.class)) {
                             final String value = (String) field.get(dto);
+                            if (dto instanceof CreateAccountDTO createAccountDTO
+                                    && "FOP".equals(createAccountDTO.accountType())) {
+                                return;
+                            }
                             if (value == null || !(value.equals("UAH") || value.equals("USD") || value.equals("EUR"))) {
                                 result.rejectValue(field.getName(), "currency.invalid", "неправильний код валют");
                             }
                         } else if (field.isAnnotationPresent(AccountType.class)) {
                             final String value = (String) field.get(dto);
-                            if (value == null || !(value.equals("UAH") || value.equals("USD") || value.equals("EUR") || value.equals("FOP"))) {
+                            if (value == null || !(value.equals("CURRENT") || value.equals("FOP"))) {
                                 result.rejectValue(field.getName(), "account.type.invalid", "неправильний тип рахунку");
                             }
                         } else if (field.isAnnotationPresent(AccountStatus.class)) {

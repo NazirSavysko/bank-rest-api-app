@@ -46,10 +46,7 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Payment processIbanPayment(final IbanPaymentRequestDTO request, final String authenticatedUserEmail) {
-        if (!request.recipientIban().startsWith("UA")) {
-            throw new IllegalArgumentException("Recipient IBAN must start with UA");
-        }
-
+        validateRecipientIban(request.recipientIban());
         final Account senderAccount = getValidOwnedAccount(request.accountId(), authenticatedUserEmail);
         validateFopAccount(senderAccount);
         validateIbanSupportedCurrency(senderAccount.getCurrencyCode());
@@ -177,6 +174,15 @@ public class PaymentServiceImpl implements PaymentService {
     private void validateIbanSupportedCurrency(final Currency currency) {
         if (currency == null || !SUPPORTED_IBAN_CURRENCIES.contains(currency)) {
             throw new UnsupportedCurrencyException("Unsupported account currency for IBAN payment");
+        }
+    }
+
+    private void validateRecipientIban(final String recipientIban) {
+        if (recipientIban == null
+                || recipientIban.length() != 32
+                || !recipientIban.startsWith("UA")
+                || !recipientIban.substring(2).chars().allMatch(Character::isDigit)) {
+            throw new IllegalArgumentException("Recipient IBAN must start with UA and contain exactly 32 characters");
         }
     }
 

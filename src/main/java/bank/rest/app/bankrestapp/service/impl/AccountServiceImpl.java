@@ -43,15 +43,18 @@ public class AccountServiceImpl implements AccountService {
                 .balance(ACCOUNT_BALANCE_INITIAL)
                 .accountType(AccountType.CURRENT)
                 .currencyCode(currency)
+                .edrpou(this.generateUniqueEdrpou())
                 .status(DEFAULT_ACCOUNT_STATUS)
                 .createdAt(DEFAULT_CREATED_AT)
                 .build();
     }
 
     @Override
-    public Account createAccount(final @NotNull String accountType, final String customerEmail) {
+    public Account createAccount(final @NotNull String accountType,
+                                 final String currencyCode,
+                                 final String customerEmail) {
         final boolean isFopAccount = AccountType.FOP.name().equalsIgnoreCase(accountType);
-        final Currency currency = isFopAccount ? Currency.UAH : Currency.valueOf(accountType.toUpperCase());
+        final Currency currency = isFopAccount ? Currency.UAH : Currency.valueOf(currencyCode.toUpperCase());
         final Account account = this.generateAccountByCurrencyCode(currency);
         final Card card = this.cardService.generateCard();
 
@@ -68,9 +71,6 @@ public class AccountServiceImpl implements AccountService {
         }
 
         account.setAccountType(isFopAccount ? AccountType.FOP : AccountType.CURRENT);
-        if (isFopAccount) {
-            account.setEdrpou(this.generateUniqueEdrpou());
-        }
         account.setCustomer(customer);
         account.setCard(card);
         card.setAccount(account);

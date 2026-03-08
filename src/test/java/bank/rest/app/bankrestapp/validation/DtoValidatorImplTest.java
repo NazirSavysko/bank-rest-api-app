@@ -8,6 +8,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class DtoValidatorImplTest {
 
@@ -22,9 +23,17 @@ class DtoValidatorImplTest {
 
     @Test
     void validate_CreateAccountDtoFop_ShouldPass() {
-        final CreateAccountDTO dto = new CreateAccountDTO("FOP", "alice@example.com");
+        final CreateAccountDTO dto = new CreateAccountDTO("FOP", "XYZ", "alice@example.com");
         final BindingResult bindingResult = new BeanPropertyBindingResult(dto, "createAccountDTO");
 
         assertDoesNotThrow(() -> this.dtoValidator.validate(dto, bindingResult));
+    }
+
+    @Test
+    void validate_CreateAccountDtoCurrentWithInvalidCurrency_ShouldThrow() {
+        final CreateAccountDTO dto = new CreateAccountDTO("CURRENT", "XYZ", "alice@example.com");
+        final BindingResult bindingResult = new BeanPropertyBindingResult(dto, "createAccountDTO");
+
+        assertThrows(IllegalArgumentException.class, () -> this.dtoValidator.validate(dto, bindingResult));
     }
 }
