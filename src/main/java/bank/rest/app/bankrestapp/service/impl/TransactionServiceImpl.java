@@ -20,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -70,27 +71,30 @@ public class TransactionServiceImpl implements TransactionService {
         senderAccount.setBalance(senderAccount.getBalance().subtract(amount));
         recipientAccount.setBalance(recipientAccount.getBalance().add(amountToReceive));
 
-        return this.createTransaction(senderAccount, recipientAccount, amount, description,COMPLETED);
+        return this.createTransaction(senderAccount, recipientAccount, amount, description, COMPLETED);
     }
 
     @Override
     public Page<Transaction> getAllTransactions(final String accountAccountNumber, final Account account, final Pageable pageable) {
-       List<Transaction> transactions = transactionRepository.findAllByAccount_AccountNumberOrToAccount_AccountNumber(accountAccountNumber,accountAccountNumber, pageable);
+        Page<Transaction> transactions = transactionRepository.findAllTransactions(accountAccountNumber, List.of(CANCELLED, FAILED), pageable);
 
-       List<Transaction> handledList = transactions.stream()
-               .filter(transaction -> {
-                   if(transaction.getToAccount() == null) {
-                       return true;
-                   }
-                   return (transaction.getStatus().equals(CANCELLED) || transaction.getStatus().equals(FAILED))
-                           && !transaction.getToAccount().equals(account);
-               })
-               .sorted((t1, t2) -> t2.getTransactionDate().compareTo(t1.getTransactionDate()))
-               .toList();
+        transactions.map(
+                transaction -> {
+                    if (transaction.getToAccount() != null) {
+                        if (transaction.getToAccount().equals(account)) {
+                            transaction.setIsRecipient(Boolean.TRUE);
+                            transaction.setAmount(currencyLoader.convert(transaction.getAmount(), transaction.getCurrencyCode().name(), account.getCurrencyCode().name()));
+                        }
+                    }
 
-       return new PageImpl<>(handledList, pageable, handledList.size());
+                    return transaction;
+                }
+        );
+
+        return transactions;
 
     }
+
     private Account getAccountByCardNumber(final String card) {
         return accountRepository.findByCard_CardNumber(card)
                 .orElseThrow(() -> new NoSuchElementException("Account not found for the provided card"));

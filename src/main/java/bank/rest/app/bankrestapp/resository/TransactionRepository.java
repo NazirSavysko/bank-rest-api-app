@@ -2,6 +2,7 @@ package bank.rest.app.bankrestapp.resository;
 
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,11 +10,23 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 public interface TransactionRepository extends JpaRepository<Transaction, Integer> {
 
-    List<Transaction> findAllByAccount_AccountNumberOrToAccount_AccountNumber(String accountAccountNumber, String toAccountAccountNumber, Pageable pageable);
+    Page<Transaction> findAllByAccount_AccountNumberOrToAccount_AccountNumber(String accountAccountNumber, String toAccountAccountNumber, Pageable pageable);
+
+    @Query("""
+            SELECT t FROM Transaction t
+            JOIN t.account acc
+            LEFT JOIN t.toAccount toAcc
+            WHERE acc.accountNumber = :accountNumber
+                        OR CASE WHEN toAcc IS NOT NULL THEN (toAcc.accountNumber = :accountNumber AND t.status NOT IN :statuses)
+                        ELSE true END
+            ORDER BY t.transactionDate DESC, t.transactionId DESC
+            """)
+    Page<Transaction> findAllTransactions(@Param("accountNumber") String accountNumber, @Param("statuses") Collection<TransactionStatus> statuses, Pageable pageable);
 
     @Query("""
         SELECT t FROM Transaction t
