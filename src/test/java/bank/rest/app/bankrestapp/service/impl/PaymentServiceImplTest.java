@@ -60,7 +60,7 @@ class PaymentServiceImplTest {
     @Test
     void processIbanPayment_Successful() {
         final Account senderAccount = createAccount(10, Currency.UAH, BigDecimal.valueOf(500), "user@example.com", "UA_SENDER");
-        when(accountRepository.findById(10)).thenReturn(Optional.of(senderAccount));
+        when(accountRepository.findByIdForUpdate(10)).thenReturn(Optional.of(senderAccount));
         when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -69,7 +69,7 @@ class PaymentServiceImplTest {
                 10L,
                 BigDecimal.valueOf(100),
                 "ТОВ Тест",
-                "UA123456789012345678901234567",
+                VALID_UA_IBAN,
                 "1234567890",
                 "Оплата послуг"
         );
@@ -82,16 +82,17 @@ class PaymentServiceImplTest {
         assertEquals(COMPLETED, ibanPayment.getStatus());
         assertEquals("UAH", ibanPayment.getCurrencyCode());
         assertEquals("ТОВ Тест", ibanPayment.getBeneficiaryName());
-        assertEquals("UA123456789012345678901234567", ibanPayment.getBeneficiaryAcc());
+        assertEquals(VALID_UA_IBAN, ibanPayment.getBeneficiaryAcc());
         assertEquals("1234567890", ibanPayment.getTaxNumber());
         assertEquals("Оплата послуг", ibanPayment.getPurpose());
         assertNotNull(ibanPayment.getPaymentDate());
         assertNotNull(ibanPayment.getTransaction());
         assertEquals(TransactionType.IBAN_PAYMENT, ibanPayment.getTransaction().getTransactionType());
-        assertEquals("Переказ за IBAN: UA123456789012345678901234567. До зарахування: 100.00 UAH", ibanPayment.getTransaction().getDescription());
+        assertEquals("Переказ за IBAN: " + VALID_UA_IBAN + ". До зарахування: 100.00 UAH", ibanPayment.getTransaction().getDescription());
         assertNull(ibanPayment.getTransaction().getToAccount());
 
         verify(accountRepository).save(senderAccount);
+        verify(accountRepository).findByIdForUpdate(10);
         verify(accountRepository, never()).findByAccountNumber(anyString());
         verify(transactionRepository).save(any(Transaction.class));
         verify(paymentRepository).save(any(IbanPayment.class));
@@ -100,7 +101,7 @@ class PaymentServiceImplTest {
     @Test
     void processInternetPayment_Successful() {
         final Account account = createAccount(11, Currency.UAH, BigDecimal.valueOf(300), "user@example.com", "UA_INTERNET_1");
-        when(accountRepository.findById(11)).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdForUpdate(11)).thenReturn(Optional.of(account));
         when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -127,6 +128,7 @@ class PaymentServiceImplTest {
         assertNull(internetPayment.getTransaction().getToAccount());
 
         verify(accountRepository).save(account);
+        verify(accountRepository).findByIdForUpdate(11);
         verify(transactionRepository).save(any(Transaction.class));
         verify(paymentRepository).save(any(InternetPayment.class));
     }
@@ -134,7 +136,7 @@ class PaymentServiceImplTest {
     @Test
     void processIbanPayment_UsdAccount_ShouldDeductOriginalAmount_AndSetUahAmountInDescription() {
         final Account senderAccount = createAccount(12, Currency.USD, BigDecimal.valueOf(500), "user@example.com", "UA_SENDER");
-        when(accountRepository.findById(12)).thenReturn(Optional.of(senderAccount));
+        when(accountRepository.findByIdForUpdate(12)).thenReturn(Optional.of(senderAccount));
         when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -145,7 +147,7 @@ class PaymentServiceImplTest {
                 12L,
                 BigDecimal.valueOf(400),
                 "Name",
-                "UA123456789012345678901234567",
+                VALID_UA_IBAN,
                 "123",
                 "Purpose"
         );
@@ -157,7 +159,7 @@ class PaymentServiceImplTest {
         assertEquals(BigDecimal.valueOf(100), senderAccount.getBalance());
         assertEquals(BigDecimal.valueOf(400), result.getAmount());
         assertEquals("USD", result.getCurrencyCode());
-        assertEquals("Переказ за IBAN: UA123456789012345678901234567. До зарахування: 16000.00 UAH", ibanPayment.getTransaction().getDescription());
+        assertEquals("Переказ за IBAN: " + VALID_UA_IBAN + ". До зарахування: 16000.00 UAH", ibanPayment.getTransaction().getDescription());
         assertNull(ibanPayment.getTransaction().getToAccount());
         verify(currencyLoader).getRate("USD");
         verify(accountRepository).save(senderAccount);
@@ -169,7 +171,7 @@ class PaymentServiceImplTest {
     @Test
     void processIbanPayment_EurAccount_ShouldSetUahAmountInDescription() {
         final Account senderAccount = createAccount(19, Currency.EUR, BigDecimal.valueOf(100), "user@example.com", "UA_SENDER");
-        when(accountRepository.findById(19)).thenReturn(Optional.of(senderAccount));
+        when(accountRepository.findByIdForUpdate(19)).thenReturn(Optional.of(senderAccount));
         when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -180,7 +182,7 @@ class PaymentServiceImplTest {
                 19L,
                 BigDecimal.valueOf(10),
                 "Name",
-                "UA123456789012345678901234567",
+                VALID_UA_IBAN,
                 "123",
                 "Purpose"
         );
@@ -192,7 +194,7 @@ class PaymentServiceImplTest {
         assertEquals(BigDecimal.valueOf(90), senderAccount.getBalance());
         assertEquals(BigDecimal.valueOf(10), result.getAmount());
         assertEquals("EUR", result.getCurrencyCode());
-        assertEquals("Переказ за IBAN: UA123456789012345678901234567. До зарахування: 420.00 UAH", ibanPayment.getTransaction().getDescription());
+        assertEquals("Переказ за IBAN: " + VALID_UA_IBAN + ". До зарахування: 420.00 UAH", ibanPayment.getTransaction().getDescription());
         assertNull(ibanPayment.getTransaction().getToAccount());
         verify(currencyLoader).getRate("EUR");
         verify(transactionRepository).save(any(Transaction.class));
@@ -201,7 +203,7 @@ class PaymentServiceImplTest {
     @Test
     void processInternetPayment_InsufficientFunds_ShouldThrow() {
         final Account account = createAccount(13, Currency.UAH, BigDecimal.valueOf(20), "user@example.com", "UA_INTERNET_2");
-        when(accountRepository.findById(13)).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdForUpdate(13)).thenReturn(Optional.of(account));
 
         final InternetPaymentRequestDTO request = new InternetPaymentRequestDTO(
                 13L,
@@ -222,7 +224,7 @@ class PaymentServiceImplTest {
     @Test
     void processIbanPayment_AccountOwnershipMismatch_ShouldThrow() {
         final Account account = createAccount(14, Currency.UAH, BigDecimal.valueOf(200), "owner@example.com", "UA_SENDER");
-        when(accountRepository.findById(14)).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdForUpdate(14)).thenReturn(Optional.of(account));
 
         final IbanPaymentRequestDTO request = new IbanPaymentRequestDTO(
                 14L,
@@ -279,7 +281,7 @@ class PaymentServiceImplTest {
     @Test
     void processIbanPayment_UnsupportedCurrency_ShouldThrow() {
         final Account senderAccount = createAccount(16, null, BigDecimal.valueOf(200), "user@example.com", "UA_SENDER");
-        when(accountRepository.findById(16)).thenReturn(Optional.of(senderAccount));
+        when(accountRepository.findByIdForUpdate(16)).thenReturn(Optional.of(senderAccount));
 
         final IbanPaymentRequestDTO request = new IbanPaymentRequestDTO(
                 16L,
@@ -305,7 +307,7 @@ class PaymentServiceImplTest {
         final Account senderAccount = createAccount(17, Currency.UAH, BigDecimal.valueOf(200), "user@example.com", "UA_SENDER");
         senderAccount.setAccountType(AccountType.FOP);
         senderAccount.setEdrpou(null);
-        when(accountRepository.findById(17)).thenReturn(Optional.of(senderAccount));
+        when(accountRepository.findByIdForUpdate(17)).thenReturn(Optional.of(senderAccount));
 
         final IbanPaymentRequestDTO request = new IbanPaymentRequestDTO(
                 17L,
@@ -328,7 +330,7 @@ class PaymentServiceImplTest {
     @Test
     void processIbanPayment_InsufficientFunds_ShouldThrow() {
         final Account senderAccount = createAccount(21, Currency.UAH, BigDecimal.valueOf(20), "user@example.com", "UA_SENDER");
-        when(accountRepository.findById(21)).thenReturn(Optional.of(senderAccount));
+        when(accountRepository.findByIdForUpdate(21)).thenReturn(Optional.of(senderAccount));
 
         final IbanPaymentRequestDTO request = new IbanPaymentRequestDTO(
                 21L,
@@ -351,7 +353,7 @@ class PaymentServiceImplTest {
     @Test
     void processIbanPayment_ExternalRecipientIban_ShouldNotLookupRecipientAccount() {
         final Account senderAccount = createAccount(18, Currency.USD, BigDecimal.valueOf(200), "user@example.com", "UA_SENDER");
-        when(accountRepository.findById(18)).thenReturn(Optional.of(senderAccount));
+        when(accountRepository.findByIdForUpdate(18)).thenReturn(Optional.of(senderAccount));
         when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -362,7 +364,7 @@ class PaymentServiceImplTest {
                 18L,
                 BigDecimal.valueOf(100),
                 "Name",
-                "UA123456789012345678901234567",
+                VALID_UA_IBAN,
                 "123",
                 "Purpose"
         );
