@@ -71,13 +71,9 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .map(transaction -> this.normalizeAmount(transaction, account.getCurrencyCode()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        final BigDecimal outgoingPayments = payments.stream()
-                .map(payment -> this.normalizeAmount(payment, account.getCurrencyCode()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
         return new AnalyticsSummaryDTO(
                 incoming,
-                outgoingTransactions.add(outgoingPayments),
+                outgoingTransactions,
                 transactions.size() + payments.size()
         );
     }
