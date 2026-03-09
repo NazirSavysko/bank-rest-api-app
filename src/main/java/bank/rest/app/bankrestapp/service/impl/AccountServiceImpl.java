@@ -71,6 +71,7 @@ public class AccountServiceImpl implements AccountService {
         }
 
         account.setAccountType(isFopAccount ? AccountType.FOP : AccountType.CURRENT);
+        account.setBalance(isFopAccount ? FOP_ACCOUNT_BALANCE_INITIAL : ACCOUNT_BALANCE_INITIAL);
         account.setCustomer(customer);
         account.setCard(card);
         card.setAccount(account);
@@ -120,10 +121,6 @@ public class AccountServiceImpl implements AccountService {
 
     @Contract(pure = true)
     private @NotNull String getBeginningOfWordByCurrency(@NotNull Currency currency) {
-        return switch (currency) {
-            case UAH -> "UA";
-            case USD -> "US";
-            case EUR -> "EU";
-        };
+        return "UA";
     }
 }
