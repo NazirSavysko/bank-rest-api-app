@@ -13,7 +13,7 @@ class AccountRepositoryLockingTest {
 
     @Test
     void lockingQueries_ShouldUsePessimisticWriteLock() throws NoSuchMethodException {
-        assertPessimisticWrite(AccountRepository.class.getMethod("findByAccountNumberForUpdate", String.class));
+        assertPessimisticWrite(AccountRepository.class.getMethod("findWithLockByAccountNumber", String.class));
         assertPessimisticWrite(AccountRepository.class.getMethod("findByCard_CardNumberForUpdate", String.class));
         assertPessimisticWrite(AccountRepository.class.getMethod("findByIdForUpdate", Integer.class));
     }
