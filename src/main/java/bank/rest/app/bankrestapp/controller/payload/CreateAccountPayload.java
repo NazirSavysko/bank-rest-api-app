@@ -1,6 +1,9 @@
 package bank.rest.app.bankrestapp.controller.payload;
 
+import bank.rest.app.bankrestapp.entity.enums.AccountType;
+
 public record CreateAccountPayload(
-        String accountType
+        AccountType accountType,
+        String currency
 ) {
 }

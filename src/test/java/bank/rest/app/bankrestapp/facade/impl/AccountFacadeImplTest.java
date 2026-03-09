@@ -36,7 +36,7 @@ class AccountFacadeImplTest {
     @Test
     void createAccount_whenValidatorThrows_shouldNotCallServiceOrMapper() {
         // given
-        CreateAccountDTO input = new CreateAccountDTO("USD", "john.doe@example.com");
+        CreateAccountDTO input = new CreateAccountDTO("CURRENT", "USD", "john.doe@example.com");
         BindingResult bindingResult = mock(BindingResult.class);
 
         RuntimeException validationError = new RuntimeException("validation failed");
@@ -57,20 +57,20 @@ class AccountFacadeImplTest {
     @Test
     void createAccount_shouldPassThroughExactDtoFieldsToService() {
         // given
-        CreateAccountDTO input = new CreateAccountDTO("EUR", "alice@example.com");
+        CreateAccountDTO input = new CreateAccountDTO("CURRENT", "EUR", "alice@example.com");
         BindingResult bindingResult = mock(BindingResult.class);
 
         Account createdAccount = Account.builder().accountId(7).build();
         GetAccountDTO mappedDto = mock(GetAccountDTO.class);
 
-        when(accountService.createAccount(any(), any())).thenReturn(createdAccount);
+        when(accountService.createAccount(any(), any(), any())).thenReturn(createdAccount);
         when(accountMapper.toDto(createdAccount)).thenReturn(mappedDto);
 
         // when
         sut.createAccount(input, bindingResult);
 
         // then
-        verify(accountService).createAccount("EUR", "alice@example.com");
+        verify(accountService).createAccount("CURRENT", "EUR", "alice@example.com");
         verify(accountMapper).toDto(createdAccount);
     }
 }

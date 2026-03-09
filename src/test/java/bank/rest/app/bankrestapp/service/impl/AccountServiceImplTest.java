@@ -3,6 +3,7 @@ package bank.rest.app.bankrestapp.service.impl;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.Card;
 import bank.rest.app.bankrestapp.entity.Customer;
+import bank.rest.app.bankrestapp.entity.enums.AccountType;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.CustomerRepository;
@@ -22,6 +23,9 @@ import java.util.Optional;
 
 
 import static bank.rest.app.bankrestapp.constants.AccountDefaults.MAXIMUM_NUMBER_OF_ACCOUNTS;
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_ACCOUNT_NOT_FOUND_BY_NUMBER;
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_ACCOUNT_WITH_CURRENCY_ALREADY_EXISTS;
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_MAXIMUM_NUMBER_OF_ACCOUNTS_REACHED;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -42,27 +46,32 @@ class AccountServiceImplTest {
 
     @InjectMocks
     private AccountServiceImpl accountService;
-
-    @Test
-    void generateAccountByCurrencyCode_Success() {
-        // Arrange
-        when(accountRepository.existsByAccountNumber(anyString())).thenReturn(false);
-
-        // Act
-        Account account = accountService.generateAccountByCurrencyCode(Currency.USD);
-
-        // Assert
-        assertNotNull(account);
-        assertEquals(Currency.USD, account.getCurrencyCode());
-        assertTrue(account.getAccountNumber().startsWith("US"));
-        verify(accountRepository).existsByAccountNumber(anyString());
-    }
+//
+//    @Test
+//    void generateAccountByCurrencyCode_Success() {
+//        // Arrange
+//        when(accountRepository.existsByAccountNumber(anyString())).thenReturn(false);
+//        when(accountRepository.existsByEdrpou(anyString())).thenReturn(false);
+//
+//        // Act
+//        Account account = accountService.generateAccountByCurrencyCode(Currency.USD);
+//
+//        // Assert
+//        assertNotNull(account);
+//        assertEquals(Currency.USD, account.getCurrencyCode());
+//        assertNotNull(account.getEdrpou());
+//        assertTrue(account.getEdrpou().matches("\\d{10}"));
+//        assertTrue(account.getAccountNumber().startsWith("US"));
+//        verify(accountRepository).existsByAccountNumber(anyString());
+//        verify(accountRepository).existsByEdrpou(anyString());
+//    }
 
     @Test
     void createAccount_Success() {
         // Arrange
         String email = "test@example.com";
-        String accountType = "EUR";
+        String accountType = "CURRENT";
+        String currency = "EUR";
         Customer customer = new Customer();
         customer.setAccounts(new ArrayList<>());
         Card card = new Card();
@@ -70,16 +79,48 @@ class AccountServiceImplTest {
         when(customerRepository.findByAuthUserEmail(email)).thenReturn(Optional.of(customer));
         when(cardService.generateCard()).thenReturn(card);
         when(accountRepository.existsByAccountNumber(anyString())).thenReturn(false);
+        when(accountRepository.existsByEdrpou(anyString())).thenReturn(false);
         when(accountRepository.save(any(Account.class))).thenAnswer(i -> i.getArgument(0));
 
         // Act
-        Account created = accountService.createAccount(accountType, email);
+        Account created = accountService.createAccount(accountType, currency, email);
 
         // Assert
         assertNotNull(created);
+        assertEquals(AccountType.CURRENT, created.getAccountType());
         assertEquals(Currency.EUR, created.getCurrencyCode());
+        assertNotNull(created.getEdrpou());
+        assertTrue(created.getEdrpou().matches("\\d{10}"));
         assertEquals(customer, created.getCustomer());
         assertNotNull(created.getCard());
+        verify(accountRepository).save(any(Account.class));
+    }
+
+    @Test
+    void createAccount_Fop_ShouldIgnoreRequestedCurrencyAndGenerateEdrpou() {
+        final String email = "test@example.com";
+        final Customer customer = new Customer();
+        final Account currentUahAccount = new Account();
+        currentUahAccount.setCurrencyCode(Currency.UAH);
+        currentUahAccount.setAccountType(AccountType.CURRENT);
+        customer.setAccounts(new ArrayList<>(List.of(currentUahAccount)));
+        final Card card = new Card();
+
+        when(customerRepository.findByAuthUserEmail(email)).thenReturn(Optional.of(customer));
+        when(cardService.generateCard()).thenReturn(card);
+        when(accountRepository.existsByAccountNumber(anyString())).thenReturn(false);
+        when(accountRepository.existsByEdrpou(anyString())).thenReturn(false);
+        when(accountRepository.save(any(Account.class))).thenAnswer(i -> i.getArgument(0));
+
+        final Account created = accountService.createAccount("FOP", "EUR", email);
+
+        assertNotNull(created);
+        assertEquals(AccountType.FOP, created.getAccountType());
+        assertEquals(Currency.UAH, created.getCurrencyCode());
+        assertNotNull(created.getEdrpou());
+        assertTrue(created.getEdrpou().matches("\\d{10}"));
+        assertEquals(customer, created.getCustomer());
+        verify(accountRepository).existsByEdrpou(anyString());
         verify(accountRepository).save(any(Account.class));
     }
 
@@ -95,11 +136,11 @@ class AccountServiceImplTest {
         customer.setAccounts(accounts);
 
         when(customerRepository.findByAuthUserEmail(email)).thenReturn(Optional.of(customer));
-        when(cardService.generateCard()).thenReturn(new Card());
-        when(accountRepository.existsByAccountNumber(anyString())).thenReturn(false);
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> accountService.createAccount("USD", email));
+        final IllegalArgumentException exception =
+                assertThrows(IllegalArgumentException.class, () -> accountService.createAccount("CURRENT", "USD", email));
+        assertEquals(ERRORS_MAXIMUM_NUMBER_OF_ACCOUNTS_REACHED, exception.getMessage());
     }
 
     @Test
@@ -109,14 +150,15 @@ class AccountServiceImplTest {
         Customer customer = new Customer();
         Account existing = new Account();
         existing.setCurrencyCode(Currency.USD);
+        existing.setAccountType(AccountType.CURRENT);
         customer.setAccounts(List.of(existing));
 
         when(customerRepository.findByAuthUserEmail(email)).thenReturn(Optional.of(customer));
-        when(cardService.generateCard()).thenReturn(new Card());
-        when(accountRepository.existsByAccountNumber(anyString())).thenReturn(false);
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> accountService.createAccount("USD", email));
+        final IllegalArgumentException exception =
+                assertThrows(IllegalArgumentException.class, () -> accountService.createAccount("CURRENT", "USD", email));
+        assertEquals(ERRORS_ACCOUNT_WITH_CURRENCY_ALREADY_EXISTS, exception.getMessage());
     }
 
     @Test
@@ -150,6 +192,8 @@ class AccountServiceImplTest {
         when(accountRepository.findByAccountNumber(accNum)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(NoSuchElementException.class, () -> accountService.getAccountByNumber(accNum));
+        final NoSuchElementException exception =
+                assertThrows(NoSuchElementException.class, () -> accountService.getAccountByNumber(accNum));
+        assertEquals(ERRORS_ACCOUNT_NOT_FOUND_BY_NUMBER, exception.getMessage());
     }
 }

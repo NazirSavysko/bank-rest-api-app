@@ -1,9 +1,14 @@
 package bank.rest.app.bankrestapp.exception.advice_rest_controller;
 
 import bank.rest.app.bankrestapp.exception.AccountNotActiveException;
+import bank.rest.app.bankrestapp.exception.InvalidAccountCurrencyException;
 import bank.rest.app.bankrestapp.exception.InsufficientFundsException;
+import bank.rest.app.bankrestapp.exception.RecipientNotFoundException;
+import bank.rest.app.bankrestapp.exception.UnsupportedCurrencyException;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.ResponseEntity;
+import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
@@ -12,6 +17,7 @@ import java.io.UncheckedIOException;
 import java.sql.SQLException;
 import java.util.NoSuchElementException;
 
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_OPERATION_TEMPORARILY_UNAVAILABLE;
 import static java.time.LocalDateTime.now;
 import static java.util.Map.of;
 import static org.springframework.http.HttpStatus.*;
@@ -26,7 +32,7 @@ public final class RestControllerAdviceHandler {
                 .contentType(APPLICATION_JSON)
                 .body(of(
                         "timestamp", now(),
-                        "error", "Bad Request",
+                        "error", "Некоректний запит",
                         "message", e.getMessage()
                 ));
     }
@@ -37,7 +43,7 @@ public final class RestControllerAdviceHandler {
                 .contentType(APPLICATION_JSON)
                 .body(of(
                         "timestamp", now(),
-                        "error", "Database Error",
+                        "error", "Помилка бази даних",
                         "message", e.getMessage()
                 ));
     }
@@ -48,31 +54,29 @@ public final class RestControllerAdviceHandler {
                 .contentType(APPLICATION_JSON)
                 .body(of(
                         "timestamp", now(),
-                        "error", "Not Found",
+                        "error", "Не знайдено",
                         "message", e.getMessage()
                 ));
     }
 
-    // ===== Email HTML шаблон ошибка =====
     @ExceptionHandler(UncheckedIOException.class)
     public @NotNull ResponseEntity<?> handleTemplateReadException(@NotNull UncheckedIOException e) {
         return ResponseEntity.status(INTERNAL_SERVER_ERROR)
                 .contentType(APPLICATION_JSON)
                 .body(of(
                         "timestamp", now(),
-                        "error", "Email Template Error",
+                        "error", "Помилка шаблону електронного листа",
                         "message", e.getMessage()
                 ));
     }
 
-    // ===== Ошибка отправки email =====
     @ExceptionHandler(ResponseStatusException.class)
     public @NotNull ResponseEntity<?> handleEmailSendError(@NotNull ResponseStatusException e) {
         return ResponseEntity.status(e.getStatusCode())
                 .contentType(APPLICATION_JSON)
                 .body(of(
                         "timestamp", now(),
-                        "error", "Email Sending Error",
+                        "error", "Помилка надсилання електронного листа",
                         "message", e.getMessage()
                 ));
     }
@@ -84,7 +88,7 @@ public final class RestControllerAdviceHandler {
                 .contentType(APPLICATION_JSON)
                 .body(of(
                         "timestamp", now(),
-                        "error", "Account Not Active",
+                        "error", "Рахунок не активний",
                         "message", e.getMessage()
                 ));
     }
@@ -96,7 +100,54 @@ public final class RestControllerAdviceHandler {
                 .contentType(APPLICATION_JSON)
                 .body(of(
                         "timestamp", now(),
-                        "error", "Insufficient Funds",
+                        "error", "Недостатньо коштів",
+                        "message", e.getMessage()
+                ));
+    }
+
+    @ExceptionHandler({CannotAcquireLockException.class, PessimisticLockingFailureException.class})
+    public @NotNull ResponseEntity<?> handlePessimisticLockingFailureException(@NotNull RuntimeException e) {
+        return ResponseEntity.status(SERVICE_UNAVAILABLE)
+                .contentType(APPLICATION_JSON)
+                .body(of(
+                        "timestamp", now(),
+                        "error", "Конфлікт блокування",
+                        "message", ERRORS_OPERATION_TEMPORARILY_UNAVAILABLE
+                ));
+    }
+
+    @ExceptionHandler(InvalidAccountCurrencyException.class)
+    public @NotNull ResponseEntity<?> handleInvalidAccountCurrencyException(@NotNull InvalidAccountCurrencyException e) {
+
+        return ResponseEntity.status(UNPROCESSABLE_ENTITY)
+                .contentType(APPLICATION_JSON)
+                .body(of(
+                        "timestamp", now(),
+                        "error", "Некоректна валюта рахунку",
+                        "message", e.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(UnsupportedCurrencyException.class)
+    public @NotNull ResponseEntity<?> handleUnsupportedCurrencyException(@NotNull UnsupportedCurrencyException e) {
+
+        return ResponseEntity.status(UNPROCESSABLE_ENTITY)
+                .contentType(APPLICATION_JSON)
+                .body(of(
+                        "timestamp", now(),
+                        "error", "Непідтримувана валюта",
+                        "message", e.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(RecipientNotFoundException.class)
+    public @NotNull ResponseEntity<?> handleRecipientNotFoundException(@NotNull RecipientNotFoundException e) {
+
+        return ResponseEntity.status(NOT_FOUND)
+                .contentType(APPLICATION_JSON)
+                .body(of(
+                        "timestamp", now(),
+                        "error", "Отримувача не знайдено",
                         "message", e.getMessage()
                 ));
     }

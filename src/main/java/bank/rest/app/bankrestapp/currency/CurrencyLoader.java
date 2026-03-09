@@ -19,6 +19,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_EXCHANGE_RATE_NOT_FOUND;
+import static java.lang.String.format;
+
 @Component
 @AllArgsConstructor
 public final class CurrencyLoader {
@@ -69,8 +72,8 @@ public final class CurrencyLoader {
     public BigDecimal convert(BigDecimal amount, @NotNull String from, String to) {
         if (from.equalsIgnoreCase(to)) return amount;
 
-        CurrencyRate fromRate = getRate(from).orElseThrow(() -> new RuntimeException("Не найден курс для: " + from));
-        CurrencyRate toRate = getRate(to).orElseThrow(() -> new RuntimeException("Не найден курс для: " + to));
+        CurrencyRate fromRate = getRate(from).orElseThrow(() -> new RuntimeException(format(ERRORS_EXCHANGE_RATE_NOT_FOUND, from)));
+        CurrencyRate toRate = getRate(to).orElseThrow(() -> new RuntimeException(format(ERRORS_EXCHANGE_RATE_NOT_FOUND, to)));
 
         BigDecimal fromToUah = amount.multiply(BigDecimal.valueOf(fromRate.getRate()));
         BigDecimal result = fromToUah.divide(BigDecimal.valueOf(toRate.getRate()), 4, RoundingMode.HALF_UP);

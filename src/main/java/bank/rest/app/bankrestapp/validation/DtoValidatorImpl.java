@@ -1,6 +1,8 @@
 package bank.rest.app.bankrestapp.validation;
 
+import bank.rest.app.bankrestapp.dto.CreateAccountDTO;
 import bank.rest.app.bankrestapp.entity.annotation.AccountStatus;
+import bank.rest.app.bankrestapp.entity.annotation.AccountType;
 import bank.rest.app.bankrestapp.entity.annotation.Currency;
 import bank.rest.app.bankrestapp.entity.annotation.CurrencyAmount;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +15,9 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.stream.Collectors;
 
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_FIELD_ACCESS_FAILED;
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_VALIDATION_FAILED_PREFIX;
+import static java.lang.String.format;
 import static java.util.Arrays.stream;
 
 /**
@@ -111,7 +116,7 @@ public final class DtoValidatorImpl implements DtoValidator {
                     .map(DefaultMessageSourceResolvable::getDefaultMessage)
                     .collect(Collectors.joining(", "));
 
-            throw new IllegalArgumentException("Validation failed: " + message);
+            throw new IllegalArgumentException(ERRORS_VALIDATION_FAILED_PREFIX + message);
         }
     }
 
@@ -131,7 +136,10 @@ public final class DtoValidatorImpl implements DtoValidator {
         validator.validate(dto, result);
         final Field[] fields = dto.getClass().getDeclaredFields();
         stream(fields)
-                .filter(field -> field.isAnnotationPresent(Currency.class) || field.isAnnotationPresent(CurrencyAmount.class) || field.isAnnotationPresent(AccountStatus.class))
+                .filter(field -> field.isAnnotationPresent(Currency.class)
+                        || field.isAnnotationPresent(CurrencyAmount.class)
+                        || field.isAnnotationPresent(AccountStatus.class)
+                        || field.isAnnotationPresent(AccountType.class))
                 .forEach(field -> {
                     field.setAccessible(true);
                     try {
@@ -142,17 +150,25 @@ public final class DtoValidatorImpl implements DtoValidator {
                             }
                         } else if (field.isAnnotationPresent(Currency.class)) {
                             final String value = (String) field.get(dto);
-                            if (value == null || !(value.equals("UAH") || value.equals("USD") || value.equals("EUR"))) {
-                                result.rejectValue(field.getName(), "currency.invalid", "неправильний кол валют");
+                            if (isFopAccountRequest(dto)) {
+                                return;
                             }
-                        }else if (field.isAnnotationPresent(AccountStatus.class)) {
+                            if (value == null || !(value.equals("UAH") || value.equals("USD") || value.equals("EUR"))) {
+                                result.rejectValue(field.getName(), "currency.invalid", "неправильний код валют");
+                            }
+                        } else if (field.isAnnotationPresent(AccountType.class)) {
+                            final String value = (String) field.get(dto);
+                            if (value == null || !(value.equals("CURRENT") || value.equals("FOP"))) {
+                                result.rejectValue(field.getName(), "account.type.invalid", "неправильний тип рахунку");
+                            }
+                        } else if (field.isAnnotationPresent(AccountStatus.class)) {
                             final String value = (String) field.get(dto);
                             if (value == null || !(value.equals("ACTIVE") || value.equals("BLOCKED"))) {
                                 result.rejectValue(field.getName(), "account.status.invalid", "неправильний статус рахунку");
                             }
                         }
                     } catch (IllegalAccessException e) {
-                        throw new RuntimeException("Failed to access field: " + field.getName(), e);
+                        throw new RuntimeException(format(ERRORS_FIELD_ACCESS_FAILED, field.getName()), e);
                     }
                 });
 
@@ -163,5 +179,10 @@ public final class DtoValidatorImpl implements DtoValidator {
 
             throw new IllegalArgumentException(message);
         }
+    }
+
+    private boolean isFopAccountRequest(final Object dto) {
+        return dto instanceof CreateAccountDTO createAccountDTO
+                && "FOP".equals(createAccountDTO.accountType());
     }
 }

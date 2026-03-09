@@ -4,11 +4,14 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public record GetAccountDTO(
+        Integer id,
         String accountNumber,
         BigDecimal balance,
         String currency,
         String status,
-        GetCardDTO card
+        GetCardDTO card,
+        String accountType,
+        String edrpou
 //        List<GetTransactionDTO> transactions,
 //        List<GetPaymentDTO> payments
 ) {}

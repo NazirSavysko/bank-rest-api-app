@@ -77,7 +77,9 @@ public final class AccountDefaults {
      * Set to 100,000,000 units in the selected currency.
      *
      */
-    public static final BigDecimal ACCOUNT_BALANCE_INITIAL = new BigDecimal(100_000_000);
+    public static final BigDecimal ACCOUNT_BALANCE_INITIAL = new BigDecimal(100_000);
+
+    public static final BigDecimal FOP_ACCOUNT_BALANCE_INITIAL = BigDecimal.ZERO;
 
     /**
      * Default status assigned to newly created accounts.
@@ -101,7 +103,7 @@ public final class AccountDefaults {
      */
     public static final Currency DEFAULT_CURRENCY = UAH;
 
-    public static final int MAXIMUM_NUMBER_OF_ACCOUNTS = 3;
+    public static final int MAXIMUM_NUMBER_OF_ACCOUNTS = 4;
 
     /**
      * Private constructor to prevent instantiation of this utility class.

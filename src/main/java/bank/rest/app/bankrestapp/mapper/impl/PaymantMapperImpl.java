@@ -1,7 +1,11 @@
 package bank.rest.app.bankrestapp.mapper.impl;
 
 import bank.rest.app.bankrestapp.dto.get.GetPaymentDTO;
+import bank.rest.app.bankrestapp.entity.IbanPayment;
+import bank.rest.app.bankrestapp.entity.InternetPayment;
+import bank.rest.app.bankrestapp.entity.MobilePayment;
 import bank.rest.app.bankrestapp.entity.Payment;
+import bank.rest.app.bankrestapp.entity.UtilityPayment;
 import bank.rest.app.bankrestapp.mapper.Mapper;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -67,10 +71,26 @@ public final class PaymantMapperImpl<T, R> implements Mapper<Payment, GetPayment
     @Contract(pure = true)
     @Override
     public @NotNull GetPaymentDTO toDto(final @NotNull Payment entity) {
+        String currencyCode = entity.getCurrencyCode();
+        if (currencyCode == null && entity.getAccount() != null && entity.getAccount().getCurrencyCode() != null) {
+            currencyCode = entity.getAccount().getCurrencyCode().name();
+        }
+
+        String beneficiaryName = null;
+        if (entity instanceof final IbanPayment ibanPayment) {
+            beneficiaryName = ibanPayment.getRecipientName();
+        } else if (entity instanceof final InternetPayment internetPayment) {
+            beneficiaryName = internetPayment.getProviderName();
+        } else if (entity instanceof final MobilePayment mobilePayment) {
+            beneficiaryName = mobilePayment.getOperatorName();
+        } else if (entity instanceof final UtilityPayment utilityPayment) {
+            beneficiaryName = utilityPayment.getServiceProvider();
+        }
+
         return new GetPaymentDTO(
-                entity.getCurrencyCode().name(),
-                entity.getAmount().toString(),
-                entity.getBeneficiaryName(),
+                currencyCode,
+                entity.getAmount() != null ? entity.getAmount().toString() : null,
+                beneficiaryName,
                 entity.getPurpose()
         );
     }

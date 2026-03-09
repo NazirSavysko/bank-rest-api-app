@@ -135,6 +135,6 @@ public class CustomerServiceImpl implements CustomerService {
 
     private Customer getCustomerByEmail(final String email) {
         return customerRepository.findByAuthUserEmail(email)
-                .orElseThrow(() -> new NoSuchElementException(ERRORS_INVALID_EMAIL));
+                .orElseThrow(() -> new NoSuchElementException(ERRORS_CUSTOMER_NOT_FOUND_BY_EMAIL));
     }
 }

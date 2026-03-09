@@ -1,6 +1,7 @@
 package bank.rest.app.bankrestapp.entity;
 
 import bank.rest.app.bankrestapp.entity.enums.AccountStatus;
+import bank.rest.app.bankrestapp.entity.enums.AccountType;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import jakarta.persistence.*;
 import lombok.*;
@@ -36,7 +37,13 @@ public final class Account {
     private BigDecimal balance;
 
     @Enumerated(STRING)
+    private AccountType accountType;
+
+    @Enumerated(STRING)
     private Currency currencyCode;
+
+    @Column(length = 10, unique = true)
+    private String edrpou;
 
     @Enumerated(STRING)
     private AccountStatus status;
