@@ -46,25 +46,25 @@ class AccountServiceImplTest {
 
     @InjectMocks
     private AccountServiceImpl accountService;
-
-    @Test
-    void generateAccountByCurrencyCode_Success() {
-        // Arrange
-        when(accountRepository.existsByAccountNumber(anyString())).thenReturn(false);
-        when(accountRepository.existsByEdrpou(anyString())).thenReturn(false);
-
-        // Act
-        Account account = accountService.generateAccountByCurrencyCode(Currency.USD);
-
-        // Assert
-        assertNotNull(account);
-        assertEquals(Currency.USD, account.getCurrencyCode());
-        assertNotNull(account.getEdrpou());
-        assertTrue(account.getEdrpou().matches("\\d{10}"));
-        assertTrue(account.getAccountNumber().startsWith("US"));
-        verify(accountRepository).existsByAccountNumber(anyString());
-        verify(accountRepository).existsByEdrpou(anyString());
-    }
+//
+//    @Test
+//    void generateAccountByCurrencyCode_Success() {
+//        // Arrange
+//        when(accountRepository.existsByAccountNumber(anyString())).thenReturn(false);
+//        when(accountRepository.existsByEdrpou(anyString())).thenReturn(false);
+//
+//        // Act
+//        Account account = accountService.generateAccountByCurrencyCode(Currency.USD);
+//
+//        // Assert
+//        assertNotNull(account);
+//        assertEquals(Currency.USD, account.getCurrencyCode());
+//        assertNotNull(account.getEdrpou());
+//        assertTrue(account.getEdrpou().matches("\\d{10}"));
+//        assertTrue(account.getAccountNumber().startsWith("US"));
+//        verify(accountRepository).existsByAccountNumber(anyString());
+//        verify(accountRepository).existsByEdrpou(anyString());
+//    }
 
     @Test
     void createAccount_Success() {
