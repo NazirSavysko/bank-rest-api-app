@@ -3,21 +3,21 @@ package bank.rest.app.bankrestapp.service.impl;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.Card;
 import bank.rest.app.bankrestapp.entity.Customer;
+import bank.rest.app.bankrestapp.entity.enums.AccountType;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.resository.AccountRepository;
 import bank.rest.app.bankrestapp.resository.CustomerRepository;
 import bank.rest.app.bankrestapp.service.AccountService;
 import bank.rest.app.bankrestapp.service.CardService;
 import lombok.AllArgsConstructor;
-import org.hibernate.mapping.List;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static bank.rest.app.bankrestapp.constants.AccountDefaults.*;
 import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_INVALID_EMAIL;
@@ -41,15 +41,20 @@ public class AccountServiceImpl implements AccountService {
         return Account.builder()
                 .accountNumber(accountNumber)
                 .balance(ACCOUNT_BALANCE_INITIAL)
+                .accountType(AccountType.CURRENT)
                 .currencyCode(currency)
+                .edrpou(this.generateUniqueEdrpou())
                 .status(DEFAULT_ACCOUNT_STATUS)
                 .createdAt(DEFAULT_CREATED_AT)
                 .build();
     }
 
     @Override
-    public Account createAccount(final @NotNull String accountType, final String customerEmail) {
-        final Currency currency = Currency.valueOf(accountType.toUpperCase());
+    public Account createAccount(final @NotNull String accountType,
+                                 final String currencyCode,
+                                 final String customerEmail) {
+        final boolean isFopAccount = AccountType.FOP.name().equalsIgnoreCase(accountType);
+        final Currency currency = isFopAccount ? Currency.UAH : Currency.valueOf(currencyCode.toUpperCase());
         final Account account = this.generateAccountByCurrencyCode(currency);
         final Card card = this.cardService.generateCard();
 
@@ -60,11 +65,12 @@ public class AccountServiceImpl implements AccountService {
             throw new IllegalArgumentException("Customer has reached the maximum number of accounts.");
         }
         Optional<Account> existingAccount = customer.getAccounts().stream().filter(account1 ->
-                account1.getCurrencyCode() == currency).findFirst();
+                this.hasExistingRequestedAccount(account1, currency, isFopAccount)).findFirst();
         if (existingAccount.isPresent()) {
             throw new IllegalArgumentException("Customer already has an account with this currency.");
         }
 
+        account.setAccountType(isFopAccount ? AccountType.FOP : AccountType.CURRENT);
         account.setCustomer(customer);
         account.setCard(card);
         card.setAccount(account);
@@ -80,6 +86,17 @@ public class AccountServiceImpl implements AccountService {
                 .orElseThrow(() -> new NoSuchElementException("Account not found for the provided account number"));
     }
 
+    private boolean hasExistingRequestedAccount(final Account existingAccount,
+                                                final Currency requestedCurrency,
+                                                final boolean requestedFopAccount) {
+        if (requestedFopAccount) {
+            return AccountType.FOP.equals(existingAccount.getAccountType());
+        }
+
+        return existingAccount.getCurrencyCode() == requestedCurrency
+                && !AccountType.FOP.equals(existingAccount.getAccountType());
+    }
+
     private String generateAccountNumber(String beginningOfWord) {
         String accountNumber;
 
@@ -89,6 +106,16 @@ public class AccountServiceImpl implements AccountService {
         } while (accountRepository.existsByAccountNumber(accountNumber));
 
         return accountNumber;
+    }
+
+    private @NotNull String generateUniqueEdrpou() {
+        String edrpou;
+
+        do {
+            edrpou = String.valueOf(ThreadLocalRandom.current().nextLong(1_000_000_000L, 10_000_000_000L));
+        } while (this.accountRepository.existsByEdrpou(edrpou));
+
+        return edrpou;
     }
 
     @Contract(pure = true)

@@ -9,7 +9,7 @@ public interface AccountService {
     Account generateAccountByCurrencyCode(Currency currency);
 
     @Transactional(rollbackFor = Exception.class)
-    Account createAccount(String accountType,String customerEmail);
+    Account createAccount(String accountType, String currencyCode, String customerEmail);
 
     Account getAccountByNumber(String accountNumber);
 }

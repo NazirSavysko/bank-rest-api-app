@@ -33,7 +33,8 @@ public final class AccountController {
             ) {
         final String customerEmail = userDetails.getUsername();
         final CreateAccountDTO createAccountDTO = new CreateAccountDTO(
-                createAccountPayload.accountType(),
+                createAccountPayload.accountType().name(),
+                createAccountPayload.currency(),
                 customerEmail
         );
 

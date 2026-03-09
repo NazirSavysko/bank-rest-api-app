@@ -10,6 +10,7 @@ import bank.rest.app.bankrestapp.entity.IbanPayment;
 import bank.rest.app.bankrestapp.entity.InternetPayment;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.entity.Transaction;
+import bank.rest.app.bankrestapp.entity.enums.AccountType;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.entity.enums.TransactionType;
 import bank.rest.app.bankrestapp.exception.InvalidAccountCurrencyException;
@@ -34,6 +35,8 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentServiceImplTest {
+
+    private static final String VALID_UA_IBAN = "UA123456789012345678901234567890";
 
     @Mock
     private AccountRepository accountRepository;
@@ -220,7 +223,7 @@ class PaymentServiceImplTest {
                 14L,
                 BigDecimal.TEN,
                 "Name",
-                "UA123456789012345678901234567",
+                VALID_UA_IBAN,
                 "123",
                 "Purpose"
         );
@@ -239,7 +242,24 @@ class PaymentServiceImplTest {
                 15L,
                 BigDecimal.TEN,
                 "Name",
-                "PL123456789012345678901234567",
+                "PL123456789012345678901234567890",
+                "123",
+                "Purpose"
+        );
+
+        assertThrows(IllegalArgumentException.class,
+                () -> paymentService.processIbanPayment(request, "user@example.com"));
+
+        verifyNoInteractions(accountRepository, paymentRepository, transactionRepository);
+    }
+
+    @Test
+    void processIbanPayment_InvalidIbanLength_ShouldThrow() {
+        final IbanPaymentRequestDTO request = new IbanPaymentRequestDTO(
+                15L,
+                BigDecimal.TEN,
+                "Name",
+                "UA123456789012345678901234567",
                 "123",
                 "Purpose"
         );
@@ -259,7 +279,7 @@ class PaymentServiceImplTest {
                 16L,
                 BigDecimal.valueOf(100),
                 "Name",
-                "UA123456789012345678901234567",
+                VALID_UA_IBAN,
                 "123",
                 "Purpose"
         );
@@ -271,6 +291,52 @@ class PaymentServiceImplTest {
         verify(transactionRepository, never()).save(any(Transaction.class));
         verify(paymentRepository, never()).save(any(Payment.class));
         verifyNoInteractions(currencyLoader);
+    }
+
+    @Test
+    void processIbanPayment_FopWithoutEdrpou_ShouldThrow() {
+        final Account senderAccount = createAccount(17, Currency.UAH, BigDecimal.valueOf(200), "user@example.com", "UA_SENDER");
+        senderAccount.setAccountType(AccountType.FOP);
+        senderAccount.setEdrpou(null);
+        when(accountRepository.findById(17)).thenReturn(Optional.of(senderAccount));
+
+        final IbanPaymentRequestDTO request = new IbanPaymentRequestDTO(
+                17L,
+                BigDecimal.valueOf(100),
+                "Name",
+                VALID_UA_IBAN,
+                "123",
+                "Purpose"
+        );
+
+        assertThrows(IllegalStateException.class,
+                () -> paymentService.processIbanPayment(request, "user@example.com"));
+
+        verify(accountRepository, never()).save(any(Account.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
+    void processIbanPayment_InsufficientFunds_ShouldThrow() {
+        final Account senderAccount = createAccount(21, Currency.UAH, BigDecimal.valueOf(20), "user@example.com", "UA_SENDER");
+        when(accountRepository.findById(21)).thenReturn(Optional.of(senderAccount));
+
+        final IbanPaymentRequestDTO request = new IbanPaymentRequestDTO(
+                21L,
+                BigDecimal.valueOf(100),
+                "Name",
+                VALID_UA_IBAN,
+                "123",
+                "Purpose"
+        );
+
+        assertThrows(InsufficientFundsException.class,
+                () -> paymentService.processIbanPayment(request, "user@example.com"));
+
+        verify(accountRepository, never()).save(any(Account.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
+        verify(paymentRepository, never()).save(any(Payment.class));
     }
 
     @Test
@@ -315,6 +381,7 @@ class PaymentServiceImplTest {
         final Account account = new Account();
         account.setAccountId(id);
         account.setAccountNumber(accountNumber);
+        account.setAccountType(AccountType.CURRENT);
         account.setCurrencyCode(currency);
         account.setBalance(balance);
         account.setCustomer(customer);
