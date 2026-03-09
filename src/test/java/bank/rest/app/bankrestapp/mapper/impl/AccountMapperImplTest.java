@@ -50,6 +50,7 @@ class AccountMapperImplTest {
 
         final GetAccountDTO dto = mapper.toDto(account);
 
+        assertEquals("FOP", dto.accountType());
         assertEquals("1234567890", dto.edrpou());
         assertEquals("UAH", dto.currency());
         assertEquals("ACTIVE", dto.status());

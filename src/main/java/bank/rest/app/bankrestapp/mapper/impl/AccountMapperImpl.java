@@ -49,6 +49,7 @@ public final class AccountMapperImpl implements Mapper<Account, GetAccountDTO> {
                 entity.getCurrencyCode().name(),
                 entity.getStatus().name(),
                 mapDto(entity.getCard(), this.cardMapper::toDto),
+                entity.getAccountType().name(),
                 entity.getEdrpou()
         );
     }

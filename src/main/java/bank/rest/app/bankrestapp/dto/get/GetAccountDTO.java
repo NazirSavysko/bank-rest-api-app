@@ -10,6 +10,7 @@ public record GetAccountDTO(
         String currency,
         String status,
         GetCardDTO card,
+        String accountType,
         String edrpou
 //        List<GetTransactionDTO> transactions,
 //        List<GetPaymentDTO> payments
