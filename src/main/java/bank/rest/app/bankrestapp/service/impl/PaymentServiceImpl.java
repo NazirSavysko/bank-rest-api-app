@@ -189,7 +189,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     private Account getValidOwnedAccount(final Long accountId, final String authenticatedUserEmail) {
         final Integer id = this.convertAccountId(accountId);
-        final Account account = this.accountRepository.findById(id)
+        final Account account = this.accountRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new NoSuchElementException(ERRORS_ACCOUNT_NOT_FOUND));
 
         if (account.getCustomer() == null

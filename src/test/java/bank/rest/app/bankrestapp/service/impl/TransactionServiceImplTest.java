@@ -10,6 +10,7 @@ import bank.rest.app.bankrestapp.resository.TransactionRepository;
 import bank.rest.app.bankrestapp.service.EmailService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -29,7 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -61,8 +61,8 @@ class TransactionServiceImplTest {
         Account senderAccount = createAccount(senderCard, Currency.USD, BigDecimal.valueOf(500));
         Account recipientAccount = createAccount(recipientCard, Currency.USD, BigDecimal.valueOf(100));
 
-        when(accountRepository.findByCard_CardNumber(senderCard)).thenReturn(Optional.of(senderAccount));
-        when(accountRepository.findByCard_CardNumber(recipientCard)).thenReturn(Optional.of(recipientAccount));
+        when(accountRepository.findByCard_CardNumberForUpdate(senderCard)).thenReturn(Optional.of(senderAccount));
+        when(accountRepository.findByCard_CardNumberForUpdate(recipientCard)).thenReturn(Optional.of(recipientAccount));
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
@@ -75,6 +75,7 @@ class TransactionServiceImplTest {
         assertEquals(BigDecimal.valueOf(200), recipientAccount.getBalance());
         verify(emailService).checkIfCodeIsVerified(anyString());
         verify(transactionRepository).save(any(Transaction.class));
+        verify(accountRepository, never()).findByCard_CardNumber(anyString());
     }
 
     @Test
@@ -88,8 +89,8 @@ class TransactionServiceImplTest {
         Account senderAccount = createAccount(senderCard, Currency.USD, BigDecimal.valueOf(500));
         Account recipientAccount = createAccount(recipientCard, Currency.EUR, BigDecimal.valueOf(100));
 
-        when(accountRepository.findByCard_CardNumber(senderCard)).thenReturn(Optional.of(senderAccount));
-        when(accountRepository.findByCard_CardNumber(recipientCard)).thenReturn(Optional.of(recipientAccount));
+        when(accountRepository.findByCard_CardNumberForUpdate(senderCard)).thenReturn(Optional.of(senderAccount));
+        when(accountRepository.findByCard_CardNumberForUpdate(recipientCard)).thenReturn(Optional.of(recipientAccount));
         when(currencyLoader.convert(amount, "USD", "EUR")).thenReturn(convertedAmount);
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -104,6 +105,24 @@ class TransactionServiceImplTest {
     }
 
     @Test
+    void withdraw_ShouldLockAccountsInCardOrder() {
+        final String senderCard = "9999";
+        final String recipientCard = "1111";
+        final Account senderAccount = createAccount(senderCard, Currency.UAH, BigDecimal.valueOf(200));
+        final Account recipientAccount = createAccount(recipientCard, Currency.UAH, BigDecimal.valueOf(100));
+
+        when(accountRepository.findByCard_CardNumberForUpdate(recipientCard)).thenReturn(Optional.of(recipientAccount));
+        when(accountRepository.findByCard_CardNumberForUpdate(senderCard)).thenReturn(Optional.of(senderAccount));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        transactionService.withdraw(senderCard, recipientCard, BigDecimal.TEN, "Ordered lock");
+
+        final InOrder inOrder = inOrder(accountRepository);
+        inOrder.verify(accountRepository).findByCard_CardNumberForUpdate(recipientCard);
+        inOrder.verify(accountRepository).findByCard_CardNumberForUpdate(senderCard);
+    }
+
+    @Test
     void withdraw_WhenSenderAccountIsInactive_ShouldThrowLocalizedMessage() {
         final String senderCard = "1111";
         final String recipientCard = "2222";
@@ -111,8 +130,8 @@ class TransactionServiceImplTest {
         senderAccount.setStatus(bank.rest.app.bankrestapp.entity.enums.AccountStatus.BLOCKED);
         final Account recipientAccount = createAccount(recipientCard, Currency.EUR, BigDecimal.valueOf(100));
 
-        when(accountRepository.findByCard_CardNumber(senderCard)).thenReturn(Optional.of(senderAccount));
-        when(accountRepository.findByCard_CardNumber(recipientCard)).thenReturn(Optional.of(recipientAccount));
+        when(accountRepository.findByCard_CardNumberForUpdate(senderCard)).thenReturn(Optional.of(senderAccount));
+        when(accountRepository.findByCard_CardNumberForUpdate(recipientCard)).thenReturn(Optional.of(recipientAccount));
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         final bank.rest.app.bankrestapp.exception.AccountNotActiveException exception =
@@ -129,8 +148,8 @@ class TransactionServiceImplTest {
         final Account senderAccount = createAccount(senderCard, Currency.USD, BigDecimal.ONE);
         final Account recipientAccount = createAccount(recipientCard, Currency.EUR, BigDecimal.valueOf(100));
 
-        when(accountRepository.findByCard_CardNumber(senderCard)).thenReturn(Optional.of(senderAccount));
-        when(accountRepository.findByCard_CardNumber(recipientCard)).thenReturn(Optional.of(recipientAccount));
+        when(accountRepository.findByCard_CardNumberForUpdate(senderCard)).thenReturn(Optional.of(senderAccount));
+        when(accountRepository.findByCard_CardNumberForUpdate(recipientCard)).thenReturn(Optional.of(recipientAccount));
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         final bank.rest.app.bankrestapp.exception.InsufficientFundsException exception =

@@ -164,4 +164,10 @@ public final class MessageError {
      * Pattern for exchange-rate lookup errors.
      */
     public static final String ERRORS_EXCHANGE_RATE_NOT_FOUND = "Курс для валюти %s не знайдено";
+
+    /**
+     * Error message when an operation cannot acquire a database lock in time.
+     */
+    public static final String ERRORS_OPERATION_TEMPORARILY_UNAVAILABLE =
+            "Операція тимчасово недоступна, спробуйте ще раз";
 }

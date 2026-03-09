@@ -7,6 +7,8 @@ import bank.rest.app.bankrestapp.exception.RecipientNotFoundException;
 import bank.rest.app.bankrestapp.exception.UnsupportedCurrencyException;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.ResponseEntity;
+import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
@@ -15,6 +17,7 @@ import java.io.UncheckedIOException;
 import java.sql.SQLException;
 import java.util.NoSuchElementException;
 
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_OPERATION_TEMPORARILY_UNAVAILABLE;
 import static java.time.LocalDateTime.now;
 import static java.util.Map.of;
 import static org.springframework.http.HttpStatus.*;
@@ -99,6 +102,17 @@ public final class RestControllerAdviceHandler {
                         "timestamp", now(),
                         "error", "Недостатньо коштів",
                         "message", e.getMessage()
+                ));
+    }
+
+    @ExceptionHandler({CannotAcquireLockException.class, PessimisticLockingFailureException.class})
+    public @NotNull ResponseEntity<?> handlePessimisticLockingFailureException(@NotNull RuntimeException e) {
+        return ResponseEntity.status(SERVICE_UNAVAILABLE)
+                .contentType(APPLICATION_JSON)
+                .body(of(
+                        "timestamp", now(),
+                        "error", "Конфлікт блокування",
+                        "message", ERRORS_OPERATION_TEMPORARILY_UNAVAILABLE
                 ));
     }
 

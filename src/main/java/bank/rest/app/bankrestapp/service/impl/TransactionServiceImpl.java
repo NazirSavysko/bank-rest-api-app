@@ -17,6 +17,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -42,12 +43,17 @@ public class TransactionServiceImpl implements TransactionService {
     private final EmailService emailService;
 
     @Override
+    @Transactional(
+            rollbackFor = Exception.class,
+            noRollbackFor = {AccountNotActiveException.class, InsufficientFundsException.class}
+    )
     public Transaction withdraw(final String senderCardNumber,
                                 final String recipientCardNumber,
                                 final BigDecimal amount,
                                 final String description) {
-        final Account senderAccount = this.getAccountByCardNumber(senderCardNumber);
-        final Account recipientAccount = this.getAccountByCardNumber(recipientCardNumber);
+        final LockedAccounts lockedAccounts = this.lockAccountsForTransfer(senderCardNumber, recipientCardNumber);
+        final Account senderAccount = lockedAccounts.senderAccount();
+        final Account recipientAccount = lockedAccounts.recipientAccount();
 
         this.validateActiveSenderAccount(senderAccount, recipientAccount, amount, description);
         this.validateVerifiedSender(senderAccount.getCustomer());
@@ -111,9 +117,27 @@ public class TransactionServiceImpl implements TransactionService {
         recipientAccount.setBalance(recipientAccount.getBalance().add(amountToReceive));
     }
 
-    private Account getAccountByCardNumber(final String card) {
-        return this.accountRepository.findByCard_CardNumber(card)
+    private Account getAccountByCardNumberForUpdate(final String card) {
+        return this.accountRepository.findByCard_CardNumberForUpdate(card)
                 .orElseThrow(() -> new NoSuchElementException(ERRORS_ACCOUNT_NOT_FOUND_BY_CARD));
+    }
+
+    private LockedAccounts lockAccountsForTransfer(final String senderCardNumber, final String recipientCardNumber) {
+        if (senderCardNumber.equals(recipientCardNumber)) {
+            final Account account = this.getAccountByCardNumberForUpdate(senderCardNumber);
+            return new LockedAccounts(account, account);
+        }
+
+        if (senderCardNumber.compareTo(recipientCardNumber) < 0) {
+            return new LockedAccounts(
+                    this.getAccountByCardNumberForUpdate(senderCardNumber),
+                    this.getAccountByCardNumberForUpdate(recipientCardNumber)
+            );
+        }
+
+        final Account recipientAccount = this.getAccountByCardNumberForUpdate(recipientCardNumber);
+        final Account senderAccount = this.getAccountByCardNumberForUpdate(senderCardNumber);
+        return new LockedAccounts(senderAccount, recipientAccount);
     }
 
     private @NotNull Transaction createTransaction(final @NotNull Account senderAccount,
@@ -138,5 +162,8 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         return this.transactionRepository.save(transaction);
+    }
+
+    private record LockedAccounts(Account senderAccount, Account recipientAccount) {
     }
 }
