@@ -25,6 +25,15 @@ public final class AccountController {
 
     private final AccountFacade accountFacade;
 
+    /**
+     * Creates a new account for the authenticated customer.
+     *
+     * @param userDetails authenticated user details
+     * @param createAccountPayload account creation payload
+     * @param bindingResult validation result
+     * @return response containing the created account DTO
+     * @throws IllegalArgumentException if the payload is invalid or the account cannot be created
+     */
     @PostMapping("/create")
     public ResponseEntity<?> createAccount(
             final @AuthenticationPrincipal UserDetails userDetails,

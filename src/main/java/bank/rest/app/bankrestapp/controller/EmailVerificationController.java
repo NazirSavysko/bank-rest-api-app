@@ -19,6 +19,14 @@ public final class EmailVerificationController {
 
     private final EmailFacade emailFacade;
 
+    /**
+     * Sends a verification code to the supplied email address.
+     *
+     * @param email email payload
+     * @param bindingResult validation result
+     * @return empty success response
+     * @throws IllegalArgumentException if validation fails
+     */
     @PostMapping("/send")
     public ResponseEntity<?> sendCode(final @RequestBody EmailDTO email,
                                       final BindingResult bindingResult) {
@@ -28,6 +36,14 @@ public final class EmailVerificationController {
                 .build();
     }
 
+    /**
+     * Checks the verification code submitted by the client.
+     *
+     * @param verifyCodeDTO verification payload
+     * @param bindingResult validation result
+     * @return empty success response
+     * @throws IllegalArgumentException if validation fails or the code is invalid
+     */
     @PostMapping("/check")
     public ResponseEntity<?> checkCode(final @RequestBody VerifyCodeDTO verifyCodeDTO,
                                        final BindingResult bindingResult) {

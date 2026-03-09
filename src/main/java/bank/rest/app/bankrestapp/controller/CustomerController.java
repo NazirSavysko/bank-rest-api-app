@@ -22,6 +22,13 @@ class CustomerController {
 
     private final CustomerFacade customerFacade;
 
+    /**
+     * Returns profile data for the authenticated customer.
+     *
+     * @param userDetails authenticated user details
+     * @return response containing customer data
+     * @throws java.util.NoSuchElementException if the customer cannot be found
+     */
     @GetMapping("/customer")
     public ResponseEntity<?> getCustomer(
             final @AuthenticationPrincipal UserDetails userDetails) {
@@ -31,6 +38,14 @@ class CustomerController {
         return ok(getCustomerDTO);
     }
 
+    /**
+     * Resets a customer password using the forgot-password flow.
+     *
+     * @param resetPasswordRequestDTO reset-password payload
+     * @param bindingResult validation result
+     * @return empty success response
+     * @throws IllegalArgumentException if validation fails or the password cannot be reset
+     */
     @PutMapping("/forgot-password")
     public ResponseEntity<?> updatePassword(final @RequestBody ResetPasswordRequestDTO resetPasswordRequestDTO,final BindingResult bindingResult) {
         this.customerFacade.resetPassword(resetPasswordRequestDTO,bindingResult);
@@ -39,6 +54,15 @@ class CustomerController {
                 .build();
     }
 
+    /**
+     * Changes the password of the authenticated customer.
+     *
+     * @param userDetails authenticated user details
+     * @param updateCustomerPassword change-password payload
+     * @param bindingResult validation result
+     * @return empty success response
+     * @throws IllegalArgumentException if validation fails or password rules are violated
+     */
     @PutMapping("/change-password")
     public ResponseEntity<?> changePassword(
             final @AuthenticationPrincipal UserDetails userDetails,

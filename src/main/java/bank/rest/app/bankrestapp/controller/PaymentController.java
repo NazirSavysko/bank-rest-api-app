@@ -26,6 +26,14 @@ public final class PaymentController {
     private final PaymentService paymentService;
     private final Mapper<Payment, GetPaymentDTO> paymentMapper;
 
+    /**
+     * Processes an IBAN payment for the authenticated customer.
+     *
+     * @param userDetails authenticated user details
+     * @param request IBAN payment request payload
+     * @return response containing the created payment DTO
+     * @throws IllegalArgumentException if the request is invalid or the account does not belong to the user
+     */
     @PostMapping("/iban")
     public ResponseEntity<GetPaymentDTO> processIbanPayment(
             final @AuthenticationPrincipal UserDetails userDetails,
@@ -38,6 +46,14 @@ public final class PaymentController {
                 .body(this.paymentMapper.toDto(payment));
     }
 
+    /**
+     * Processes an internet-service payment for the authenticated customer.
+     *
+     * @param userDetails authenticated user details
+     * @param request internet payment request payload
+     * @return response containing the created payment DTO
+     * @throws IllegalArgumentException if the request is invalid or the account does not belong to the user
+     */
     @PostMapping("/internet")
     public ResponseEntity<GetPaymentDTO> processInternetPayment(
             final @AuthenticationPrincipal UserDetails userDetails,

@@ -14,15 +14,21 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 
-
+import java.util.ArrayList;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static bank.rest.app.bankrestapp.constants.AccountDefaults.*;
-import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_INVALID_EMAIL;
+import static bank.rest.app.bankrestapp.constants.AccountDefaults.ACCOUNT_BALANCE_INITIAL;
+import static bank.rest.app.bankrestapp.constants.AccountDefaults.ACCOUNT_NUMBER_PATTERN;
+import static bank.rest.app.bankrestapp.constants.AccountDefaults.DEFAULT_ACCOUNT_STATUS;
+import static bank.rest.app.bankrestapp.constants.AccountDefaults.DEFAULT_CREATED_AT;
+import static bank.rest.app.bankrestapp.constants.AccountDefaults.FOP_ACCOUNT_BALANCE_INITIAL;
+import static bank.rest.app.bankrestapp.constants.AccountDefaults.MAXIMUM_NUMBER_OF_ACCOUNTS;
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_ACCOUNT_NOT_FOUND_BY_NUMBER;
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_ACCOUNT_WITH_CURRENCY_ALREADY_EXISTS;
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_CUSTOMER_NOT_FOUND_BY_EMAIL;
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_MAXIMUM_NUMBER_OF_ACCOUNTS_REACHED;
 import static java.lang.String.format;
-import static java.util.List.of;
 
 @Service
 @AllArgsConstructor
@@ -32,14 +38,10 @@ public class AccountServiceImpl implements AccountService {
     private final CustomerRepository customerRepository;
     private final CardService cardService;
 
-
     @Override
     public Account generateAccountByCurrencyCode(final @NotNull Currency currency) {
-        final String beginningOfWord = this.getBeginningOfWordByCurrency(currency);
-        final String accountNumber = this.generateAccountNumber(beginningOfWord);
-
         return Account.builder()
-                .accountNumber(accountNumber)
+                .accountNumber(this.generateAccountNumber(this.getBeginningOfWordByCurrency(currency)))
                 .balance(ACCOUNT_BALANCE_INITIAL)
                 .accountType(AccountType.CURRENT)
                 .currencyCode(currency)
@@ -53,30 +55,17 @@ public class AccountServiceImpl implements AccountService {
     public Account createAccount(final @NotNull String accountType,
                                  final String currencyCode,
                                  final String customerEmail) {
-        final boolean isFopAccount = AccountType.FOP.name().equalsIgnoreCase(accountType);
-        final Currency currency = isFopAccount ? Currency.UAH : Currency.valueOf(currencyCode.toUpperCase());
+        final boolean isFopAccount = this.isFopAccount(accountType);
+        final Currency currency = this.resolveCurrency(accountType, currencyCode);
+        final Customer customer = this.getCustomerByEmail(customerEmail);
+
+        this.validateAccountCapacity(customer);
+        this.validateRequestedAccountAbsence(customer, currency, isFopAccount);
+
         final Account account = this.generateAccountByCurrencyCode(currency);
         final Card card = this.cardService.generateCard();
 
-        final Customer customer = this.customerRepository.findByAuthUserEmail(customerEmail)
-                .orElseThrow(() -> new NoSuchElementException(ERRORS_INVALID_EMAIL));
-
-        if(customer.getAccounts().size() >= MAXIMUM_NUMBER_OF_ACCOUNTS) {
-            throw new IllegalArgumentException("Customer has reached the maximum number of accounts.");
-        }
-        Optional<Account> existingAccount = customer.getAccounts().stream().filter(account1 ->
-                this.hasExistingRequestedAccount(account1, currency, isFopAccount)).findFirst();
-        if (existingAccount.isPresent()) {
-            throw new IllegalArgumentException("Customer already has an account with this currency.");
-        }
-
-        account.setAccountType(isFopAccount ? AccountType.FOP : AccountType.CURRENT);
-        account.setBalance(isFopAccount ? FOP_ACCOUNT_BALANCE_INITIAL : ACCOUNT_BALANCE_INITIAL);
-        account.setCustomer(customer);
-        account.setCard(card);
-        card.setAccount(account);
-        account.setSentTransactions(of());
-        account.setReceivedTransactions(of());
+        this.assignAccountDetails(account, card, customer, isFopAccount);
 
         return this.accountRepository.save(account);
     }
@@ -84,7 +73,52 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public Account getAccountByNumber(final String accountNumber) {
         return this.accountRepository.findByAccountNumber(accountNumber)
-                .orElseThrow(() -> new NoSuchElementException("Account not found for the provided account number"));
+                .orElseThrow(() -> new NoSuchElementException(ERRORS_ACCOUNT_NOT_FOUND_BY_NUMBER));
+    }
+
+    private Currency resolveCurrency(final String accountType, final String currencyCode) {
+        return this.isFopAccount(accountType)
+                ? Currency.UAH
+                : Currency.valueOf(currencyCode.toUpperCase());
+    }
+
+    private boolean isFopAccount(final String accountType) {
+        return AccountType.FOP.name().equalsIgnoreCase(accountType);
+    }
+
+    private Customer getCustomerByEmail(final String customerEmail) {
+        return this.customerRepository.findByAuthUserEmail(customerEmail)
+                .orElseThrow(() -> new NoSuchElementException(ERRORS_CUSTOMER_NOT_FOUND_BY_EMAIL));
+    }
+
+    private void validateAccountCapacity(final Customer customer) {
+        if (customer.getAccounts().size() >= MAXIMUM_NUMBER_OF_ACCOUNTS) {
+            throw new IllegalArgumentException(ERRORS_MAXIMUM_NUMBER_OF_ACCOUNTS_REACHED);
+        }
+    }
+
+    private void validateRequestedAccountAbsence(final Customer customer,
+                                                 final Currency requestedCurrency,
+                                                 final boolean requestedFopAccount) {
+        final boolean existingAccountPresent = customer.getAccounts().stream()
+                .anyMatch(account -> this.hasExistingRequestedAccount(account, requestedCurrency, requestedFopAccount));
+
+        if (existingAccountPresent) {
+            throw new IllegalArgumentException(ERRORS_ACCOUNT_WITH_CURRENCY_ALREADY_EXISTS);
+        }
+    }
+
+    private void assignAccountDetails(final Account account,
+                                      final Card card,
+                                      final Customer customer,
+                                      final boolean isFopAccount) {
+        account.setAccountType(isFopAccount ? AccountType.FOP : AccountType.CURRENT);
+        account.setBalance(isFopAccount ? FOP_ACCOUNT_BALANCE_INITIAL : ACCOUNT_BALANCE_INITIAL);
+        account.setCustomer(customer);
+        account.setCard(card);
+        account.setSentTransactions(new ArrayList<>());
+        account.setReceivedTransactions(new ArrayList<>());
+        card.setAccount(account);
     }
 
     private boolean hasExistingRequestedAccount(final Account existingAccount,
@@ -98,13 +132,13 @@ public class AccountServiceImpl implements AccountService {
                 && !AccountType.FOP.equals(existingAccount.getAccountType());
     }
 
-    private String generateAccountNumber(String beginningOfWord) {
+    private String generateAccountNumber(final String beginningOfWord) {
         String accountNumber;
 
         do {
             final long randomNumber = (long) (Math.random() * 1_0000_0000_0000_0000L);
-            accountNumber = format(ACCOUNT_NUMBER_PATTERN,beginningOfWord, randomNumber);
-        } while (accountRepository.existsByAccountNumber(accountNumber));
+            accountNumber = format(ACCOUNT_NUMBER_PATTERN, beginningOfWord, randomNumber);
+        } while (this.accountRepository.existsByAccountNumber(accountNumber));
 
         return accountNumber;
     }
@@ -120,7 +154,7 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Contract(pure = true)
-    private @NotNull String getBeginningOfWordByCurrency(@NotNull Currency currency) {
+    private @NotNull String getBeginningOfWordByCurrency(final @NotNull Currency currency) {
         return "UA";
     }
 }

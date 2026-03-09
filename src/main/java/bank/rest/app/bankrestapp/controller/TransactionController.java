@@ -18,6 +18,14 @@ class TransactionController {
 
     private final TransactionFacade transactionFacade;
 
+    /**
+     * Performs a card-to-card transfer.
+     *
+     * @param transaction transfer payload
+     * @param bindingResult validation result
+     * @return response containing the created transaction DTO
+     * @throws IllegalArgumentException if validation fails
+     */
     @PostMapping("/withdraw")
     public ResponseEntity<?> withdraw(final @RequestBody CreateTransaction transaction,
                                       final BindingResult bindingResult) {
@@ -27,9 +35,17 @@ class TransactionController {
         return ResponseEntity.ok(getTransactionDTO);
     }
 
+    /**
+     * Returns paged transaction history for the specified account number.
+     *
+     * @param pageable paging and sorting configuration
+     * @param accountNumber account number whose history should be returned
+     * @return page of transaction DTOs
+     * @throws java.util.NoSuchElementException if the account cannot be found
+     */
     @GetMapping("transactions")
     public Page<GetTransactionDTO> getAllTransactions(@PageableDefault(sort = {"transactionDate", "transactionId"}, direction = Sort.Direction.DESC) org.springframework.data.domain.Pageable pageable,
-                                                       @RequestParam String accountNumber) {
+                                                        @RequestParam String accountNumber) {
         return this.transactionFacade.getAllTransactions(pageable,accountNumber);
     }
 

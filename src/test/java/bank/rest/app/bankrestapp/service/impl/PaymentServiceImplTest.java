@@ -28,6 +28,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.util.Optional;
 
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_ACCOUNT_OWNERSHIP_MISMATCH;
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_FOP_ACCOUNT_EDRPOU_REQUIRED;
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_INSUFFICIENT_FUNDS;
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_UNSUPPORTED_ACCOUNT_CURRENCY_FOR_IBAN_PAYMENT;
 import static bank.rest.app.bankrestapp.entity.enums.PaymentStatus.COMPLETED;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -206,8 +210,9 @@ class PaymentServiceImplTest {
                 "A-01"
         );
 
-        assertThrows(InsufficientFundsException.class,
+        final InsufficientFundsException exception = assertThrows(InsufficientFundsException.class,
                 () -> paymentService.processInternetPayment(request, "user@example.com"));
+        assertEquals(ERRORS_INSUFFICIENT_FUNDS, exception.getMessage());
 
         verify(accountRepository, never()).save(any(Account.class));
         verify(transactionRepository, never()).save(any(Transaction.class));
@@ -228,8 +233,9 @@ class PaymentServiceImplTest {
                 "Purpose"
         );
 
-        assertThrows(IllegalArgumentException.class,
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> paymentService.processIbanPayment(request, "other@example.com"));
+        assertEquals(ERRORS_ACCOUNT_OWNERSHIP_MISMATCH, exception.getMessage());
 
         verify(accountRepository, never()).save(any(Account.class));
         verify(transactionRepository, never()).save(any(Transaction.class));
@@ -284,8 +290,9 @@ class PaymentServiceImplTest {
                 "Purpose"
         );
 
-        assertThrows(UnsupportedCurrencyException.class,
+        final UnsupportedCurrencyException exception = assertThrows(UnsupportedCurrencyException.class,
                 () -> paymentService.processIbanPayment(request, "user@example.com"));
+        assertEquals(ERRORS_UNSUPPORTED_ACCOUNT_CURRENCY_FOR_IBAN_PAYMENT, exception.getMessage());
 
         verify(accountRepository, never()).save(any(Account.class));
         verify(transactionRepository, never()).save(any(Transaction.class));
@@ -309,8 +316,9 @@ class PaymentServiceImplTest {
                 "Purpose"
         );
 
-        assertThrows(IllegalStateException.class,
+        final IllegalStateException exception = assertThrows(IllegalStateException.class,
                 () -> paymentService.processIbanPayment(request, "user@example.com"));
+        assertEquals(ERRORS_FOP_ACCOUNT_EDRPOU_REQUIRED, exception.getMessage());
 
         verify(accountRepository, never()).save(any(Account.class));
         verify(transactionRepository, never()).save(any(Transaction.class));
@@ -331,8 +339,9 @@ class PaymentServiceImplTest {
                 "Purpose"
         );
 
-        assertThrows(InsufficientFundsException.class,
+        final InsufficientFundsException exception = assertThrows(InsufficientFundsException.class,
                 () -> paymentService.processIbanPayment(request, "user@example.com"));
+        assertEquals(ERRORS_INSUFFICIENT_FUNDS, exception.getMessage());
 
         verify(accountRepository, never()).save(any(Account.class));
         verify(transactionRepository, never()).save(any(Transaction.class));

@@ -4,7 +4,7 @@ import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,8 +15,10 @@ import java.util.List;
 
 public interface TransactionRepository extends JpaRepository<Transaction, Integer> {
 
+    @EntityGraph(attributePaths = {"account", "toAccount"})
     Page<Transaction> findAllByAccount_AccountNumberOrToAccount_AccountNumber(String accountAccountNumber, String toAccountAccountNumber, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"account", "toAccount"})
     @Query("""
         SELECT t FROM Transaction t
         LEFT JOIN t.toAccount toAcc
@@ -26,6 +28,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Intege
         """)
     Page<Transaction> findAllTransactions(@Param("accountNumber") String accountNumber, @Param("statuses") Collection<TransactionStatus> statuses, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"account", "toAccount"})
     @Query("""
         SELECT t FROM Transaction t
         LEFT JOIN t.account acc
@@ -40,5 +43,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, Intege
                                               @Param("endDate") LocalDateTime endDate,
                                               @Param("status") TransactionStatus status);
 
+    @EntityGraph(attributePaths = {"account", "toAccount"})
     List<Transaction> findByAccount_AccountNumber(String accountNumber);
 }

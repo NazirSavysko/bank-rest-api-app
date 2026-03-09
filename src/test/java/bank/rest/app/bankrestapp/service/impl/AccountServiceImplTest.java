@@ -23,6 +23,9 @@ import java.util.Optional;
 
 
 import static bank.rest.app.bankrestapp.constants.AccountDefaults.MAXIMUM_NUMBER_OF_ACCOUNTS;
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_ACCOUNT_NOT_FOUND_BY_NUMBER;
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_ACCOUNT_WITH_CURRENCY_ALREADY_EXISTS;
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_MAXIMUM_NUMBER_OF_ACCOUNTS_REACHED;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -138,7 +141,9 @@ class AccountServiceImplTest {
         when(accountRepository.existsByEdrpou(anyString())).thenReturn(false);
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> accountService.createAccount("CURRENT", "USD", email));
+        final IllegalArgumentException exception =
+                assertThrows(IllegalArgumentException.class, () -> accountService.createAccount("CURRENT", "USD", email));
+        assertEquals(ERRORS_MAXIMUM_NUMBER_OF_ACCOUNTS_REACHED, exception.getMessage());
     }
 
     @Test
@@ -157,7 +162,9 @@ class AccountServiceImplTest {
         when(accountRepository.existsByEdrpou(anyString())).thenReturn(false);
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> accountService.createAccount("CURRENT", "USD", email));
+        final IllegalArgumentException exception =
+                assertThrows(IllegalArgumentException.class, () -> accountService.createAccount("CURRENT", "USD", email));
+        assertEquals(ERRORS_ACCOUNT_WITH_CURRENCY_ALREADY_EXISTS, exception.getMessage());
     }
 
     @Test
@@ -191,6 +198,8 @@ class AccountServiceImplTest {
         when(accountRepository.findByAccountNumber(accNum)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(NoSuchElementException.class, () -> accountService.getAccountByNumber(accNum));
+        final NoSuchElementException exception =
+                assertThrows(NoSuchElementException.class, () -> accountService.getAccountByNumber(accNum));
+        assertEquals(ERRORS_ACCOUNT_NOT_FOUND_BY_NUMBER, exception.getMessage());
     }
 }

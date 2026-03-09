@@ -147,7 +147,7 @@ public final class MapperUtils {
      */
     public static <T, R> R mapDto(T source, Function<T, R> mapper) {
         if (source == null) {
-            throw new NullPointerException("Cannot map null source object");
+            throw new NullPointerException("Неможливо виконати мапінг для порожнього вихідного об’єкта");
         }
         return mapper.apply(source);
     }

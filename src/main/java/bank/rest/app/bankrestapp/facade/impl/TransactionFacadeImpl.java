@@ -11,14 +11,11 @@ import bank.rest.app.bankrestapp.service.AccountService;
 import bank.rest.app.bankrestapp.service.TransactionService;
 import bank.rest.app.bankrestapp.validation.DtoValidator;
 import lombok.AllArgsConstructor;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 
-import java.util.List;
 import static bank.rest.app.bankrestapp.utils.MapperUtils.mapDto;
 
 @Component
@@ -46,8 +43,28 @@ public class TransactionFacadeImpl implements TransactionFacade {
     @Override
     public Page<GetTransactionDTO> getAllTransactions(final Pageable pageable, final String accountNumber) {
         final Account account = this.accountService.getAccountByNumber(accountNumber);
-        Page<Transaction> page = this.transactionService.getAllTransactions(accountNumber,account, pageable);
+        Page<Transaction> page = this.transactionService.getAllTransactions(accountNumber, account, pageable)
+                .map(transaction -> this.normalizeTransaction(transaction, account));
 
         return page.map(transactionMapper::toDto);
+    }
+
+    private Transaction normalizeTransaction(final Transaction transaction, final Account account) {
+        if (transaction.getAmount() != null
+                && transaction.getCurrencyCode() != null
+                && account.getCurrencyCode() != null) {
+            transaction.setAmount(this.currencyLoader.convert(
+                    transaction.getAmount(),
+                    transaction.getCurrencyCode().name(),
+                    account.getCurrencyCode().name()
+            ));
+            transaction.setCurrencyCode(account.getCurrencyCode());
+        }
+
+        if (transaction.getToAccount() != null && transaction.getToAccount().equals(account)) {
+            transaction.setIsRecipient(Boolean.TRUE);
+        }
+
+        return transaction;
     }
 }
