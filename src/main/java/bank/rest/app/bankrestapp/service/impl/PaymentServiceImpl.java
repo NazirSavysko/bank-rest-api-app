@@ -24,19 +24,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.EnumSet;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
-import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_ACCOUNT_NOT_FOUND;
-import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_ACCOUNT_OWNERSHIP_MISMATCH;
-import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_EXCHANGE_RATE_NOT_FOUND;
-import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_FOP_ACCOUNT_EDRPOU_REQUIRED;
-import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_INSUFFICIENT_FUNDS;
-import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_INVALID_RECIPIENT_IBAN;
-import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_PAYMENTS_ALLOWED_ONLY_FROM_UAH_ACCOUNTS;
-import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_UNSUPPORTED_ACCOUNT_CURRENCY_FOR_IBAN_PAYMENT;
+import static bank.rest.app.bankrestapp.constants.MessageError.*;
 import static bank.rest.app.bankrestapp.entity.enums.PaymentStatus.COMPLETED;
 import static java.lang.String.format;
 import static java.time.LocalDateTime.now;
@@ -58,22 +50,54 @@ public class PaymentServiceImpl implements PaymentService {
         this.validateRecipientIban(request.recipientIban());
 
         final Account senderAccount = this.getValidOwnedAccount(request.accountId(), authenticatedUserEmail);
+        final Account recipientAccount = this.getValidORecipientAccount(
+                request.recipientIban(),
+                request.taxNumber(),
+                request.recipientName()
+        );
+        if(senderAccount.equals(recipientAccount)){
+            throw new IllegalArgumentException(ERRORS_SENDER_AND_RECIPIENT_ACCOUNTS_CANNOT_BE_SAME);
+        }
         this.validateIbanPaymentAccount(senderAccount, request.amount());
 
-        final BigDecimal amountInUah = this.resolveAmountInUah(senderAccount, request.amount());
+        final BigDecimal convertedAmount = this.convertAmount(senderAccount,recipientAccount, request.amount());
         this.debitAccount(senderAccount, request.amount());
+        this.creditAccount(recipientAccount, convertedAmount);
 
         final IbanPayment payment = this.buildIbanPayment(request, senderAccount);
         payment.setTransaction(this.createTransaction(
                 senderAccount,
-                null,
+                recipientAccount,
                 request.amount(),
                 TransactionType.IBAN_PAYMENT,
-                this.buildIbanDescription(request.recipientIban(), amountInUah)
+                this.buildIbanDescription(request.recipientIban(), convertedAmount)
         ));
 
         return this.paymentRepository.save(payment);
     }
+
+    private Account getValidORecipientAccount(final String recipientIban,final String taxNumber,final String recipientName){
+        final Account recipientAccount = this.accountRepository.findWithLockByAccountNumber(recipientIban)
+                .orElseThrow(() -> new NoSuchElementException(ERRORS_ACCOUNT_NOT_FOUND_BY_NUMBER));
+
+        if (!Objects.equals(recipientAccount.getEdrpou(), taxNumber)) {
+            throw new IllegalArgumentException(ERRORS_FOP_ACCOUNT_EDRPOU_MISMATCH);
+        }
+        final String fullName = recipientAccount.getCustomer().getFirstName() + " " + recipientAccount.getCustomer().getLastName();
+
+        if (recipientAccount.getAccountType() == AccountType.FOP) {
+            if (!Objects.equals(fullName + "  ФОП", recipientName)) {
+                throw new IllegalArgumentException(ERRORS_ACCOUNT_NAME_MISMATCH);
+            }
+        }else {
+            if (!Objects.equals(fullName, recipientName)) {
+                throw new IllegalArgumentException(ERRORS_ACCOUNT_NAME_MISMATCH);
+            }
+        }
+
+        return recipientAccount;
+    }
+
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -106,8 +130,8 @@ public class PaymentServiceImpl implements PaymentService {
         this.validateSufficientFunds(account, amount);
     }
 
-    private BigDecimal resolveAmountInUah(final Account senderAccount, final BigDecimal originalAmount) {
-        if (Currency.UAH.equals(senderAccount.getCurrencyCode())) {
+    private BigDecimal convertAmount(final Account senderAccount, final Account recipientAccount, final BigDecimal originalAmount) {
+        if (senderAccount.getCurrencyCode().equals(recipientAccount.getCurrencyCode())) {
             return originalAmount;
         }
 
@@ -116,11 +140,16 @@ public class PaymentServiceImpl implements PaymentService {
                         format(ERRORS_EXCHANGE_RATE_NOT_FOUND, senderAccount.getCurrencyCode().name())
                 ));
 
-        return originalAmount.multiply(BigDecimal.valueOf(exchangeRate.getRate()));
+        return currencyLoader.convert(originalAmount, senderAccount.getCurrencyCode().name(), recipientAccount.getCurrencyCode().name());
     }
 
     private void debitAccount(final Account account, final BigDecimal amount) {
         account.setBalance(account.getBalance().subtract(amount));
+        this.accountRepository.save(account);
+    }
+
+    private void creditAccount(final Account account, final BigDecimal amount) {
+        account.setBalance(account.getBalance().add(amount));
         this.accountRepository.save(account);
     }
 
@@ -142,11 +171,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private String buildIbanDescription(final String recipientIban, final BigDecimal amountInUah) {
-        return "Переказ за IBAN: "
-                + recipientIban
-                + ". До зарахування: "
-                + amountInUah.setScale(2, RoundingMode.HALF_UP)
-                + " UAH";
+        return "Переказ за IBAN: ";
     }
 
     private InternetPayment buildInternetPayment(final InternetPaymentRequestDTO request, final Account account) {

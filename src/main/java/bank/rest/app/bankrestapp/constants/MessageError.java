@@ -96,6 +96,12 @@ public final class MessageError {
      */
     public static final String ERRORS_ACCOUNT_NOT_FOUND_BY_NUMBER = "Рахунок за вказаним номером не знайдено";
 
+    public static final String ERRORS_SENDER_AND_RECIPIENT_ACCOUNTS_CANNOT_BE_SAME = "Рахунок відправника та отримувача не могуть быть одинаковими";
+
+    public static final String ERRORS_FOP_ACCOUNT_EDRPOU_MISMATCH = "Для рахунку код ЄДРПОУ/ІПН має відповідати коду ЄДРПОУ власника рахунку";
+
+    public static final String ERRORS_ACCOUNT_NAME_MISMATCH = "Назва рахунку не відповідає типу власника";
+
     /**
      * Error message when an account cannot be found by the provided card number.
      */

@@ -29,6 +29,7 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @EntityGraph(attributePaths = {"customer", "customer.authUser", "card"})
+    @Query("select a from Account a where a.accountNumber = :accountNumber")
     Optional<Account> findWithLockByAccountNumber(String accountNumber);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
