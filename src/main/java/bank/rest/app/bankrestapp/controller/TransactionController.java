@@ -5,6 +5,7 @@ import bank.rest.app.bankrestapp.dto.get.GetTransactionDTO;
 import bank.rest.app.bankrestapp.facade.TransactionFacade;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
@@ -44,7 +45,7 @@ class TransactionController {
      * @throws java.util.NoSuchElementException if the account cannot be found
      */
     @GetMapping("transactions")
-    public Page<GetTransactionDTO> getAllTransactions(@PageableDefault(sort = {"transactionDate", "transactionId"}, direction = Sort.Direction.DESC) org.springframework.data.domain.Pageable pageable,
+    public Page<GetTransactionDTO> getAllTransactions(@PageableDefault(sort = {"transactionDate", "transactionId"}, direction = Sort.Direction.DESC) Pageable pageable,
                                                         @RequestParam String accountNumber) {
         return this.transactionFacade.getAllTransactions(pageable,accountNumber);
     }

@@ -121,7 +121,7 @@ public final class MessageError {
      * Error message when the recipient IBAN is invalid.
      */
     public static final String ERRORS_INVALID_RECIPIENT_IBAN =
-            "IBAN отримувача має починатися з UA та містити лише цифри після префікса";
+            "IBAN отримувача має починатися з UA, містити 34 символи та лише цифри після префікса";
 
     /**
      * Error message when a FOP account has no EDRPOU.

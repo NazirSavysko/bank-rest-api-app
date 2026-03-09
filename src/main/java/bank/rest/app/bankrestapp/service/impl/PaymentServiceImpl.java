@@ -223,6 +223,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     private void validateRecipientIban(final String recipientIban) {
         if (recipientIban == null
+                || recipientIban.length() != 34
                 || !recipientIban.startsWith("UA")
                 || !recipientIban.substring(2).chars().allMatch(Character::isDigit)) {
             throw new IllegalArgumentException(ERRORS_INVALID_RECIPIENT_IBAN);

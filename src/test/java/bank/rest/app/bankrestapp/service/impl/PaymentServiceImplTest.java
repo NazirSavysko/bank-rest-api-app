@@ -40,7 +40,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class PaymentServiceImplTest {
 
-    private static final String VALID_UA_IBAN = "UA123456789012345678901234567890";
+    private static final String VALID_UA_IBAN = "UA12345678901234567890123456789012";
 
     @Mock
     private AccountRepository accountRepository;
