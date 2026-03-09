@@ -179,10 +179,10 @@ public class PaymentServiceImpl implements PaymentService {
 
     private void validateRecipientIban(final String recipientIban) {
         if (recipientIban == null
-                || recipientIban.length() != 32
+                || recipientIban.length() != 34
                 || !recipientIban.startsWith("UA")
                 || !recipientIban.substring(2).chars().allMatch(Character::isDigit)) {
-            throw new IllegalArgumentException("Recipient IBAN must start with UA and be 32 characters long (UA + 30 digits)");
+            throw new IllegalArgumentException("Recipient IBAN must start with UA and be 32 characters long (UA + 32 digits)");
         }
     }
 
