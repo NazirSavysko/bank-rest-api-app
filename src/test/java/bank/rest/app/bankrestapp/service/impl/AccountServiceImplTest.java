@@ -136,9 +136,6 @@ class AccountServiceImplTest {
         customer.setAccounts(accounts);
 
         when(customerRepository.findByAuthUserEmail(email)).thenReturn(Optional.of(customer));
-        when(cardService.generateCard()).thenReturn(new Card());
-        when(accountRepository.existsByAccountNumber(anyString())).thenReturn(false);
-        when(accountRepository.existsByEdrpou(anyString())).thenReturn(false);
 
         // Act & Assert
         final IllegalArgumentException exception =
@@ -157,9 +154,6 @@ class AccountServiceImplTest {
         customer.setAccounts(List.of(existing));
 
         when(customerRepository.findByAuthUserEmail(email)).thenReturn(Optional.of(customer));
-        when(cardService.generateCard()).thenReturn(new Card());
-        when(accountRepository.existsByAccountNumber(anyString())).thenReturn(false);
-        when(accountRepository.existsByEdrpou(anyString())).thenReturn(false);
 
         // Act & Assert
         final IllegalArgumentException exception =
