@@ -77,7 +77,7 @@ public final class AccountDefaults {
      * Set to 100,000,000 units in the selected currency.
      *
      */
-    public static final BigDecimal ACCOUNT_BALANCE_INITIAL = new BigDecimal(100_000_000);
+    public static final BigDecimal ACCOUNT_BALANCE_INITIAL = new BigDecimal(100_000);
 
     public static final BigDecimal FOP_ACCOUNT_BALANCE_INITIAL = BigDecimal.ZERO;
 
