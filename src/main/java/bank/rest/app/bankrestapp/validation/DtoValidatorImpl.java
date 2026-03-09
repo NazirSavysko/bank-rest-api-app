@@ -15,6 +15,9 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.stream.Collectors;
 
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_FIELD_ACCESS_FAILED;
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_VALIDATION_FAILED_PREFIX;
+import static java.lang.String.format;
 import static java.util.Arrays.stream;
 
 /**
@@ -113,7 +116,7 @@ public final class DtoValidatorImpl implements DtoValidator {
                     .map(DefaultMessageSourceResolvable::getDefaultMessage)
                     .collect(Collectors.joining(", "));
 
-            throw new IllegalArgumentException("Validation failed: " + message);
+            throw new IllegalArgumentException(ERRORS_VALIDATION_FAILED_PREFIX + message);
         }
     }
 
@@ -165,7 +168,7 @@ public final class DtoValidatorImpl implements DtoValidator {
                             }
                         }
                     } catch (IllegalAccessException e) {
-                        throw new RuntimeException("Failed to access field: " + field.getName(), e);
+                        throw new RuntimeException(format(ERRORS_FIELD_ACCESS_FAILED, field.getName()), e);
                     }
                 });
 
