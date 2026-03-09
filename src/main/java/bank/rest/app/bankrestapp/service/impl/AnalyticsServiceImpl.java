@@ -21,6 +21,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_ACCOUNT_OWNERSHIP_MISMATCH;
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_REQUIRED_ANALYTICS_PARAMETERS;
+
 @Service
 @AllArgsConstructor
 public class AnalyticsServiceImpl implements AnalyticsService {
@@ -35,17 +38,10 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                                                  final Integer year,
                                                  final Integer month,
                                                  final String userEmail) {
-        if (accountNumber == null || year == null || month == null) {
-            throw new IllegalArgumentException("accountNumber, year and month are required");
-        }
+        this.validateAnalyticsParameters(accountNumber, year, month);
 
         final Account account = this.accountService.getAccountByNumber(accountNumber);
-
-        if (userEmail != null && (account.getCustomer() == null
-                || account.getCustomer().getAuthUser() == null
-                || !Objects.equals(account.getCustomer().getAuthUser().getEmail(), userEmail))) {
-            throw new IllegalArgumentException("Account does not belong to the authenticated user");
-        }
+        this.validateOwnership(account, userEmail);
 
         final LocalDateTime startDate = LocalDateTime.of(year, month, 1, 0, 0);
         final LocalDateTime endDate = startDate.plusMonths(1);
@@ -56,27 +52,45 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 endDate,
                 TransactionStatus.COMPLETED
         );
+        final List<Payment> payments = this.paymentRepository.findMonthlyPayments(
+                accountNumber,
+                startDate,
+                endDate,
+                PaymentStatus.COMPLETED
+        );
 
+        final BigDecimal incoming = transactions.stream()
+                .filter(transaction -> transaction.getToAccount() != null
+                        && accountNumber.equals(transaction.getToAccount().getAccountNumber()))
+                .map(transaction -> this.normalizeAmount(transaction, account.getCurrencyCode()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal incoming = BigDecimal.ZERO;
-        BigDecimal outgoing = BigDecimal.ZERO;
+        final BigDecimal outgoingTransactions = transactions.stream()
+                .filter(transaction -> transaction.getAccount() != null
+                        && accountNumber.equals(transaction.getAccount().getAccountNumber()))
+                .map(transaction -> this.normalizeAmount(transaction, account.getCurrencyCode()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        for (Transaction transaction : transactions) {
-            final BigDecimal normalizedAmount = normalizeAmount(transaction, account.getCurrencyCode());
+        return new AnalyticsSummaryDTO(
+                incoming,
+                outgoingTransactions,
+                transactions.size() + payments.size()
+        );
+    }
 
-            if (transaction.getToAccount() != null
-                    && accountNumber.equals(transaction.getToAccount().getAccountNumber())) {
-                incoming = incoming.add(normalizedAmount);
-            }
-
-            if (transaction.getAccount() != null
-                    && accountNumber.equals(transaction.getAccount().getAccountNumber())) {
-                outgoing = outgoing.add(normalizedAmount);
-            }
+    private void validateAnalyticsParameters(final String accountNumber, final Integer year, final Integer month) {
+        if (accountNumber == null || year == null || month == null) {
+            throw new IllegalArgumentException(ERRORS_REQUIRED_ANALYTICS_PARAMETERS);
         }
+    }
 
-
-        return new AnalyticsSummaryDTO(incoming, outgoing, transactions.size());
+    private void validateOwnership(final Account account, final String userEmail) {
+        if (userEmail != null
+                && (account.getCustomer() == null
+                || account.getCustomer().getAuthUser() == null
+                || !Objects.equals(account.getCustomer().getAuthUser().getEmail(), userEmail))) {
+            throw new IllegalArgumentException(ERRORS_ACCOUNT_OWNERSHIP_MISMATCH);
+        }
     }
 
     private BigDecimal normalizeAmount(final Transaction transaction, final Currency targetCurrency) {
@@ -88,5 +102,20 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         }
 
         return this.currencyLoader.convert(amount, transactionCurrency.name(), targetCurrency.name());
+    }
+
+    private BigDecimal normalizeAmount(final Payment payment, final Currency targetCurrency) {
+        final BigDecimal amount = payment.getAmount() == null ? BigDecimal.ZERO : payment.getAmount();
+
+        if (payment.getCurrencyCode() == null || targetCurrency == null) {
+            return amount;
+        }
+
+        final Currency paymentCurrency = Currency.valueOf(payment.getCurrencyCode().toUpperCase(Locale.ROOT));
+        if (paymentCurrency.equals(targetCurrency)) {
+            return amount;
+        }
+
+        return this.currencyLoader.convert(amount, paymentCurrency.name(), targetCurrency.name());
     }
 }

@@ -23,6 +23,14 @@ class AuthController {
 
     private final CustomerFacade customerFacade;
 
+    /**
+     * Registers a new customer.
+     *
+     * @param createCustomerDTO customer registration payload
+     * @param bindingResult validation result
+     * @return empty response with creation status
+     * @throws IllegalArgumentException if validation fails or registration cannot be completed
+     */
     @PostMapping("/register")
     public ResponseEntity<?> register(final @RequestBody CreateCustomerDTO createCustomerDTO,
                                       final BindingResult bindingResult) {
@@ -34,6 +42,14 @@ class AuthController {
                 .build();
     }
 
+    /**
+     * Authenticates a customer and returns the authentication payload.
+     *
+     * @param loginDTO login request payload
+     * @param bindingResult validation result
+     * @return response containing authentication data
+     * @throws IllegalArgumentException if validation or authentication fails
+     */
     @PostMapping(path = "/log-in")
     public ResponseEntity<?> login(final @RequestBody LoginDTO loginDTO,
                                    final BindingResult bindingResult) {

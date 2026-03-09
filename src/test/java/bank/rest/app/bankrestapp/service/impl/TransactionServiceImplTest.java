@@ -10,6 +10,7 @@ import bank.rest.app.bankrestapp.resository.TransactionRepository;
 import bank.rest.app.bankrestapp.service.EmailService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -22,11 +23,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_ACCOUNT_NOT_ACTIVE;
+import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_INSUFFICIENT_FUNDS_SENDER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -58,8 +61,8 @@ class TransactionServiceImplTest {
         Account senderAccount = createAccount(senderCard, Currency.USD, BigDecimal.valueOf(500));
         Account recipientAccount = createAccount(recipientCard, Currency.USD, BigDecimal.valueOf(100));
 
-        when(accountRepository.findByCard_CardNumber(senderCard)).thenReturn(Optional.of(senderAccount));
-        when(accountRepository.findByCard_CardNumber(recipientCard)).thenReturn(Optional.of(recipientAccount));
+        when(accountRepository.findByCard_CardNumberForUpdate(senderCard)).thenReturn(Optional.of(senderAccount));
+        when(accountRepository.findByCard_CardNumberForUpdate(recipientCard)).thenReturn(Optional.of(recipientAccount));
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
@@ -72,6 +75,7 @@ class TransactionServiceImplTest {
         assertEquals(BigDecimal.valueOf(200), recipientAccount.getBalance());
         verify(emailService).checkIfCodeIsVerified(anyString());
         verify(transactionRepository).save(any(Transaction.class));
+        verify(accountRepository, never()).findByCard_CardNumber(anyString());
     }
 
     @Test
@@ -85,8 +89,8 @@ class TransactionServiceImplTest {
         Account senderAccount = createAccount(senderCard, Currency.USD, BigDecimal.valueOf(500));
         Account recipientAccount = createAccount(recipientCard, Currency.EUR, BigDecimal.valueOf(100));
 
-        when(accountRepository.findByCard_CardNumber(senderCard)).thenReturn(Optional.of(senderAccount));
-        when(accountRepository.findByCard_CardNumber(recipientCard)).thenReturn(Optional.of(recipientAccount));
+        when(accountRepository.findByCard_CardNumberForUpdate(senderCard)).thenReturn(Optional.of(senderAccount));
+        when(accountRepository.findByCard_CardNumberForUpdate(recipientCard)).thenReturn(Optional.of(recipientAccount));
         when(currencyLoader.convert(amount, "USD", "EUR")).thenReturn(convertedAmount);
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -98,6 +102,61 @@ class TransactionServiceImplTest {
         assertEquals(BigDecimal.valueOf(400), senderAccount.getBalance()); // 500 - 100
         assertEquals(BigDecimal.valueOf(190), recipientAccount.getBalance()); // 100 + 90
         verify(currencyLoader).convert(amount, "USD", "EUR");
+    }
+
+    @Test
+    void withdraw_ShouldLockAccountsInCardOrder() {
+        final String senderCard = "9999";
+        final String recipientCard = "1111";
+        final Account senderAccount = createAccount(senderCard, Currency.UAH, BigDecimal.valueOf(200));
+        final Account recipientAccount = createAccount(recipientCard, Currency.UAH, BigDecimal.valueOf(100));
+
+        when(accountRepository.findByCard_CardNumberForUpdate(recipientCard)).thenReturn(Optional.of(recipientAccount));
+        when(accountRepository.findByCard_CardNumberForUpdate(senderCard)).thenReturn(Optional.of(senderAccount));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        transactionService.withdraw(senderCard, recipientCard, BigDecimal.TEN, "Ordered lock");
+
+        final InOrder inOrder = inOrder(accountRepository);
+        inOrder.verify(accountRepository).findByCard_CardNumberForUpdate(recipientCard);
+        inOrder.verify(accountRepository).findByCard_CardNumberForUpdate(senderCard);
+    }
+
+    @Test
+    void withdraw_WhenSenderAccountIsInactive_ShouldThrowLocalizedMessage() {
+        final String senderCard = "1111";
+        final String recipientCard = "2222";
+        final Account senderAccount = createAccount(senderCard, Currency.USD, BigDecimal.valueOf(500));
+        senderAccount.setStatus(bank.rest.app.bankrestapp.entity.enums.AccountStatus.BLOCKED);
+        final Account recipientAccount = createAccount(recipientCard, Currency.EUR, BigDecimal.valueOf(100));
+
+        when(accountRepository.findByCard_CardNumberForUpdate(senderCard)).thenReturn(Optional.of(senderAccount));
+        when(accountRepository.findByCard_CardNumberForUpdate(recipientCard)).thenReturn(Optional.of(recipientAccount));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        final bank.rest.app.bankrestapp.exception.AccountNotActiveException exception =
+                assertThrows(bank.rest.app.bankrestapp.exception.AccountNotActiveException.class,
+                        () -> transactionService.withdraw(senderCard, recipientCard, BigDecimal.TEN, "Blocked"));
+
+        assertEquals(ERRORS_ACCOUNT_NOT_ACTIVE, exception.getMessage());
+    }
+
+    @Test
+    void withdraw_WhenSenderHasInsufficientFunds_ShouldThrowLocalizedMessage() {
+        final String senderCard = "1111";
+        final String recipientCard = "2222";
+        final Account senderAccount = createAccount(senderCard, Currency.USD, BigDecimal.ONE);
+        final Account recipientAccount = createAccount(recipientCard, Currency.EUR, BigDecimal.valueOf(100));
+
+        when(accountRepository.findByCard_CardNumberForUpdate(senderCard)).thenReturn(Optional.of(senderAccount));
+        when(accountRepository.findByCard_CardNumberForUpdate(recipientCard)).thenReturn(Optional.of(recipientAccount));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        final bank.rest.app.bankrestapp.exception.InsufficientFundsException exception =
+                assertThrows(bank.rest.app.bankrestapp.exception.InsufficientFundsException.class,
+                        () -> transactionService.withdraw(senderCard, recipientCard, BigDecimal.TEN, "Insufficient"));
+
+        assertEquals(ERRORS_INSUFFICIENT_FUNDS_SENDER, exception.getMessage());
     }
 
     @Test

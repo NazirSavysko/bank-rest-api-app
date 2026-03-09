@@ -18,6 +18,16 @@ public final class AnalyticsController {
 
     private final AnalyticsService analyticsService;
 
+    /**
+     * Returns a monthly analytics summary for the authenticated user's account.
+     *
+     * @param userDetails authenticated user details
+     * @param accountNumber account number to summarize
+     * @param year requested year
+     * @param month requested month
+     * @return response containing the analytics summary DTO
+     * @throws IllegalArgumentException if required parameters are missing or the account is unavailable to the user
+     */
     @GetMapping("/summary")
     public ResponseEntity<AnalyticsSummaryDTO> getSummary(final @AuthenticationPrincipal UserDetails userDetails,
                                                           final @RequestParam String accountNumber,
