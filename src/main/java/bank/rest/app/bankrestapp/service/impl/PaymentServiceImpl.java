@@ -148,6 +148,10 @@ public class PaymentServiceImpl implements PaymentService {
     public Payment processTaxPayment(final TaxPaymentRequestDTO request, final String authenticatedUserEmail) {
         final Account account = this.getValidOwnedAccount(request.getAccountId(), authenticatedUserEmail);
 
+        if(account.getAccountType() != AccountType.FOP){
+            throw new IllegalArgumentException("Оплата податків з рахунку не ФОП не дозволена");
+        }
+
         this.validateSufficientFunds(account, request.getAmount());
         this.debitAccount(account, request.getAmount());
 
