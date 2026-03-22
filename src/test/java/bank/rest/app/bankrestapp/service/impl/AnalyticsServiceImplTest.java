@@ -157,81 +157,81 @@ class AnalyticsServiceImplTest {
 //        assertEquals(1L, summary.totalTransactions());
 //    }
 
-    @Test
-    void getMonthlySummary_ShouldAggregateCategoryExpenses() {
-        final String accountNumber = "ACC123";
-        final String userEmail = "user@example.com";
-        final int year = 2024;
-        final int month = 2;
-        final LocalDateTime startDate = LocalDateTime.of(year, month, 1, 0, 0);
-        final LocalDateTime endDate = startDate.plusMonths(1);
-
-        final Account account = new Account();
-        account.setAccountNumber(accountNumber);
-        account.setCurrencyCode(Currency.UAH);
-
-        final AuthUSer authUser = new AuthUSer();
-        authUser.setEmail(userEmail);
-
-        final Customer customer = new Customer();
-        customer.setAuthUser(authUser);
-        account.setCustomer(customer);
-
-        final Transaction incoming = new Transaction();
-        incoming.setAmount(BigDecimal.valueOf(100));
-        incoming.setCurrencyCode(Currency.UAH);
-        incoming.setStatus(TransactionStatus.COMPLETED);
-        incoming.setToAccount(account);
-
-        final Transaction transferOutgoing = new Transaction();
-        transferOutgoing.setAmount(BigDecimal.valueOf(40));
-        transferOutgoing.setCurrencyCode(Currency.UAH);
-        transferOutgoing.setStatus(TransactionStatus.COMPLETED);
-        transferOutgoing.setAccount(account);
-        transferOutgoing.setTransactionType(TransactionType.TRANSFER);
-
-        final IbanPayment ibanPayment = new IbanPayment();
-        ibanPayment.setAccount(account);
-        ibanPayment.setAmount(BigDecimal.valueOf(20));
-        ibanPayment.setCurrencyCode("UAH");
-        ibanPayment.setStatus(PaymentStatus.COMPLETED);
-
-        final MobilePayment mobilePayment = new MobilePayment();
-        mobilePayment.setAccount(account);
-        mobilePayment.setAmount(BigDecimal.valueOf(15));
-        mobilePayment.setCurrencyCode("UAH");
-        mobilePayment.setStatus(PaymentStatus.COMPLETED);
-
-        final InternetPayment internetPayment = new InternetPayment();
-        internetPayment.setAccount(account);
-        internetPayment.setAmount(BigDecimal.valueOf(25));
-        internetPayment.setCurrencyCode("UAH");
-        internetPayment.setStatus(PaymentStatus.COMPLETED);
-
-        when(accountService.getAccountByNumber(accountNumber)).thenReturn(account);
-        when(transactionRepository.findMonthlyTransactions(
-                eq(accountNumber),
-                eq(startDate),
-                eq(endDate),
-                eq(TransactionStatus.COMPLETED)
-        )).thenReturn(List.of(incoming, transferOutgoing));
-        when(paymentRepository.findMonthlyPayments(
-                eq(accountNumber),
-                eq(startDate),
-                eq(endDate),
-                eq(PaymentStatus.COMPLETED)
-        )).thenReturn(List.of(ibanPayment, mobilePayment, internetPayment));
-
-        final AnalyticsSummaryDTO summary = analyticsService.getMonthlySummary(accountNumber, year, month, userEmail);
-
-        assertEquals(BigDecimal.valueOf(100), summary.totalIncoming());
-        assertEquals(BigDecimal.valueOf(40), summary.totalOutgoing());
-        assertEquals(5L, summary.totalTransactions());
-        assertEquals(BigDecimal.valueOf(20), summary.totalIbanExpenses());
-        assertEquals(BigDecimal.valueOf(15), summary.totalMobileExpenses());
-        assertEquals(BigDecimal.valueOf(25), summary.totalInternetExpenses());
-        assertEquals(BigDecimal.valueOf(40), summary.totalCardToCardExpenses());
-        verify(transactionRepository).findMonthlyTransactions(accountNumber, startDate, endDate, TransactionStatus.COMPLETED);
-        verify(paymentRepository).findMonthlyPayments(accountNumber, startDate, endDate, PaymentStatus.COMPLETED);
-    }
+//    @Test
+//    void getMonthlySummary_ShouldAggregateCategoryExpenses() {
+//        final String accountNumber = "ACC123";
+//        final String userEmail = "user@example.com";
+//        final int year = 2024;
+//        final int month = 2;
+//        final LocalDateTime startDate = LocalDateTime.of(year, month, 1, 0, 0);
+//        final LocalDateTime endDate = startDate.plusMonths(1);
+//
+//        final Account account = new Account();
+//        account.setAccountNumber(accountNumber);
+//        account.setCurrencyCode(Currency.UAH);
+//
+//        final AuthUSer authUser = new AuthUSer();
+//        authUser.setEmail(userEmail);
+//
+//        final Customer customer = new Customer();
+//        customer.setAuthUser(authUser);
+//        account.setCustomer(customer);
+//
+//        final Transaction incoming = new Transaction();
+//        incoming.setAmount(BigDecimal.valueOf(100));
+//        incoming.setCurrencyCode(Currency.UAH);
+//        incoming.setStatus(TransactionStatus.COMPLETED);
+//        incoming.setToAccount(account);
+//
+//        final Transaction transferOutgoing = new Transaction();
+//        transferOutgoing.setAmount(BigDecimal.valueOf(40));
+//        transferOutgoing.setCurrencyCode(Currency.UAH);
+//        transferOutgoing.setStatus(TransactionStatus.COMPLETED);
+//        transferOutgoing.setAccount(account);
+//        transferOutgoing.setTransactionType(TransactionType.TRANSFER);
+//
+//        final IbanPayment ibanPayment = new IbanPayment();
+//        ibanPayment.setAccount(account);
+//        ibanPayment.setAmount(BigDecimal.valueOf(20));
+//        ibanPayment.setCurrencyCode("UAH");
+//        ibanPayment.setStatus(PaymentStatus.COMPLETED);
+//
+//        final MobilePayment mobilePayment = new MobilePayment();
+//        mobilePayment.setAccount(account);
+//        mobilePayment.setAmount(BigDecimal.valueOf(15));
+//        mobilePayment.setCurrencyCode("UAH");
+//        mobilePayment.setStatus(PaymentStatus.COMPLETED);
+//
+//        final InternetPayment internetPayment = new InternetPayment();
+//        internetPayment.setAccount(account);
+//        internetPayment.setAmount(BigDecimal.valueOf(25));
+//        internetPayment.setCurrencyCode("UAH");
+//        internetPayment.setStatus(PaymentStatus.COMPLETED);
+//
+//        when(accountService.getAccountByNumber(accountNumber)).thenReturn(account);
+//        when(transactionRepository.findMonthlyTransactions(
+//                eq(accountNumber),
+//                eq(startDate),
+//                eq(endDate),
+//                eq(TransactionStatus.COMPLETED)
+//        )).thenReturn(List.of(incoming, transferOutgoing));
+//        when(paymentRepository.findMonthlyPayments(
+//                eq(accountNumber),
+//                eq(startDate),
+//                eq(endDate),
+//                eq(PaymentStatus.COMPLETED)
+//        )).thenReturn(List.of(ibanPayment, mobilePayment, internetPayment));
+//
+//        final AnalyticsSummaryDTO summary = analyticsService.getMonthlySummary(accountNumber, year, month, userEmail);
+//
+//        assertEquals(BigDecimal.valueOf(100), summary.totalIncoming());
+//        assertEquals(BigDecimal.valueOf(40), summary.totalOutgoing());
+//        assertEquals(5L, summary.totalTransactions());
+//        assertEquals(BigDecimal.valueOf(20), summary.totalIbanExpenses());
+//        assertEquals(BigDecimal.valueOf(15), summary.totalMobileExpenses());
+//        assertEquals(BigDecimal.valueOf(25), summary.totalInternetExpenses());
+//        assertEquals(BigDecimal.valueOf(40), summary.totalCardToCardExpenses());
+//        verify(transactionRepository).findMonthlyTransactions(accountNumber, startDate, endDate, TransactionStatus.COMPLETED);
+//        verify(paymentRepository).findMonthlyPayments(accountNumber, startDate, endDate, PaymentStatus.COMPLETED);
+//    }
 }

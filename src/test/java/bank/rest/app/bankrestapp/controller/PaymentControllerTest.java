@@ -92,7 +92,7 @@ class PaymentControllerTest {
         final var response = controller.processMobilePayment(user, request);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals("Mobile top-up completed successfully", response.getBody());
+        assertEquals("Поповнення мобільного рахунку успішно завершено", response.getBody());
         verify(paymentService).processMobilePayment(request, "user@example.com");
         verifyNoInteractions(paymentMapper);
     }
