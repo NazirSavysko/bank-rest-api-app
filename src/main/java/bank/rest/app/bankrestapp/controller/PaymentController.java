@@ -1,5 +1,6 @@
 package bank.rest.app.bankrestapp.controller;
 
+import bank.rest.app.bankrestapp.dto.ElectronicsPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.MobilePaymentRequestDTO;
@@ -84,5 +85,14 @@ public final class PaymentController {
     ) {
         this.paymentService.processTaxPayment(request, userDetails.getUsername());
         return ResponseEntity.ok("Оплата податків успішно завершена");
+    }
+
+    @PostMapping("/electronics")
+    public ResponseEntity<String> processElectronicsPayment(
+            final @AuthenticationPrincipal UserDetails userDetails,
+            final @Valid @RequestBody ElectronicsPaymentRequestDTO request
+    ) {
+        this.paymentService.processElectronicsPayment(userDetails.getUsername(), request);
+        return ResponseEntity.ok("Оплата електроніки успішно завершена");
     }
 }

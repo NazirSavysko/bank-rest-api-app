@@ -3,6 +3,7 @@ package bank.rest.app.bankrestapp.service.impl;
 import bank.rest.app.bankrestapp.currency.CurrencyLoader;
 import bank.rest.app.bankrestapp.dto.get.AnalyticsSummaryDTO;
 import bank.rest.app.bankrestapp.entity.Account;
+import bank.rest.app.bankrestapp.entity.ElectronicsPayment;
 import bank.rest.app.bankrestapp.entity.IbanPayment;
 import bank.rest.app.bankrestapp.entity.InternetPayment;
 import bank.rest.app.bankrestapp.entity.MobilePayment;
@@ -103,6 +104,11 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .map(payment -> this.normalizeAmount(payment, account.getCurrencyCode()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        final BigDecimal totalElectronicsExpenses = payments.stream()
+                .filter(ElectronicsPayment.class::isInstance)
+                .map(payment -> this.normalizeAmount(payment, account.getCurrencyCode()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         return new AnalyticsSummaryDTO(
                 incoming,
                 outgoingTransactions,
@@ -111,7 +117,8 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 totalMobileExpenses,
                 totalInternetExpenses,
                 totalCardToCardExpenses,
-                totalTaxExpenses
+                totalTaxExpenses,
+                totalElectronicsExpenses
         );
     }
 
