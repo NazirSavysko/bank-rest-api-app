@@ -182,6 +182,13 @@ public class PaymentServiceImpl implements PaymentService {
         if (calculatedTotal.compareTo(dto.getTotalAmount()) != 0) {
             throw new IllegalArgumentException("Невірна сума кошика");
         }
+        if (account.getCurrencyCode() != Currency.UAH) {
+            throw new IllegalArgumentException("Оплата електроніки можлива лише з гривневого рахунку");
+        }
+        if(account.getAccountType() == AccountType.FOP){
+            throw new IllegalArgumentException("Оплата електроніки з рахунку ФОП не дозволена");
+        }
+
 
         this.validateSufficientFunds(account, dto.getTotalAmount());
         this.debitAccount(account, dto.getTotalAmount());
