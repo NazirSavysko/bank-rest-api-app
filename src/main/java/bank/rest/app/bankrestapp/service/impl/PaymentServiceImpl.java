@@ -1,11 +1,14 @@
 package bank.rest.app.bankrestapp.service.impl;
 
 import bank.rest.app.bankrestapp.currency.CurrencyLoader;
+import bank.rest.app.bankrestapp.dto.CartItemDTO;
+import bank.rest.app.bankrestapp.dto.ElectronicsPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.MobilePaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.TaxPaymentRequestDTO;
 import bank.rest.app.bankrestapp.entity.Account;
+import bank.rest.app.bankrestapp.entity.ElectronicsPayment;
 import bank.rest.app.bankrestapp.entity.IbanPayment;
 import bank.rest.app.bankrestapp.entity.InternetPayment;
 import bank.rest.app.bankrestapp.entity.MobilePayment;
@@ -29,8 +32,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static bank.rest.app.bankrestapp.constants.MessageError.*;
 import static bank.rest.app.bankrestapp.entity.enums.PaymentStatus.COMPLETED;
@@ -167,6 +172,32 @@ public class PaymentServiceImpl implements PaymentService {
         return this.paymentRepository.save(payment);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Payment processElectronicsPayment(final String email, final ElectronicsPaymentRequestDTO dto) {
+        final Account account = this.getValidOwnedAccount(dto.getAccountId(), email);
+        this.validateElectronicsCurrency(account.getCurrencyCode());
+
+        final BigDecimal calculatedTotal = this.calculateCartTotal(dto.getItems());
+        if (calculatedTotal.compareTo(dto.getTotalAmount()) != 0) {
+            throw new IllegalArgumentException("Невірна сума кошика");
+        }
+
+        this.validateSufficientFunds(account, dto.getTotalAmount());
+        this.debitAccount(account, dto.getTotalAmount());
+
+        final ElectronicsPayment payment = this.buildElectronicsPayment(dto, account);
+        payment.setTransaction(this.createTransaction(
+                account,
+                null,
+                dto.getTotalAmount(),
+                TransactionType.PAYMENT,
+                payment.getPurpose()
+        ));
+
+        return this.paymentRepository.save(payment);
+    }
+
     private void validateIbanPaymentAccount(final Account senderAccount, final BigDecimal amount) {
         this.validateFopAccount(senderAccount);
         this.validateIbanSupportedCurrency(senderAccount.getCurrencyCode());
@@ -275,6 +306,32 @@ public class PaymentServiceImpl implements PaymentService {
         return payment;
     }
 
+    private ElectronicsPayment buildElectronicsPayment(final ElectronicsPaymentRequestDTO request, final Account account) {
+        final ElectronicsPayment payment = new ElectronicsPayment();
+        payment.setAccount(account);
+        payment.setAmount(request.getTotalAmount());
+        payment.setCurrencyCode(Currency.UAH.name());
+        payment.setPaymentDate(now());
+        payment.setStatus(COMPLETED);
+        payment.setBeneficiaryName("Marketplace");
+        payment.setPurpose(this.buildElectronicsPurpose(request.getItems()));
+
+        return payment;
+    }
+
+    private BigDecimal calculateCartTotal(final List<CartItemDTO> items) {
+        return items.stream()
+                .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private String buildElectronicsPurpose(final List<CartItemDTO> items) {
+        return "Купівля електроніки: "
+                + items.stream()
+                .map(item -> item.getProductName() + " (" + item.getQuantity() + " шт)")
+                .collect(Collectors.joining(", "));
+    }
+
     private Transaction createTransaction(final Account senderAccount,
                                           final Account recipientAccount,
                                           final BigDecimal amount,
@@ -331,6 +388,12 @@ public class PaymentServiceImpl implements PaymentService {
     private void validateMobileCurrency(final Currency currency) {
         if (!Currency.UAH.equals(currency)) {
             throw new InvalidAccountCurrencyException("Пополнение мобильного возможно только с гривневого счета");
+        }
+    }
+
+    private void validateElectronicsCurrency(final Currency currency) {
+        if (!Currency.UAH.equals(currency)) {
+            throw new InvalidAccountCurrencyException("Оплата за електроніку можлива лише з гривневого рахунку");
         }
     }
 

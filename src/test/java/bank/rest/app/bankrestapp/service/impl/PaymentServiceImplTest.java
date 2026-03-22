@@ -1,11 +1,14 @@
 package bank.rest.app.bankrestapp.service.impl;
 
 import bank.rest.app.bankrestapp.currency.CurrencyLoader;
+import bank.rest.app.bankrestapp.dto.CartItemDTO;
+import bank.rest.app.bankrestapp.dto.ElectronicsPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.MobilePaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.TaxPaymentRequestDTO;
 import bank.rest.app.bankrestapp.entity.Account;
+import bank.rest.app.bankrestapp.entity.ElectronicsPayment;
 import bank.rest.app.bankrestapp.entity.AuthUSer;
 import bank.rest.app.bankrestapp.entity.Customer;
 import bank.rest.app.bankrestapp.entity.IbanPayment;
@@ -30,6 +33,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 import static bank.rest.app.bankrestapp.constants.MessageError.ERRORS_ACCOUNT_OWNERSHIP_MISMATCH;
@@ -351,6 +355,112 @@ class PaymentServiceImplTest {
         final InsufficientFundsException exception = assertThrows(
                 InsufficientFundsException.class,
                 () -> paymentService.processTaxPayment(request, "user@example.com")
+        );
+        assertEquals(ERRORS_INSUFFICIENT_FUNDS, exception.getMessage());
+
+        verify(accountRepository, never()).save(any(Account.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
+    void processElectronicsPayment_Successful() {
+        final Account account = createAccount(51, Currency.UAH, BigDecimal.valueOf(150000), "user@example.com", "UA_ELEC_1");
+        when(accountRepository.findByIdForUpdate(51)).thenReturn(Optional.of(account));
+        when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        final ElectronicsPaymentRequestDTO request = new ElectronicsPaymentRequestDTO();
+        request.setAccountId(51L);
+        request.setTotalAmount(BigDecimal.valueOf(120000));
+        request.setItems(List.of(
+                new CartItemDTO("iPhone 15", 1, BigDecimal.valueOf(100000)),
+                new CartItemDTO("AirPods", 2, BigDecimal.valueOf(10000))
+        ));
+
+        final Payment result = paymentService.processElectronicsPayment("user@example.com", request);
+
+        assertInstanceOf(ElectronicsPayment.class, result);
+        final ElectronicsPayment electronicsPayment = (ElectronicsPayment) result;
+        assertEquals(BigDecimal.valueOf(30000), account.getBalance());
+        assertEquals(COMPLETED, electronicsPayment.getStatus());
+        assertEquals("Marketplace", electronicsPayment.getBeneficiaryName());
+        assertEquals("UAH", electronicsPayment.getCurrencyCode());
+        assertEquals("Купівля електроніки: iPhone 15 (1 шт), AirPods (2 шт)", electronicsPayment.getPurpose());
+        assertNotNull(electronicsPayment.getTransaction());
+        assertEquals(TransactionType.PAYMENT, electronicsPayment.getTransaction().getTransactionType());
+        assertEquals("Купівля електроніки: iPhone 15 (1 шт), AirPods (2 шт)",
+                electronicsPayment.getTransaction().getDescription());
+        assertNull(electronicsPayment.getTransaction().getToAccount());
+
+        verify(accountRepository).save(account);
+        verify(accountRepository).findByIdForUpdate(51);
+        verify(transactionRepository).save(any(Transaction.class));
+        verify(paymentRepository).save(any(ElectronicsPayment.class));
+    }
+
+    @Test
+    void processElectronicsPayment_NonUahAccount_ShouldThrow() {
+        final Account account = createAccount(52, Currency.USD, BigDecimal.valueOf(5000), "user@example.com", "UA_ELEC_2");
+        when(accountRepository.findByIdForUpdate(52)).thenReturn(Optional.of(account));
+
+        final ElectronicsPaymentRequestDTO request = new ElectronicsPaymentRequestDTO();
+        request.setAccountId(52L);
+        request.setTotalAmount(BigDecimal.valueOf(1000));
+        request.setItems(List.of(
+                new CartItemDTO("Powerbank", 1, BigDecimal.valueOf(1000))
+        ));
+
+        final InvalidAccountCurrencyException exception = assertThrows(
+                InvalidAccountCurrencyException.class,
+                () -> paymentService.processElectronicsPayment("user@example.com", request)
+        );
+        assertEquals("Оплата за електроніку можлива лише з гривневого рахунку", exception.getMessage());
+
+        verify(accountRepository, never()).save(any(Account.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
+    void processElectronicsPayment_InvalidCartTotal_ShouldThrow() {
+        final Account account = createAccount(53, Currency.UAH, BigDecimal.valueOf(5000), "user@example.com", "UA_ELEC_3");
+        when(accountRepository.findByIdForUpdate(53)).thenReturn(Optional.of(account));
+
+        final ElectronicsPaymentRequestDTO request = new ElectronicsPaymentRequestDTO();
+        request.setAccountId(53L);
+        request.setTotalAmount(BigDecimal.valueOf(1200));
+        request.setItems(List.of(
+                new CartItemDTO("Router", 1, BigDecimal.valueOf(1000))
+        ));
+
+        final IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> paymentService.processElectronicsPayment("user@example.com", request)
+        );
+        assertEquals("Невірна сума кошика", exception.getMessage());
+
+        verify(accountRepository, never()).save(any(Account.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
+    void processElectronicsPayment_InsufficientFunds_ShouldThrow() {
+        final Account account = createAccount(54, Currency.UAH, BigDecimal.valueOf(1000), "user@example.com", "UA_ELEC_4");
+        when(accountRepository.findByIdForUpdate(54)).thenReturn(Optional.of(account));
+
+        final ElectronicsPaymentRequestDTO request = new ElectronicsPaymentRequestDTO();
+        request.setAccountId(54L);
+        request.setTotalAmount(BigDecimal.valueOf(2000));
+        request.setItems(List.of(
+                new CartItemDTO("SSD", 1, BigDecimal.valueOf(2000))
+        ));
+
+        final InsufficientFundsException exception = assertThrows(
+                InsufficientFundsException.class,
+                () -> paymentService.processElectronicsPayment("user@example.com", request)
         );
         assertEquals(ERRORS_INSUFFICIENT_FUNDS, exception.getMessage());
 
