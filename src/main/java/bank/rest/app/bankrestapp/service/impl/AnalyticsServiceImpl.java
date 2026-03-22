@@ -100,7 +100,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         return new AnalyticsSummaryDTO(
                 incoming,
                 outgoingTransactions,
-                transactions.size() + payments.size(),
+                transactions.size(),
                 totalIbanExpenses,
                 totalMobileExpenses,
                 totalInternetExpenses,
