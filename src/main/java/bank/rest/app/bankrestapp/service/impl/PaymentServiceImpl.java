@@ -3,9 +3,11 @@ package bank.rest.app.bankrestapp.service.impl;
 import bank.rest.app.bankrestapp.currency.CurrencyLoader;
 import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.MobilePaymentRequestDTO;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.IbanPayment;
 import bank.rest.app.bankrestapp.entity.InternetPayment;
+import bank.rest.app.bankrestapp.entity.MobilePayment;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.AccountType;
@@ -119,6 +121,26 @@ public class PaymentServiceImpl implements PaymentService {
         return this.paymentRepository.save(payment);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Payment processMobilePayment(final MobilePaymentRequestDTO request, final String authenticatedUserEmail) {
+        final Account account = this.getValidOwnedAccount(request.getAccountId(), authenticatedUserEmail);
+
+        this.validateMobilePaymentAccount(account, request.getAmount());
+        this.debitAccount(account, request.getAmount());
+
+        final MobilePayment payment = this.buildMobilePayment(request, account);
+        payment.setTransaction(this.createTransaction(
+                account,
+                null,
+                request.getAmount(),
+                TransactionType.PAYMENT,
+                "Поповнення мобільного: " + request.getPhoneNumber()
+        ));
+
+        return this.paymentRepository.save(payment);
+    }
+
     private void validateIbanPaymentAccount(final Account senderAccount, final BigDecimal amount) {
         this.validateFopAccount(senderAccount);
         this.validateIbanSupportedCurrency(senderAccount.getCurrencyCode());
@@ -127,6 +149,11 @@ public class PaymentServiceImpl implements PaymentService {
 
     private void validateInternetPaymentAccount(final Account account, final BigDecimal amount) {
         this.validateInternetCurrency(account.getCurrencyCode());
+        this.validateSufficientFunds(account, amount);
+    }
+
+    private void validateMobilePaymentAccount(final Account account, final BigDecimal amount) {
+        this.validateMobileCurrency(account.getCurrencyCode());
         this.validateSufficientFunds(account, amount);
     }
 
@@ -193,6 +220,22 @@ public class PaymentServiceImpl implements PaymentService {
         return payment;
     }
 
+    private MobilePayment buildMobilePayment(final MobilePaymentRequestDTO request, final Account account) {
+        final MobilePayment payment = new MobilePayment();
+        payment.setAccount(account);
+        payment.setAmount(request.getAmount());
+        payment.setCurrencyCode(account.getCurrencyCode().name());
+        payment.setPaymentDate(now());
+        payment.setStatus(COMPLETED);
+        payment.setBeneficiaryName("Mobile Operator");
+        payment.setBeneficiaryAcc(request.getPhoneNumber());
+        payment.setPhoneNumber(request.getPhoneNumber());
+        payment.setOperatorName("Mobile Operator");
+        payment.setPurpose("Mobile top-up: " + request.getPhoneNumber());
+
+        return payment;
+    }
+
     private Transaction createTransaction(final Account senderAccount,
                                           final Account recipientAccount,
                                           final BigDecimal amount,
@@ -243,6 +286,12 @@ public class PaymentServiceImpl implements PaymentService {
     private void validateIbanSupportedCurrency(final Currency currency) {
         if (currency == null || !SUPPORTED_IBAN_CURRENCIES.contains(currency)) {
             throw new UnsupportedCurrencyException(ERRORS_UNSUPPORTED_ACCOUNT_CURRENCY_FOR_IBAN_PAYMENT);
+        }
+    }
+
+    private void validateMobileCurrency(final Currency currency) {
+        if (!Currency.UAH.equals(currency)) {
+            throw new InvalidAccountCurrencyException("Пополнение мобильного возможно только с гривневого счета");
         }
     }
 

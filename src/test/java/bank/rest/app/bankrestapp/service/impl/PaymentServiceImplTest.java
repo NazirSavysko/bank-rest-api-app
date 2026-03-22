@@ -3,11 +3,13 @@ package bank.rest.app.bankrestapp.service.impl;
 import bank.rest.app.bankrestapp.currency.CurrencyLoader;
 import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.MobilePaymentRequestDTO;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.AuthUSer;
 import bank.rest.app.bankrestapp.entity.Customer;
 import bank.rest.app.bankrestapp.entity.IbanPayment;
 import bank.rest.app.bankrestapp.entity.InternetPayment;
+import bank.rest.app.bankrestapp.entity.MobilePayment;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.AccountType;
@@ -215,6 +217,58 @@ class PaymentServiceImplTest {
         final InsufficientFundsException exception = assertThrows(InsufficientFundsException.class,
                 () -> paymentService.processInternetPayment(request, "user@example.com"));
         assertEquals(ERRORS_INSUFFICIENT_FUNDS, exception.getMessage());
+
+        verify(accountRepository, never()).save(any(Account.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
+    void processMobilePayment_Successful() {
+        final Account account = createAccount(31, Currency.UAH, BigDecimal.valueOf(300), "user@example.com", "UA_MOBILE_1");
+        when(accountRepository.findByIdForUpdate(31)).thenReturn(Optional.of(account));
+        when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        final MobilePaymentRequestDTO request = new MobilePaymentRequestDTO(
+                31L,
+                BigDecimal.valueOf(50),
+                "+380991112233"
+        );
+
+        final Payment result = paymentService.processMobilePayment(request, "user@example.com");
+
+        assertInstanceOf(MobilePayment.class, result);
+        final MobilePayment mobilePayment = (MobilePayment) result;
+        assertEquals(BigDecimal.valueOf(250), account.getBalance());
+        assertEquals(COMPLETED, mobilePayment.getStatus());
+        assertEquals("+380991112233", mobilePayment.getBeneficiaryAcc());
+        assertEquals("Mobile top-up: +380991112233", mobilePayment.getPurpose());
+        assertNotNull(mobilePayment.getTransaction());
+        assertEquals(TransactionType.PAYMENT, mobilePayment.getTransaction().getTransactionType());
+        assertEquals("Поповнення мобільного: +380991112233", mobilePayment.getTransaction().getDescription());
+
+        verify(accountRepository).save(account);
+        verify(accountRepository).findByIdForUpdate(31);
+        verify(transactionRepository).save(any(Transaction.class));
+        verify(paymentRepository).save(any(MobilePayment.class));
+    }
+
+    @Test
+    void processMobilePayment_NonUahAccount_ShouldThrow() {
+        final Account account = createAccount(32, Currency.USD, BigDecimal.valueOf(300), "user@example.com", "UA_MOBILE_2");
+        when(accountRepository.findByIdForUpdate(32)).thenReturn(Optional.of(account));
+
+        final MobilePaymentRequestDTO request = new MobilePaymentRequestDTO(
+                32L,
+                BigDecimal.valueOf(50),
+                "+380991112233"
+        );
+
+        final InvalidAccountCurrencyException exception = assertThrows(InvalidAccountCurrencyException.class,
+                () -> paymentService.processMobilePayment(request, "user@example.com"));
+        assertEquals("Пополнение мобильного возможно только с гривневого счета", exception.getMessage());
 
         verify(accountRepository, never()).save(any(Account.class));
         verify(transactionRepository, never()).save(any(Transaction.class));

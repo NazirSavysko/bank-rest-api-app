@@ -5,5 +5,16 @@ import java.math.BigDecimal;
 public record AnalyticsSummaryDTO(
         BigDecimal totalIncoming,
         BigDecimal totalOutgoing,
-        long totalTransactions
-) { }
+        long totalTransactions,
+        BigDecimal totalIbanExpenses,
+        BigDecimal totalMobileExpenses,
+        BigDecimal totalInternetExpenses,
+        BigDecimal totalCardToCardExpenses
+) {
+    public AnalyticsSummaryDTO {
+        totalIbanExpenses = totalIbanExpenses == null ? BigDecimal.ZERO : totalIbanExpenses;
+        totalMobileExpenses = totalMobileExpenses == null ? BigDecimal.ZERO : totalMobileExpenses;
+        totalInternetExpenses = totalInternetExpenses == null ? BigDecimal.ZERO : totalInternetExpenses;
+        totalCardToCardExpenses = totalCardToCardExpenses == null ? BigDecimal.ZERO : totalCardToCardExpenses;
+    }
+}
