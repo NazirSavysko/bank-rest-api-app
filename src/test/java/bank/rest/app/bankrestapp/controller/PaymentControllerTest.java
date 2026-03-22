@@ -2,6 +2,7 @@ package bank.rest.app.bankrestapp.controller;
 
 import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.MobilePaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.get.GetPaymentDTO;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.mapper.Mapper;
@@ -77,5 +78,22 @@ class PaymentControllerTest {
         assertEquals(dto, response.getBody());
         verify(paymentService).processInternetPayment(request, "user@example.com");
         verify(paymentMapper).toDto(payment);
+    }
+
+    @Test
+    void processMobilePayment_ShouldUseAuthenticatedUserAndReturnOk() {
+        final UserDetails user = User.withUsername("user@example.com").password("pass").roles("USER").build();
+        final MobilePaymentRequestDTO request = new MobilePaymentRequestDTO(
+                3L,
+                BigDecimal.valueOf(30),
+                "+380991112233"
+        );
+
+        final var response = controller.processMobilePayment(user, request);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("Mobile top-up completed successfully", response.getBody());
+        verify(paymentService).processMobilePayment(request, "user@example.com");
+        verifyNoInteractions(paymentMapper);
     }
 }

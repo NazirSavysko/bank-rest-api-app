@@ -3,11 +3,15 @@ package bank.rest.app.bankrestapp.service.impl;
 import bank.rest.app.bankrestapp.currency.CurrencyLoader;
 import bank.rest.app.bankrestapp.dto.get.AnalyticsSummaryDTO;
 import bank.rest.app.bankrestapp.entity.Account;
+import bank.rest.app.bankrestapp.entity.IbanPayment;
+import bank.rest.app.bankrestapp.entity.InternetPayment;
+import bank.rest.app.bankrestapp.entity.MobilePayment;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.entity.enums.PaymentStatus;
 import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
+import bank.rest.app.bankrestapp.entity.enums.TransactionType;
 import bank.rest.app.bankrestapp.resository.PaymentRepository;
 import bank.rest.app.bankrestapp.resository.TransactionRepository;
 import bank.rest.app.bankrestapp.service.AccountService;
@@ -71,10 +75,36 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .map(transaction -> this.normalizeAmount(transaction, account.getCurrencyCode()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        final BigDecimal totalIbanExpenses = payments.stream()
+                .filter(IbanPayment.class::isInstance)
+                .map(payment -> this.normalizeAmount(payment, account.getCurrencyCode()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        final BigDecimal totalMobileExpenses = payments.stream()
+                .filter(MobilePayment.class::isInstance)
+                .map(payment -> this.normalizeAmount(payment, account.getCurrencyCode()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        final BigDecimal totalInternetExpenses = payments.stream()
+                .filter(InternetPayment.class::isInstance)
+                .map(payment -> this.normalizeAmount(payment, account.getCurrencyCode()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        final BigDecimal totalCardToCardExpenses = transactions.stream()
+                .filter(transaction -> transaction.getAccount() != null
+                        && accountNumber.equals(transaction.getAccount().getAccountNumber()))
+                .filter(transaction -> TransactionType.TRANSFER.equals(transaction.getTransactionType()))
+                .map(transaction -> this.normalizeAmount(transaction, account.getCurrencyCode()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         return new AnalyticsSummaryDTO(
                 incoming,
                 outgoingTransactions,
-                transactions.size() + payments.size()
+                transactions.size() + payments.size(),
+                totalIbanExpenses,
+                totalMobileExpenses,
+                totalInternetExpenses,
+                totalCardToCardExpenses
         );
     }
 

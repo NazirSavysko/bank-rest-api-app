@@ -2,6 +2,7 @@ package bank.rest.app.bankrestapp.controller;
 
 import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.MobilePaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.get.GetPaymentDTO;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.mapper.Mapper;
@@ -64,5 +65,14 @@ public final class PaymentController {
         return ResponseEntity
                 .status(CREATED)
                 .body(this.paymentMapper.toDto(payment));
+    }
+
+    @PostMapping("/mobile")
+    public ResponseEntity<String> processMobilePayment(
+            final @AuthenticationPrincipal UserDetails userDetails,
+            final @Valid @RequestBody MobilePaymentRequestDTO request
+    ) {
+        this.paymentService.processMobilePayment(request, userDetails.getUsername());
+        return ResponseEntity.ok("Mobile top-up completed successfully");
     }
 }
