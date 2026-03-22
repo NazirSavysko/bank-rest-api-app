@@ -73,6 +73,6 @@ public final class PaymentController {
             final @Valid @RequestBody MobilePaymentRequestDTO request
     ) {
         this.paymentService.processMobilePayment(request, userDetails.getUsername());
-        return ResponseEntity.ok("Mobile top-up completed successfully");
+        return ResponseEntity.ok("Поповнення мобільного рахунку успішно завершено");
     }
 }
