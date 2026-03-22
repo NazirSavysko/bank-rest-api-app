@@ -4,6 +4,7 @@ import bank.rest.app.bankrestapp.currency.CurrencyLoader;
 import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.MobilePaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.TaxPaymentRequestDTO;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.AuthUSer;
 import bank.rest.app.bankrestapp.entity.Customer;
@@ -11,6 +12,7 @@ import bank.rest.app.bankrestapp.entity.IbanPayment;
 import bank.rest.app.bankrestapp.entity.InternetPayment;
 import bank.rest.app.bankrestapp.entity.MobilePayment;
 import bank.rest.app.bankrestapp.entity.Payment;
+import bank.rest.app.bankrestapp.entity.TaxPayment;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.AccountType;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
@@ -292,6 +294,65 @@ class PaymentServiceImplTest {
         final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> paymentService.processIbanPayment(request, "other@example.com"));
         assertEquals(ERRORS_ACCOUNT_OWNERSHIP_MISMATCH, exception.getMessage());
+
+        verify(accountRepository, never()).save(any(Account.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
+    void processTaxPayment_Successful() {
+        final Account account = createAccount(41, Currency.UAH, BigDecimal.valueOf(500), "user@example.com", "UA_TAX_1");
+        when(accountRepository.findByIdForUpdate(41)).thenReturn(Optional.of(account));
+        when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        final TaxPaymentRequestDTO request = new TaxPaymentRequestDTO();
+        request.setAccountId(41L);
+        request.setAmount(BigDecimal.valueOf(120));
+        request.setTaxType("Єдиний податок (5% від доходу)");
+        request.setPeriod("I квартал 2026 року");
+        request.setReceiverName("Держказначейство");
+
+        final Payment result = paymentService.processTaxPayment(request, "user@example.com");
+
+        assertInstanceOf(TaxPayment.class, result);
+        final TaxPayment taxPayment = (TaxPayment) result;
+        assertEquals(BigDecimal.valueOf(380), account.getBalance());
+        assertEquals(COMPLETED, taxPayment.getStatus());
+        assertEquals("Держказначейство", taxPayment.getBeneficiaryName());
+        assertEquals("Податок: Єдиний податок (5% від доходу), Період: I квартал 2026 року", taxPayment.getPurpose());
+        assertEquals("UAH", taxPayment.getCurrencyCode());
+        assertNotNull(taxPayment.getTransaction());
+        assertEquals(TransactionType.PAYMENT, taxPayment.getTransaction().getTransactionType());
+        assertEquals("Оплата податків: Єдиний податок (5% від доходу), I квартал 2026 року",
+                taxPayment.getTransaction().getDescription());
+        assertNull(taxPayment.getTransaction().getToAccount());
+
+        verify(accountRepository).save(account);
+        verify(accountRepository).findByIdForUpdate(41);
+        verify(transactionRepository).save(any(Transaction.class));
+        verify(paymentRepository).save(any(TaxPayment.class));
+    }
+
+    @Test
+    void processTaxPayment_InsufficientFunds_ShouldThrow() {
+        final Account account = createAccount(42, Currency.UAH, BigDecimal.valueOf(20), "user@example.com", "UA_TAX_2");
+        when(accountRepository.findByIdForUpdate(42)).thenReturn(Optional.of(account));
+
+        final TaxPaymentRequestDTO request = new TaxPaymentRequestDTO();
+        request.setAccountId(42L);
+        request.setAmount(BigDecimal.valueOf(50));
+        request.setTaxType("Єдиний податок");
+        request.setPeriod("I квартал 2026 року");
+        request.setReceiverName("Держказначейство");
+
+        final InsufficientFundsException exception = assertThrows(
+                InsufficientFundsException.class,
+                () -> paymentService.processTaxPayment(request, "user@example.com")
+        );
+        assertEquals(ERRORS_INSUFFICIENT_FUNDS, exception.getMessage());
 
         verify(accountRepository, never()).save(any(Account.class));
         verify(transactionRepository, never()).save(any(Transaction.class));

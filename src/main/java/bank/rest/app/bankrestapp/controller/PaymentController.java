@@ -3,6 +3,7 @@ package bank.rest.app.bankrestapp.controller;
 import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.MobilePaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.TaxPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.get.GetPaymentDTO;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.mapper.Mapper;
@@ -74,5 +75,14 @@ public final class PaymentController {
     ) {
         this.paymentService.processMobilePayment(request, userDetails.getUsername());
         return ResponseEntity.ok("Поповнення мобільного рахунку успішно завершено");
+    }
+
+    @PostMapping("/taxes")
+    public ResponseEntity<String> processTaxPayment(
+            final @AuthenticationPrincipal UserDetails userDetails,
+            final @Valid @RequestBody TaxPaymentRequestDTO request
+    ) {
+        this.paymentService.processTaxPayment(request, userDetails.getUsername());
+        return ResponseEntity.ok("Оплата податків успішно завершена");
     }
 }

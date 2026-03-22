@@ -4,11 +4,13 @@ import bank.rest.app.bankrestapp.currency.CurrencyLoader;
 import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.MobilePaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.TaxPaymentRequestDTO;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.IbanPayment;
 import bank.rest.app.bankrestapp.entity.InternetPayment;
 import bank.rest.app.bankrestapp.entity.MobilePayment;
 import bank.rest.app.bankrestapp.entity.Payment;
+import bank.rest.app.bankrestapp.entity.TaxPayment;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.AccountType;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
@@ -141,6 +143,30 @@ public class PaymentServiceImpl implements PaymentService {
         return this.paymentRepository.save(payment);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Payment processTaxPayment(final TaxPaymentRequestDTO request, final String authenticatedUserEmail) {
+        final Account account = this.getValidOwnedAccount(request.getAccountId(), authenticatedUserEmail);
+
+        if(account.getAccountType() != AccountType.FOP){
+            throw new IllegalArgumentException("Оплата податків з рахунку не ФОП не дозволена");
+        }
+
+        this.validateSufficientFunds(account, request.getAmount());
+        this.debitAccount(account, request.getAmount());
+
+        final TaxPayment payment = this.buildTaxPayment(request, account);
+        payment.setTransaction(this.createTransaction(
+                account,
+                null,
+                request.getAmount(),
+                TransactionType.PAYMENT,
+                "Оплата податків: " + request.getTaxType() + ", " + request.getPeriod()
+        ));
+
+        return this.paymentRepository.save(payment);
+    }
+
     private void validateIbanPaymentAccount(final Account senderAccount, final BigDecimal amount) {
         this.validateFopAccount(senderAccount);
         this.validateIbanSupportedCurrency(senderAccount.getCurrencyCode());
@@ -232,6 +258,19 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setPhoneNumber(request.getPhoneNumber());
         payment.setOperatorName("Mobile Operator");
         payment.setPurpose("Mobile top-up: " + request.getPhoneNumber());
+
+        return payment;
+    }
+
+    private TaxPayment buildTaxPayment(final TaxPaymentRequestDTO request, final Account account) {
+        final TaxPayment payment = new TaxPayment();
+        payment.setAccount(account);
+        payment.setAmount(request.getAmount());
+        payment.setCurrencyCode(account.getCurrencyCode().name());
+        payment.setPaymentDate(now());
+        payment.setStatus(COMPLETED);
+        payment.setBeneficiaryName(request.getReceiverName());
+        payment.setPurpose(format("Податок: %s, Період: %s", request.getTaxType(), request.getPeriod()));
 
         return payment;
     }

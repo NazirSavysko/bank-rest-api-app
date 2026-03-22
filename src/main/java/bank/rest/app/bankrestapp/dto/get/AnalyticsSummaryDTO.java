@@ -9,12 +9,14 @@ public record AnalyticsSummaryDTO(
         BigDecimal totalIbanExpenses,
         BigDecimal totalMobileExpenses,
         BigDecimal totalInternetExpenses,
-        BigDecimal totalCardToCardExpenses
+        BigDecimal totalCardToCardExpenses,
+        BigDecimal totalTaxExpenses
 ) {
     public AnalyticsSummaryDTO {
         totalIbanExpenses = totalIbanExpenses == null ? BigDecimal.ZERO : totalIbanExpenses;
         totalMobileExpenses = totalMobileExpenses == null ? BigDecimal.ZERO : totalMobileExpenses;
         totalInternetExpenses = totalInternetExpenses == null ? BigDecimal.ZERO : totalInternetExpenses;
         totalCardToCardExpenses = totalCardToCardExpenses == null ? BigDecimal.ZERO : totalCardToCardExpenses;
+        totalTaxExpenses = totalTaxExpenses == null ? BigDecimal.ZERO : totalTaxExpenses;
     }
 }

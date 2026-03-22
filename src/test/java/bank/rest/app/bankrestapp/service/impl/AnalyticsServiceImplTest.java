@@ -8,6 +8,7 @@ import bank.rest.app.bankrestapp.entity.Customer;
 import bank.rest.app.bankrestapp.entity.IbanPayment;
 import bank.rest.app.bankrestapp.entity.InternetPayment;
 import bank.rest.app.bankrestapp.entity.MobilePayment;
+import bank.rest.app.bankrestapp.entity.TaxPayment;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.entity.enums.PaymentStatus;
@@ -234,4 +235,54 @@ class AnalyticsServiceImplTest {
 //        verify(transactionRepository).findMonthlyTransactions(accountNumber, startDate, endDate, TransactionStatus.COMPLETED);
 //        verify(paymentRepository).findMonthlyPayments(accountNumber, startDate, endDate, PaymentStatus.COMPLETED);
 //    }
+
+    @Test
+    void getMonthlySummary_ShouldAggregateTaxExpenses() {
+        final String accountNumber = "ACC-TAX-123";
+        final String userEmail = "user@example.com";
+        final int year = 2026;
+        final int month = 1;
+        final LocalDateTime startDate = LocalDateTime.of(year, month, 1, 0, 0);
+        final LocalDateTime endDate = startDate.plusMonths(1);
+
+        final Account account = new Account();
+        account.setAccountNumber(accountNumber);
+        account.setCurrencyCode(Currency.UAH);
+
+        final AuthUSer authUser = new AuthUSer();
+        authUser.setEmail(userEmail);
+
+        final Customer customer = new Customer();
+        customer.setAuthUser(authUser);
+        account.setCustomer(customer);
+
+        final TaxPayment taxPayment = new TaxPayment();
+        taxPayment.setAccount(account);
+        taxPayment.setAmount(BigDecimal.valueOf(150));
+        taxPayment.setCurrencyCode("UAH");
+        taxPayment.setStatus(PaymentStatus.COMPLETED);
+
+        when(accountService.getAccountByNumber(accountNumber)).thenReturn(account);
+        when(transactionRepository.findMonthlyTransactions(
+                eq(accountNumber),
+                eq(startDate),
+                eq(endDate),
+                eq(TransactionStatus.COMPLETED)
+        )).thenReturn(List.of());
+        when(paymentRepository.findMonthlyPayments(
+                eq(accountNumber),
+                eq(startDate),
+                eq(endDate),
+                eq(PaymentStatus.COMPLETED)
+        )).thenReturn(List.of(taxPayment));
+
+        final AnalyticsSummaryDTO summary = analyticsService.getMonthlySummary(accountNumber, year, month, userEmail);
+
+        assertEquals(BigDecimal.ZERO, summary.totalIncoming());
+        assertEquals(BigDecimal.ZERO, summary.totalOutgoing());
+        assertEquals(0L, summary.totalTransactions());
+        assertEquals(BigDecimal.valueOf(150), summary.totalTaxExpenses());
+        verify(transactionRepository).findMonthlyTransactions(accountNumber, startDate, endDate, TransactionStatus.COMPLETED);
+        verify(paymentRepository).findMonthlyPayments(accountNumber, startDate, endDate, PaymentStatus.COMPLETED);
+    }
 }

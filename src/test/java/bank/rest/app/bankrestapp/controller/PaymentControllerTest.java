@@ -3,6 +3,7 @@ package bank.rest.app.bankrestapp.controller;
 import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.MobilePaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.TaxPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.get.GetPaymentDTO;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.mapper.Mapper;
@@ -94,6 +95,24 @@ class PaymentControllerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals("Поповнення мобільного рахунку успішно завершено", response.getBody());
         verify(paymentService).processMobilePayment(request, "user@example.com");
+        verifyNoInteractions(paymentMapper);
+    }
+
+    @Test
+    void processTaxPayment_ShouldUseAuthenticatedUserAndReturnOk() {
+        final UserDetails user = User.withUsername("user@example.com").password("pass").roles("USER").build();
+        final TaxPaymentRequestDTO request = new TaxPaymentRequestDTO();
+        request.setAccountId(4L);
+        request.setAmount(BigDecimal.valueOf(45));
+        request.setTaxType("Єдиний податок (5% від доходу)");
+        request.setPeriod("I квартал 2026 року");
+        request.setReceiverName("Держказначейство");
+
+        final var response = controller.processTaxPayment(user, request);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("Оплата податків успішно завершена", response.getBody());
+        verify(paymentService).processTaxPayment(request, "user@example.com");
         verifyNoInteractions(paymentMapper);
     }
 }
