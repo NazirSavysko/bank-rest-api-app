@@ -7,6 +7,7 @@ import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.MobilePaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.TaxPaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.TrainPaymentRequestDTO;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.ElectronicsPayment;
 import bank.rest.app.bankrestapp.entity.AuthUSer;
@@ -16,6 +17,7 @@ import bank.rest.app.bankrestapp.entity.InternetPayment;
 import bank.rest.app.bankrestapp.entity.MobilePayment;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.entity.TaxPayment;
+import bank.rest.app.bankrestapp.entity.TrainPayment;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.AccountType;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
@@ -33,6 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -467,6 +470,110 @@ class PaymentServiceImplTest {
         verify(accountRepository, never()).save(any(Account.class));
         verify(transactionRepository, never()).save(any(Transaction.class));
         verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
+    void processTrainPayment_Successful() {
+        final Account account = createAccount(61, Currency.UAH, BigDecimal.valueOf(2000), "user@example.com", "UA_TRAIN_1");
+        when(accountRepository.findByIdForUpdate(61)).thenReturn(Optional.of(account));
+        when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        final TrainPaymentRequestDTO request = new TrainPaymentRequestDTO();
+        request.setAccountId(61L);
+        request.setAmount(BigDecimal.valueOf(750));
+        request.setFromCity("Київ");
+        request.setToCity("Одеса");
+        request.setDepartureDate(LocalDate.of(2026, 4, 1));
+        request.setTicketType("Купе");
+
+        final Payment result = paymentService.processTrainPayment("user@example.com", request);
+
+        assertInstanceOf(TrainPayment.class, result);
+        final TrainPayment trainPayment = (TrainPayment) result;
+        assertEquals(BigDecimal.valueOf(1250), account.getBalance());
+        assertEquals(COMPLETED, trainPayment.getStatus());
+        assertEquals("UAH", trainPayment.getCurrencyCode());
+        assertEquals("Укрзалізниця", trainPayment.getBeneficiaryName());
+        assertEquals("Квиток на потяг: Київ - Одеса, Дата: 2026-04-01 (Купе)", trainPayment.getPurpose());
+        assertNotNull(trainPayment.getTransaction());
+        assertEquals(TransactionType.PAYMENT, trainPayment.getTransaction().getTransactionType());
+        assertEquals("Квиток на потяг: Київ - Одеса, Дата: 2026-04-01 (Купе)",
+                trainPayment.getTransaction().getDescription());
+        assertNull(trainPayment.getTransaction().getToAccount());
+
+        verify(accountRepository).save(account);
+        verify(accountRepository).findByIdForUpdate(61);
+        verify(transactionRepository).save(any(Transaction.class));
+        verify(paymentRepository).save(any(TrainPayment.class));
+    }
+
+    @Test
+    void processTrainPayment_NonUahAccount_ShouldThrow() {
+        final Account account = createAccount(62, Currency.USD, BigDecimal.valueOf(2000), "user@example.com", "UA_TRAIN_2");
+        when(accountRepository.findByIdForUpdate(62)).thenReturn(Optional.of(account));
+
+        final TrainPaymentRequestDTO request = new TrainPaymentRequestDTO();
+        request.setAccountId(62L);
+        request.setAmount(BigDecimal.valueOf(500));
+        request.setFromCity("Київ");
+        request.setToCity("Харків");
+        request.setDepartureDate(LocalDate.of(2026, 4, 2));
+        request.setTicketType("Плацкарт");
+
+        final InvalidAccountCurrencyException exception = assertThrows(
+                InvalidAccountCurrencyException.class,
+                () -> paymentService.processTrainPayment("user@example.com", request)
+        );
+        assertEquals("Платежі дозволені лише з рахунків у гривні", exception.getMessage());
+
+        verify(accountRepository, never()).save(any(Account.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
+    void processTrainPayment_InsufficientFunds_ShouldThrow() {
+        final Account account = createAccount(63, Currency.UAH, BigDecimal.valueOf(100), "user@example.com", "UA_TRAIN_3");
+        when(accountRepository.findByIdForUpdate(63)).thenReturn(Optional.of(account));
+
+        final TrainPaymentRequestDTO request = new TrainPaymentRequestDTO();
+        request.setAccountId(63L);
+        request.setAmount(BigDecimal.valueOf(500));
+        request.setFromCity("Київ");
+        request.setToCity("Дніпро");
+        request.setDepartureDate(LocalDate.of(2026, 4, 3));
+        request.setTicketType("Інтерсіті");
+
+        final InsufficientFundsException exception = assertThrows(
+                InsufficientFundsException.class,
+                () -> paymentService.processTrainPayment("user@example.com", request)
+        );
+        assertEquals(ERRORS_INSUFFICIENT_FUNDS, exception.getMessage());
+
+        verify(accountRepository, never()).save(any(Account.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
+    void processTrainPayment_PastDepartureDate_ShouldThrow() {
+        final TrainPaymentRequestDTO request = new TrainPaymentRequestDTO();
+        request.setAccountId(64L);
+        request.setAmount(BigDecimal.valueOf(500));
+        request.setFromCity("Київ");
+        request.setToCity("Луцьк");
+        request.setDepartureDate(LocalDate.now().minusDays(1));
+        request.setTicketType("Купе");
+
+        final IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> paymentService.processTrainPayment("user@example.com", request)
+        );
+        assertEquals("Дата поїздки має бути сьогодні або в майбутньому", exception.getMessage());
+
+        verifyNoInteractions(accountRepository, transactionRepository, paymentRepository);
     }
 
     @Test
