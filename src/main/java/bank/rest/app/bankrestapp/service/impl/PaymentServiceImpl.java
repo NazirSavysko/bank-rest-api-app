@@ -7,6 +7,7 @@ import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.MobilePaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.TaxPaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.TravelPaymentRequestDTO;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.ElectronicsPayment;
 import bank.rest.app.bankrestapp.entity.IbanPayment;
@@ -14,6 +15,7 @@ import bank.rest.app.bankrestapp.entity.InternetPayment;
 import bank.rest.app.bankrestapp.entity.MobilePayment;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.entity.TaxPayment;
+import bank.rest.app.bankrestapp.entity.TravelPayment;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.AccountType;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
@@ -205,6 +207,29 @@ public class PaymentServiceImpl implements PaymentService {
         return this.paymentRepository.save(payment);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Payment processTravelPayment(final String email, final TravelPaymentRequestDTO dto) {
+        final Account account = this.getValidOwnedAccount(dto.getAccountId(), email);
+        if (!Currency.UAH.equals(account.getCurrencyCode())) {
+            throw new InvalidAccountCurrencyException("Оплата квитків можлива лише з гривневого рахунку");
+        }
+
+        this.validateSufficientFunds(account, dto.getAmount());
+        this.debitAccount(account, dto.getAmount());
+
+        final TravelPayment payment = this.buildTravelPayment(dto, account);
+        payment.setTransaction(this.createTransaction(
+                account,
+                null,
+                dto.getAmount(),
+                TransactionType.PAYMENT,
+                payment.getPurpose()
+        ));
+
+        return this.paymentRepository.save(payment);
+    }
+
     private void validateIbanPaymentAccount(final Account senderAccount, final BigDecimal amount) {
         this.validateFopAccount(senderAccount);
         this.validateIbanSupportedCurrency(senderAccount.getCurrencyCode());
@@ -324,6 +349,36 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setPurpose(this.buildElectronicsPurpose(request.getItems()));
 
         return payment;
+    }
+
+    private TravelPayment buildTravelPayment(final TravelPaymentRequestDTO request, final Account account) {
+        final TravelPayment payment = new TravelPayment();
+        payment.setAccount(account);
+        payment.setAmount(request.getAmount());
+        payment.setCurrencyCode(Currency.UAH.name());
+        payment.setPaymentDate(now());
+        payment.setStatus(COMPLETED);
+        payment.setBeneficiaryName("Transport Provider");
+        payment.setPurpose(this.buildTravelPurpose(request));
+
+        return payment;
+    }
+
+    private String buildTravelPurpose(final TravelPaymentRequestDTO request) {
+        final String transportType = request.getTransportType();
+        if ("TRAIN".equals(transportType)) {
+            return format("Квиток на потяг: %s (%s)", request.getRoute(), request.getTicketDetails());
+        }
+        if ("AIRPLANE".equals(transportType)) {
+            return format("Авіаквиток: %s (%s)", request.getRoute(), request.getTicketDetails());
+        }
+        if ("BUS".equals(transportType)) {
+            return format("Квиток на автобус: %s (%s)", request.getRoute(), request.getTicketDetails());
+        }
+        if ("CITY".equals(transportType)) {
+            return format("Міський транспорт: %s (%s)", request.getRoute(), request.getTicketDetails());
+        }
+        return format("Транспорт: %s", request.getRoute());
     }
 
     private BigDecimal calculateCartTotal(final List<CartItemDTO> items) {

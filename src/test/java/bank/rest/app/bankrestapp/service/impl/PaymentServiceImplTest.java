@@ -7,6 +7,7 @@ import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.MobilePaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.TaxPaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.TravelPaymentRequestDTO;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.ElectronicsPayment;
 import bank.rest.app.bankrestapp.entity.AuthUSer;
@@ -16,6 +17,7 @@ import bank.rest.app.bankrestapp.entity.InternetPayment;
 import bank.rest.app.bankrestapp.entity.MobilePayment;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.entity.TaxPayment;
+import bank.rest.app.bankrestapp.entity.TravelPayment;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.AccountType;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
@@ -307,6 +309,7 @@ class PaymentServiceImplTest {
     @Test
     void processTaxPayment_Successful() {
         final Account account = createAccount(41, Currency.UAH, BigDecimal.valueOf(500), "user@example.com", "UA_TAX_1");
+        account.setAccountType(AccountType.FOP);
         when(accountRepository.findByIdForUpdate(41)).thenReturn(Optional.of(account));
         when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -343,6 +346,7 @@ class PaymentServiceImplTest {
     @Test
     void processTaxPayment_InsufficientFunds_ShouldThrow() {
         final Account account = createAccount(42, Currency.UAH, BigDecimal.valueOf(20), "user@example.com", "UA_TAX_2");
+        account.setAccountType(AccountType.FOP);
         when(accountRepository.findByIdForUpdate(42)).thenReturn(Optional.of(account));
 
         final TaxPaymentRequestDTO request = new TaxPaymentRequestDTO();
@@ -461,6 +465,87 @@ class PaymentServiceImplTest {
         final InsufficientFundsException exception = assertThrows(
                 InsufficientFundsException.class,
                 () -> paymentService.processElectronicsPayment("user@example.com", request)
+        );
+        assertEquals(ERRORS_INSUFFICIENT_FUNDS, exception.getMessage());
+
+        verify(accountRepository, never()).save(any(Account.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
+    void processTravelPayment_Successful() {
+        final Account account = createAccount(61, Currency.UAH, BigDecimal.valueOf(1000), "user@example.com", "UA_TRAVEL_1");
+        when(accountRepository.findByIdForUpdate(61)).thenReturn(Optional.of(account));
+        when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        final TravelPaymentRequestDTO request = new TravelPaymentRequestDTO();
+        request.setAccountId(61L);
+        request.setAmount(BigDecimal.valueOf(500));
+        request.setTransportType("TRAIN");
+        request.setRoute("Київ - Львів");
+        request.setTicketDetails("Купе");
+
+        final Payment result = paymentService.processTravelPayment("user@example.com", request);
+
+        assertInstanceOf(TravelPayment.class, result);
+        final TravelPayment travelPayment = (TravelPayment) result;
+        assertEquals(BigDecimal.valueOf(500), account.getBalance());
+        assertEquals(COMPLETED, travelPayment.getStatus());
+        assertEquals("Transport Provider", travelPayment.getBeneficiaryName());
+        assertEquals("UAH", travelPayment.getCurrencyCode());
+        assertEquals("Квиток на потяг: Київ - Львів (Купе)", travelPayment.getPurpose());
+        assertNotNull(travelPayment.getTransaction());
+        assertEquals(TransactionType.PAYMENT, travelPayment.getTransaction().getTransactionType());
+        assertEquals("Квиток на потяг: Київ - Львів (Купе)", travelPayment.getTransaction().getDescription());
+        assertNull(travelPayment.getTransaction().getToAccount());
+
+        verify(accountRepository).save(account);
+        verify(accountRepository).findByIdForUpdate(61);
+        verify(transactionRepository).save(any(Transaction.class));
+        verify(paymentRepository).save(any(TravelPayment.class));
+    }
+
+    @Test
+    void processTravelPayment_NonUahAccount_ShouldThrow() {
+        final Account account = createAccount(62, Currency.USD, BigDecimal.valueOf(1000), "user@example.com", "UA_TRAVEL_2");
+        when(accountRepository.findByIdForUpdate(62)).thenReturn(Optional.of(account));
+
+        final TravelPaymentRequestDTO request = new TravelPaymentRequestDTO();
+        request.setAccountId(62L);
+        request.setAmount(BigDecimal.valueOf(500));
+        request.setTransportType("AIRPLANE");
+        request.setRoute("Варшава - Лондон");
+        request.setTicketDetails("Економ");
+
+        final InvalidAccountCurrencyException exception = assertThrows(
+                InvalidAccountCurrencyException.class,
+                () -> paymentService.processTravelPayment("user@example.com", request)
+        );
+        assertEquals("Оплата квитків можлива лише з гривневого рахунку", exception.getMessage());
+
+        verify(accountRepository, never()).save(any(Account.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
+    void processTravelPayment_InsufficientFunds_ShouldThrow() {
+        final Account account = createAccount(63, Currency.UAH, BigDecimal.valueOf(100), "user@example.com", "UA_TRAVEL_3");
+        when(accountRepository.findByIdForUpdate(63)).thenReturn(Optional.of(account));
+
+        final TravelPaymentRequestDTO request = new TravelPaymentRequestDTO();
+        request.setAccountId(63L);
+        request.setAmount(BigDecimal.valueOf(500));
+        request.setTransportType("BUS");
+        request.setRoute("Київ - Одеса");
+        request.setTicketDetails("FlixBus");
+
+        final InsufficientFundsException exception = assertThrows(
+                InsufficientFundsException.class,
+                () -> paymentService.processTravelPayment("user@example.com", request)
         );
         assertEquals(ERRORS_INSUFFICIENT_FUNDS, exception.getMessage());
 

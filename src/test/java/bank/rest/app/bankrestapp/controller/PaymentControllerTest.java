@@ -6,6 +6,7 @@ import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.MobilePaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.TaxPaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.TravelPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.get.GetPaymentDTO;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.mapper.Mapper;
@@ -135,6 +136,24 @@ class PaymentControllerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals("Оплата електроніки успішно завершена", response.getBody());
         verify(paymentService).processElectronicsPayment("user@example.com", request);
+        verifyNoInteractions(paymentMapper);
+    }
+
+    @Test
+    void processTravelPayment_ShouldUseAuthenticatedUserAndReturnOk() {
+        final UserDetails user = User.withUsername("user@example.com").password("pass").roles("USER").build();
+        final TravelPaymentRequestDTO request = new TravelPaymentRequestDTO();
+        request.setAccountId(6L);
+        request.setAmount(BigDecimal.valueOf(500));
+        request.setTransportType("TRAIN");
+        request.setRoute("Київ - Львів");
+        request.setTicketDetails("Купе");
+
+        final var response = controller.processTravelPayment(user, request);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("Оплата квитків успішно завершена", response.getBody());
+        verify(paymentService).processTravelPayment("user@example.com", request);
         verifyNoInteractions(paymentMapper);
     }
 }
