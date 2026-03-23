@@ -67,6 +67,42 @@ public interface CustomerService {
     void updatePassword(String email, String newPassword,String oldPassword);
 
     /**
+     * Sends a verification code to the authenticated customer for password change.
+     *
+     * @param email authenticated customer email
+     */
+    @Transactional(rollbackFor = Exception.class)
+    void initPasswordChange(String email);
+
+    /**
+     * Changes the authenticated customer's password after OTP verification.
+     *
+     * @param email authenticated customer email
+     * @param verificationCode otp verification code
+     * @param newPassword new raw password
+     */
+    @Transactional(rollbackFor = Exception.class)
+    void changePassword(String email, String verificationCode, String newPassword);
+
+    /**
+     * Sends a verification code to the authenticated customer for email change.
+     *
+     * @param email authenticated customer email
+     */
+    @Transactional(rollbackFor = Exception.class)
+    void initEmailChange(String email);
+
+    /**
+     * Changes the authenticated customer's email after OTP verification.
+     *
+     * @param email authenticated customer email
+     * @param verificationCode otp verification code
+     * @param newEmail new email value
+     */
+    @Transactional(rollbackFor = Exception.class)
+    void changeEmail(String email, String verificationCode, String newEmail);
+
+    /**
      * Returns all customers for administrative use cases.
      *
      * @return list of all customers

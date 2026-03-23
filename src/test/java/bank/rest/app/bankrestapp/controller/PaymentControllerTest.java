@@ -1,7 +1,12 @@
 package bank.rest.app.bankrestapp.controller;
 
+import bank.rest.app.bankrestapp.dto.CartItemDTO;
+import bank.rest.app.bankrestapp.dto.ElectronicsPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.MobilePaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.TaxPaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.TrainPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.get.GetPaymentDTO;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.mapper.Mapper;
@@ -13,6 +18,8 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
@@ -77,5 +84,78 @@ class PaymentControllerTest {
         assertEquals(dto, response.getBody());
         verify(paymentService).processInternetPayment(request, "user@example.com");
         verify(paymentMapper).toDto(payment);
+    }
+
+    @Test
+    void processMobilePayment_ShouldUseAuthenticatedUserAndReturnOk() {
+        final UserDetails user = User.withUsername("user@example.com").password("pass").roles("USER").build();
+        final MobilePaymentRequestDTO request = new MobilePaymentRequestDTO(
+                3L,
+                BigDecimal.valueOf(30),
+                "+380991112233"
+        );
+
+        final var response = controller.processMobilePayment(user, request);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("Поповнення мобільного рахунку успішно завершено", response.getBody());
+        verify(paymentService).processMobilePayment(request, "user@example.com");
+        verifyNoInteractions(paymentMapper);
+    }
+
+    @Test
+    void processTaxPayment_ShouldUseAuthenticatedUserAndReturnOk() {
+        final UserDetails user = User.withUsername("user@example.com").password("pass").roles("USER").build();
+        final TaxPaymentRequestDTO request = new TaxPaymentRequestDTO();
+        request.setAccountId(4L);
+        request.setAmount(BigDecimal.valueOf(45));
+        request.setTaxType("Єдиний податок (5% від доходу)");
+        request.setPeriod("I квартал 2026 року");
+        request.setReceiverName("Держказначейство");
+
+        final var response = controller.processTaxPayment(user, request);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("Оплата податків успішно завершена", response.getBody());
+        verify(paymentService).processTaxPayment(request, "user@example.com");
+        verifyNoInteractions(paymentMapper);
+    }
+
+    @Test
+    void processElectronicsPayment_ShouldUseAuthenticatedUserAndReturnOk() {
+        final UserDetails user = User.withUsername("user@example.com").password("pass").roles("USER").build();
+        final ElectronicsPaymentRequestDTO request = new ElectronicsPaymentRequestDTO();
+        request.setAccountId(5L);
+        request.setTotalAmount(BigDecimal.valueOf(120000));
+        request.setItems(List.of(
+                new CartItemDTO("iPhone 15", 1, BigDecimal.valueOf(100000)),
+                new CartItemDTO("AirPods", 1, BigDecimal.valueOf(20000))
+        ));
+
+        final var response = controller.processElectronicsPayment(user, request);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("Оплата електроніки успішно завершена", response.getBody());
+        verify(paymentService).processElectronicsPayment("user@example.com", request);
+        verifyNoInteractions(paymentMapper);
+    }
+
+    @Test
+    void processTrainPayment_ShouldUseAuthenticatedUserAndReturnOk() {
+        final UserDetails user = User.withUsername("user@example.com").password("pass").roles("USER").build();
+        final TrainPaymentRequestDTO request = new TrainPaymentRequestDTO();
+        request.setAccountId(6L);
+        request.setAmount(BigDecimal.valueOf(650));
+        request.setFromCity("Київ");
+        request.setToCity("Львів");
+        request.setDepartureDate(LocalDate.now().plusDays(1));
+        request.setTicketType("Інтерсіті");
+
+        final var response = controller.processTrainPayment(user, request);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("Оплата квитків на потяг успішно завершена", response.getBody());
+        verify(paymentService).processTrainPayment("user@example.com", request);
+        verifyNoInteractions(paymentMapper);
     }
 }

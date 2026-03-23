@@ -1,12 +1,21 @@
 package bank.rest.app.bankrestapp.service.impl;
 
 import bank.rest.app.bankrestapp.currency.CurrencyLoader;
+import bank.rest.app.bankrestapp.dto.CartItemDTO;
+import bank.rest.app.bankrestapp.dto.ElectronicsPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.MobilePaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.TaxPaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.TrainPaymentRequestDTO;
 import bank.rest.app.bankrestapp.entity.Account;
+import bank.rest.app.bankrestapp.entity.ElectronicsPayment;
 import bank.rest.app.bankrestapp.entity.IbanPayment;
 import bank.rest.app.bankrestapp.entity.InternetPayment;
+import bank.rest.app.bankrestapp.entity.MobilePayment;
 import bank.rest.app.bankrestapp.entity.Payment;
+import bank.rest.app.bankrestapp.entity.TaxPayment;
+import bank.rest.app.bankrestapp.entity.TrainPayment;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.AccountType;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
@@ -24,9 +33,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static bank.rest.app.bankrestapp.constants.MessageError.*;
 import static bank.rest.app.bankrestapp.entity.enums.PaymentStatus.COMPLETED;
@@ -119,6 +131,104 @@ public class PaymentServiceImpl implements PaymentService {
         return this.paymentRepository.save(payment);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Payment processMobilePayment(final MobilePaymentRequestDTO request, final String authenticatedUserEmail) {
+        final Account account = this.getValidOwnedAccount(request.getAccountId(), authenticatedUserEmail);
+
+        this.validateMobilePaymentAccount(account, request.getAmount());
+        this.debitAccount(account, request.getAmount());
+
+        final MobilePayment payment = this.buildMobilePayment(request, account);
+        payment.setTransaction(this.createTransaction(
+                account,
+                null,
+                request.getAmount(),
+                TransactionType.PAYMENT,
+                "Поповнення мобільного: " + request.getPhoneNumber()
+        ));
+
+        return this.paymentRepository.save(payment);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Payment processTaxPayment(final TaxPaymentRequestDTO request, final String authenticatedUserEmail) {
+        final Account account = this.getValidOwnedAccount(request.getAccountId(), authenticatedUserEmail);
+
+        if(account.getAccountType() != AccountType.FOP){
+            throw new IllegalArgumentException("Оплата податків з рахунку не ФОП не дозволена");
+        }
+
+        this.validateSufficientFunds(account, request.getAmount());
+        this.debitAccount(account, request.getAmount());
+
+        final TaxPayment payment = this.buildTaxPayment(request, account);
+        payment.setTransaction(this.createTransaction(
+                account,
+                null,
+                request.getAmount(),
+                TransactionType.PAYMENT,
+                "Оплата податків: " + request.getTaxType() + ", " + request.getPeriod()
+        ));
+
+        return this.paymentRepository.save(payment);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Payment processElectronicsPayment(final String email, final ElectronicsPaymentRequestDTO dto) {
+        final Account account = this.getValidOwnedAccount(dto.getAccountId(), email);
+        this.validateElectronicsCurrency(account.getCurrencyCode());
+
+        final BigDecimal calculatedTotal = this.calculateCartTotal(dto.getItems());
+        if (calculatedTotal.compareTo(dto.getTotalAmount()) != 0) {
+            throw new IllegalArgumentException("Невірна сума кошика");
+        }
+        if (account.getCurrencyCode() != Currency.UAH) {
+            throw new IllegalArgumentException("Оплата електроніки можлива лише з гривневого рахунку");
+        }
+        if(account.getAccountType() == AccountType.FOP){
+            throw new IllegalArgumentException("Оплата електроніки з рахунку ФОП не дозволена");
+        }
+
+
+        this.validateSufficientFunds(account, dto.getTotalAmount());
+        this.debitAccount(account, dto.getTotalAmount());
+
+        final ElectronicsPayment payment = this.buildElectronicsPayment(dto, account);
+        payment.setTransaction(this.createTransaction(
+                account,
+                null,
+                dto.getTotalAmount(),
+                TransactionType.PAYMENT,
+                payment.getPurpose()
+        ));
+
+        return this.paymentRepository.save(payment);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Payment processTrainPayment(final String email, final TrainPaymentRequestDTO dto) {
+        this.validateTrainDepartureDate(dto.getDepartureDate());
+        final Account account = this.getValidOwnedAccount(dto.getAccountId(), email);
+        this.validateTrainCurrency(account.getCurrencyCode());
+        this.validateSufficientFunds(account, dto.getAmount());
+        this.debitAccount(account, dto.getAmount());
+
+        final TrainPayment payment = this.buildTrainPayment(dto, account);
+        payment.setTransaction(this.createTransaction(
+                account,
+                null,
+                dto.getAmount(),
+                TransactionType.PAYMENT,
+                payment.getPurpose()
+        ));
+
+        return this.paymentRepository.save(payment);
+    }
+
     private void validateIbanPaymentAccount(final Account senderAccount, final BigDecimal amount) {
         this.validateFopAccount(senderAccount);
         this.validateIbanSupportedCurrency(senderAccount.getCurrencyCode());
@@ -127,6 +237,11 @@ public class PaymentServiceImpl implements PaymentService {
 
     private void validateInternetPaymentAccount(final Account account, final BigDecimal amount) {
         this.validateInternetCurrency(account.getCurrencyCode());
+        this.validateSufficientFunds(account, amount);
+    }
+
+    private void validateMobilePaymentAccount(final Account account, final BigDecimal amount) {
+        this.validateMobileCurrency(account.getCurrencyCode());
         this.validateSufficientFunds(account, amount);
     }
 
@@ -193,6 +308,80 @@ public class PaymentServiceImpl implements PaymentService {
         return payment;
     }
 
+    private MobilePayment buildMobilePayment(final MobilePaymentRequestDTO request, final Account account) {
+        final MobilePayment payment = new MobilePayment();
+        payment.setAccount(account);
+        payment.setAmount(request.getAmount());
+        payment.setCurrencyCode(account.getCurrencyCode().name());
+        payment.setPaymentDate(now());
+        payment.setStatus(COMPLETED);
+        payment.setBeneficiaryName("Mobile Operator");
+        payment.setBeneficiaryAcc(request.getPhoneNumber());
+        payment.setPhoneNumber(request.getPhoneNumber());
+        payment.setOperatorName("Mobile Operator");
+        payment.setPurpose("Mobile top-up: " + request.getPhoneNumber());
+
+        return payment;
+    }
+
+    private TaxPayment buildTaxPayment(final TaxPaymentRequestDTO request, final Account account) {
+        final TaxPayment payment = new TaxPayment();
+        payment.setAccount(account);
+        payment.setAmount(request.getAmount());
+        payment.setCurrencyCode(account.getCurrencyCode().name());
+        payment.setPaymentDate(now());
+        payment.setStatus(COMPLETED);
+        payment.setBeneficiaryName(request.getReceiverName());
+        payment.setPurpose(format("Податок: %s, Період: %s", request.getTaxType(), request.getPeriod()));
+
+        return payment;
+    }
+
+    private ElectronicsPayment buildElectronicsPayment(final ElectronicsPaymentRequestDTO request, final Account account) {
+        final ElectronicsPayment payment = new ElectronicsPayment();
+        payment.setAccount(account);
+        payment.setAmount(request.getTotalAmount());
+        payment.setCurrencyCode(Currency.UAH.name());
+        payment.setPaymentDate(now());
+        payment.setStatus(COMPLETED);
+        payment.setBeneficiaryName("Marketplace");
+        payment.setPurpose(this.buildElectronicsPurpose(request.getItems()));
+
+        return payment;
+    }
+
+    private TrainPayment buildTrainPayment(final TrainPaymentRequestDTO request, final Account account) {
+        final TrainPayment payment = new TrainPayment();
+        payment.setAccount(account);
+        payment.setAmount(request.getAmount());
+        payment.setCurrencyCode(Currency.UAH.name());
+        payment.setPaymentDate(now());
+        payment.setStatus(COMPLETED);
+        payment.setBeneficiaryName("Укрзалізниця");
+        payment.setPurpose(format(
+                "Квиток на потяг: %s - %s, Дата: %s (%s)",
+                request.getFromCity(),
+                request.getToCity(),
+                request.getDepartureDate(),
+                request.getTicketType()
+        ));
+
+        return payment;
+    }
+
+    private BigDecimal calculateCartTotal(final List<CartItemDTO> items) {
+        return items.stream()
+                .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private String buildElectronicsPurpose(final List<CartItemDTO> items) {
+        return "Купівля електроніки: "
+                + items.stream()
+                .map(item -> item.getProductName() + " (" + item.getQuantity() + " шт)")
+                .collect(Collectors.joining(", "));
+    }
+
     private Transaction createTransaction(final Account senderAccount,
                                           final Account recipientAccount,
                                           final BigDecimal amount,
@@ -243,6 +432,30 @@ public class PaymentServiceImpl implements PaymentService {
     private void validateIbanSupportedCurrency(final Currency currency) {
         if (currency == null || !SUPPORTED_IBAN_CURRENCIES.contains(currency)) {
             throw new UnsupportedCurrencyException(ERRORS_UNSUPPORTED_ACCOUNT_CURRENCY_FOR_IBAN_PAYMENT);
+        }
+    }
+
+    private void validateMobileCurrency(final Currency currency) {
+        if (!Currency.UAH.equals(currency)) {
+            throw new InvalidAccountCurrencyException("Пополнение мобильного возможно только с гривневого счета");
+        }
+    }
+
+    private void validateElectronicsCurrency(final Currency currency) {
+        if (!Currency.UAH.equals(currency)) {
+            throw new InvalidAccountCurrencyException("Оплата за електроніку можлива лише з гривневого рахунку");
+        }
+    }
+
+    private void validateTrainCurrency(final Currency currency) {
+        if (!Currency.UAH.equals(currency)) {
+            throw new InvalidAccountCurrencyException(ERRORS_PAYMENTS_ALLOWED_ONLY_FROM_UAH_ACCOUNTS);
+        }
+    }
+
+    private void validateTrainDepartureDate(final LocalDate departureDate) {
+        if (departureDate == null || departureDate.isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Дата поїздки має бути сьогодні або в майбутньому");
         }
     }
 

@@ -1,7 +1,11 @@
 package bank.rest.app.bankrestapp.controller;
 
+import bank.rest.app.bankrestapp.dto.ElectronicsPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.MobilePaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.TaxPaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.TrainPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.get.GetPaymentDTO;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.mapper.Mapper;
@@ -64,5 +68,41 @@ public final class PaymentController {
         return ResponseEntity
                 .status(CREATED)
                 .body(this.paymentMapper.toDto(payment));
+    }
+
+    @PostMapping("/mobile")
+    public ResponseEntity<String> processMobilePayment(
+            final @AuthenticationPrincipal UserDetails userDetails,
+            final @Valid @RequestBody MobilePaymentRequestDTO request
+    ) {
+        this.paymentService.processMobilePayment(request, userDetails.getUsername());
+        return ResponseEntity.ok("Поповнення мобільного рахунку успішно завершено");
+    }
+
+    @PostMapping("/taxes")
+    public ResponseEntity<String> processTaxPayment(
+            final @AuthenticationPrincipal UserDetails userDetails,
+            final @Valid @RequestBody TaxPaymentRequestDTO request
+    ) {
+        this.paymentService.processTaxPayment(request, userDetails.getUsername());
+        return ResponseEntity.ok("Оплата податків успішно завершена");
+    }
+
+    @PostMapping("/electronics")
+    public ResponseEntity<String> processElectronicsPayment(
+            final @AuthenticationPrincipal UserDetails userDetails,
+            final @Valid @RequestBody ElectronicsPaymentRequestDTO request
+    ) {
+        this.paymentService.processElectronicsPayment(userDetails.getUsername(), request);
+        return ResponseEntity.ok("Оплата електроніки успішно завершена");
+    }
+
+    @PostMapping("/train")
+    public ResponseEntity<String> processTrainPayment(
+            final @AuthenticationPrincipal UserDetails userDetails,
+            final @Valid @RequestBody TrainPaymentRequestDTO request
+    ) {
+        this.paymentService.processTrainPayment(userDetails.getUsername(), request);
+        return ResponseEntity.ok("Оплата квитків на потяг успішно завершена");
     }
 }
