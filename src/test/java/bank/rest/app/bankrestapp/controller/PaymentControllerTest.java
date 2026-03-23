@@ -1,6 +1,7 @@
 package bank.rest.app.bankrestapp.controller;
 
 import bank.rest.app.bankrestapp.dto.CartItemDTO;
+import bank.rest.app.bankrestapp.dto.CommunalPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.ElectronicsPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
@@ -156,6 +157,23 @@ class PaymentControllerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals("Оплата квитків на потяг успішно завершена", response.getBody());
         verify(paymentService).processTrainPayment("user@example.com", request);
+        verifyNoInteractions(paymentMapper);
+    }
+
+    @Test
+    void processCommunalPayment_ShouldUseAuthenticatedUserAndReturnOk() {
+        final UserDetails user = User.withUsername("user@example.com").password("pass").roles("USER").build();
+        final CommunalPaymentRequestDTO request = new CommunalPaymentRequestDTO();
+        request.setAccountId(7L);
+        request.setAmount(BigDecimal.valueOf(980));
+        request.setUtilityProvider("KyivEnergo");
+        request.setPersonalAccount("1234567890");
+
+        final var response = controller.processCommunalPayment(user, request);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("Оплата комунальних послуг успішно завершена", response.getBody());
+        verify(paymentService).processCommunalPayment("user@example.com", request);
         verifyNoInteractions(paymentMapper);
     }
 }

@@ -3,22 +3,17 @@ package bank.rest.app.bankrestapp.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Entity
 @DiscriminatorValue("UTILITY")
-@Setter
-@Getter
-@NoArgsConstructor
+@Data
+@EqualsAndHashCode(callSuper = true)
 public final class UtilityPayment extends Payment {
 
-    @Column(name = "service_provider")
-    private String serviceProvider;
-
-    @Column(name = "client_address")
-    private String clientAddress;
+    @Column(name = "provider_name")
+    private String providerName;
 
     @Column(name = "utility_account_number")
     private String utilityAccountNumber;

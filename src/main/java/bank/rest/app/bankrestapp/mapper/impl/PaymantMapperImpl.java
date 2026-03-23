@@ -84,7 +84,7 @@ public final class PaymantMapperImpl<T, R> implements Mapper<Payment, GetPayment
         } else if (entity instanceof final MobilePayment mobilePayment) {
             beneficiaryName = mobilePayment.getOperatorName();
         } else if (entity instanceof final UtilityPayment utilityPayment) {
-            beneficiaryName = utilityPayment.getServiceProvider();
+            beneficiaryName = utilityPayment.getProviderName();
         }
 
         return new GetPaymentDTO(

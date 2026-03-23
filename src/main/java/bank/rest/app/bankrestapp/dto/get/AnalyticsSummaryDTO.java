@@ -11,7 +11,8 @@ public record AnalyticsSummaryDTO(
         BigDecimal totalInternetExpenses,
         BigDecimal totalCardToCardExpenses,
         BigDecimal totalTaxExpenses,
-        BigDecimal totalElectronicsExpenses
+        BigDecimal totalElectronicsExpenses,
+        BigDecimal totalUtilityExpenses
 ) {
     public AnalyticsSummaryDTO {
         totalIbanExpenses = totalIbanExpenses == null ? BigDecimal.ZERO : totalIbanExpenses;
@@ -20,5 +21,6 @@ public record AnalyticsSummaryDTO(
         totalCardToCardExpenses = totalCardToCardExpenses == null ? BigDecimal.ZERO : totalCardToCardExpenses;
         totalTaxExpenses = totalTaxExpenses == null ? BigDecimal.ZERO : totalTaxExpenses;
         totalElectronicsExpenses = totalElectronicsExpenses == null ? BigDecimal.ZERO : totalElectronicsExpenses;
+        totalUtilityExpenses = totalUtilityExpenses == null ? BigDecimal.ZERO : totalUtilityExpenses;
     }
 }

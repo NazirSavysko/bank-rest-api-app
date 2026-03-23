@@ -2,6 +2,7 @@ package bank.rest.app.bankrestapp.service.impl;
 
 import bank.rest.app.bankrestapp.currency.CurrencyLoader;
 import bank.rest.app.bankrestapp.dto.CartItemDTO;
+import bank.rest.app.bankrestapp.dto.CommunalPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.ElectronicsPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
@@ -19,6 +20,7 @@ import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.entity.TaxPayment;
 import bank.rest.app.bankrestapp.entity.TrainPayment;
 import bank.rest.app.bankrestapp.entity.Transaction;
+import bank.rest.app.bankrestapp.entity.UtilityPayment;
 import bank.rest.app.bankrestapp.entity.enums.AccountType;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.entity.enums.TransactionType;
@@ -574,6 +576,99 @@ class PaymentServiceImplTest {
         assertEquals("Дата поїздки має бути сьогодні або в майбутньому", exception.getMessage());
 
         verifyNoInteractions(accountRepository, transactionRepository, paymentRepository);
+    }
+
+    @Test
+    void processCommunalPayment_Successful() {
+        final Account account = createAccount(71, Currency.UAH, BigDecimal.valueOf(3000), "user@example.com", "UA_COMMUNAL_1");
+        when(accountRepository.findByIdForUpdate(71)).thenReturn(Optional.of(account));
+        when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        final CommunalPaymentRequestDTO request = new CommunalPaymentRequestDTO();
+        request.setAccountId(71L);
+        request.setAmount(BigDecimal.valueOf(980));
+        request.setUtilityProvider("KyivEnergo");
+        request.setPersonalAccount("1234567890");
+
+        final Payment result = paymentService.processCommunalPayment("user@example.com", request);
+
+        assertInstanceOf(UtilityPayment.class, result);
+        final UtilityPayment utilityPayment = (UtilityPayment) result;
+        assertEquals(BigDecimal.valueOf(2020), account.getBalance());
+        assertEquals(COMPLETED, utilityPayment.getStatus());
+        assertEquals("UAH", utilityPayment.getCurrencyCode());
+        assertEquals("KyivEnergo", utilityPayment.getProviderName());
+        assertEquals("1234567890", utilityPayment.getUtilityAccountNumber());
+        assertEquals("KyivEnergo", utilityPayment.getBeneficiaryName());
+        assertEquals("Оплата комунальних послуг: KyivEnergo (Ор: 1234567890)", utilityPayment.getPurpose());
+        assertNotNull(utilityPayment.getTransaction());
+        assertEquals(TransactionType.UTILITY_PAYMENT, utilityPayment.getTransaction().getTransactionType());
+        assertEquals("Оплата комунальних послуг: KyivEnergo (Ор: 1234567890)", utilityPayment.getTransaction().getDescription());
+        assertEquals(BigDecimal.valueOf(980), utilityPayment.getTransaction().getAmount());
+        assertNull(utilityPayment.getTransaction().getToAccount());
+
+        verify(accountRepository).save(account);
+        verify(accountRepository).findByIdForUpdate(71);
+        verify(transactionRepository).save(any(Transaction.class));
+        verify(paymentRepository).save(any(UtilityPayment.class));
+        verifyNoInteractions(currencyLoader);
+    }
+
+    @Test
+    void processCommunalPayment_NonUahAccount_ShouldConvertDeduction() {
+        final Account account = createAccount(72, Currency.USD, BigDecimal.valueOf(100), "user@example.com", "UA_COMMUNAL_2");
+        when(accountRepository.findByIdForUpdate(72)).thenReturn(Optional.of(account));
+        when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(currencyLoader.convert(BigDecimal.valueOf(800), "UAH", "USD")).thenReturn(BigDecimal.valueOf(20));
+
+        final CommunalPaymentRequestDTO request = new CommunalPaymentRequestDTO();
+        request.setAccountId(72L);
+        request.setAmount(BigDecimal.valueOf(800));
+        request.setUtilityProvider("Water");
+        request.setPersonalAccount("PA-22");
+
+        final Payment result = paymentService.processCommunalPayment("user@example.com", request);
+
+        assertInstanceOf(UtilityPayment.class, result);
+        assertEquals(BigDecimal.valueOf(80), account.getBalance());
+        assertEquals(BigDecimal.valueOf(800), result.getAmount());
+        assertEquals("UAH", result.getCurrencyCode());
+        assertNotNull(result.getTransaction());
+        assertEquals(BigDecimal.valueOf(20), result.getTransaction().getAmount());
+        assertEquals(Currency.USD, result.getTransaction().getCurrencyCode());
+
+        verify(currencyLoader).convert(BigDecimal.valueOf(800), "UAH", "USD");
+        verify(accountRepository).save(account);
+        verify(transactionRepository).save(any(Transaction.class));
+        verify(paymentRepository).save(any(UtilityPayment.class));
+    }
+
+    @Test
+    void processCommunalPayment_InsufficientFunds_ShouldThrow() {
+        final Account account = createAccount(73, Currency.EUR, BigDecimal.valueOf(5), "user@example.com", "UA_COMMUNAL_3");
+        when(accountRepository.findByIdForUpdate(73)).thenReturn(Optional.of(account));
+        when(currencyLoader.convert(BigDecimal.valueOf(1000), "UAH", "EUR")).thenReturn(BigDecimal.valueOf(25));
+
+        final CommunalPaymentRequestDTO request = new CommunalPaymentRequestDTO();
+        request.setAccountId(73L);
+        request.setAmount(BigDecimal.valueOf(1000));
+        request.setUtilityProvider("Gas");
+        request.setPersonalAccount("ACC-73");
+
+        final InsufficientFundsException exception = assertThrows(
+                InsufficientFundsException.class,
+                () -> paymentService.processCommunalPayment("user@example.com", request)
+        );
+        assertEquals(ERRORS_INSUFFICIENT_FUNDS, exception.getMessage());
+
+        verify(currencyLoader).convert(BigDecimal.valueOf(1000), "UAH", "EUR");
+        verify(accountRepository, never()).save(any(Account.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
+        verify(paymentRepository, never()).save(any(Payment.class));
     }
 
     @Test
