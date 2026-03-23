@@ -11,6 +11,7 @@ import bank.rest.app.bankrestapp.entity.InternetPayment;
 import bank.rest.app.bankrestapp.entity.MobilePayment;
 import bank.rest.app.bankrestapp.entity.TaxPayment;
 import bank.rest.app.bankrestapp.entity.Transaction;
+import bank.rest.app.bankrestapp.entity.UtilityPayment;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.entity.enums.PaymentStatus;
 import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
@@ -284,6 +285,7 @@ class AnalyticsServiceImplTest {
         assertEquals(0L, summary.totalTransactions());
         assertEquals(BigDecimal.valueOf(150), summary.totalTaxExpenses());
         assertEquals(BigDecimal.ZERO, summary.totalElectronicsExpenses());
+        assertEquals(BigDecimal.ZERO, summary.totalUtilityExpenses());
         verify(transactionRepository).findMonthlyTransactions(accountNumber, startDate, endDate, TransactionStatus.COMPLETED);
         verify(paymentRepository).findMonthlyPayments(accountNumber, startDate, endDate, PaymentStatus.COMPLETED);
     }
@@ -335,6 +337,59 @@ class AnalyticsServiceImplTest {
         assertEquals(0L, summary.totalTransactions());
         assertEquals(BigDecimal.ZERO, summary.totalTaxExpenses());
         assertEquals(BigDecimal.valueOf(9999), summary.totalElectronicsExpenses());
+        assertEquals(BigDecimal.ZERO, summary.totalUtilityExpenses());
+        verify(transactionRepository).findMonthlyTransactions(accountNumber, startDate, endDate, TransactionStatus.COMPLETED);
+        verify(paymentRepository).findMonthlyPayments(accountNumber, startDate, endDate, PaymentStatus.COMPLETED);
+    }
+
+    @Test
+    void getMonthlySummary_ShouldAggregateUtilityExpenses() {
+        final String accountNumber = "ACC-UTILITY-123";
+        final String userEmail = "user@example.com";
+        final int year = 2026;
+        final int month = 3;
+        final LocalDateTime startDate = LocalDateTime.of(year, month, 1, 0, 0);
+        final LocalDateTime endDate = startDate.plusMonths(1);
+
+        final Account account = new Account();
+        account.setAccountNumber(accountNumber);
+        account.setCurrencyCode(Currency.UAH);
+
+        final AuthUSer authUser = new AuthUSer();
+        authUser.setEmail(userEmail);
+
+        final Customer customer = new Customer();
+        customer.setAuthUser(authUser);
+        account.setCustomer(customer);
+
+        final UtilityPayment utilityPayment = new UtilityPayment();
+        utilityPayment.setAccount(account);
+        utilityPayment.setAmount(BigDecimal.valueOf(780));
+        utilityPayment.setCurrencyCode("UAH");
+        utilityPayment.setStatus(PaymentStatus.COMPLETED);
+
+        when(accountService.getAccountByNumber(accountNumber)).thenReturn(account);
+        when(transactionRepository.findMonthlyTransactions(
+                eq(accountNumber),
+                eq(startDate),
+                eq(endDate),
+                eq(TransactionStatus.COMPLETED)
+        )).thenReturn(List.of());
+        when(paymentRepository.findMonthlyPayments(
+                eq(accountNumber),
+                eq(startDate),
+                eq(endDate),
+                eq(PaymentStatus.COMPLETED)
+        )).thenReturn(List.of(utilityPayment));
+
+        final AnalyticsSummaryDTO summary = analyticsService.getMonthlySummary(accountNumber, year, month, userEmail);
+
+        assertEquals(BigDecimal.ZERO, summary.totalIncoming());
+        assertEquals(BigDecimal.ZERO, summary.totalOutgoing());
+        assertEquals(0L, summary.totalTransactions());
+        assertEquals(BigDecimal.ZERO, summary.totalTaxExpenses());
+        assertEquals(BigDecimal.ZERO, summary.totalElectronicsExpenses());
+        assertEquals(BigDecimal.valueOf(780), summary.totalUtilityExpenses());
         verify(transactionRepository).findMonthlyTransactions(accountNumber, startDate, endDate, TransactionStatus.COMPLETED);
         verify(paymentRepository).findMonthlyPayments(accountNumber, startDate, endDate, PaymentStatus.COMPLETED);
     }
