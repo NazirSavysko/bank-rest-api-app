@@ -9,7 +9,7 @@ import bank.rest.app.bankrestapp.entity.InternetPayment;
 import bank.rest.app.bankrestapp.entity.MobilePayment;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.entity.TaxPayment;
-import bank.rest.app.bankrestapp.entity.TravelPayment;
+import bank.rest.app.bankrestapp.entity.TrainPayment;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.entity.enums.PaymentStatus;
@@ -111,7 +111,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         final BigDecimal totalTravelExpenses = payments.stream()
-                .filter(TravelPayment.class::isInstance)
+                .filter(TrainPayment.class::isInstance)
                 .map(payment -> this.normalizeAmount(payment, account.getCurrencyCode()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 

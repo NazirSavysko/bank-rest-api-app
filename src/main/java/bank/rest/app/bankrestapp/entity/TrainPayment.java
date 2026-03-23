@@ -6,8 +6,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @Entity
-@DiscriminatorValue("TRAVEL")
+@DiscriminatorValue("TRAIN")
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class TravelPayment extends Payment {
+public class TrainPayment extends Payment {
 }

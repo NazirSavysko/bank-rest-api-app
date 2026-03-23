@@ -7,7 +7,7 @@ import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.MobilePaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.TaxPaymentRequestDTO;
-import bank.rest.app.bankrestapp.dto.TravelPaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.TrainPaymentRequestDTO;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.ElectronicsPayment;
 import bank.rest.app.bankrestapp.entity.IbanPayment;
@@ -15,7 +15,7 @@ import bank.rest.app.bankrestapp.entity.InternetPayment;
 import bank.rest.app.bankrestapp.entity.MobilePayment;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.entity.TaxPayment;
-import bank.rest.app.bankrestapp.entity.TravelPayment;
+import bank.rest.app.bankrestapp.entity.TrainPayment;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.AccountType;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
@@ -209,7 +209,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Payment processTravelPayment(final String email, final TravelPaymentRequestDTO dto) {
+    public Payment processTrainPayment(final String email, final TrainPaymentRequestDTO dto) {
         final Account account = this.getValidOwnedAccount(dto.getAccountId(), email);
         if (!Currency.UAH.equals(account.getCurrencyCode())) {
             throw new InvalidAccountCurrencyException("Оплата квитків можлива лише з гривневого рахунку");
@@ -218,7 +218,7 @@ public class PaymentServiceImpl implements PaymentService {
         this.validateSufficientFunds(account, dto.getAmount());
         this.debitAccount(account, dto.getAmount());
 
-        final TravelPayment payment = this.buildTravelPayment(dto, account);
+        final TrainPayment payment = this.buildTrainPayment(dto, account);
         payment.setTransaction(this.createTransaction(
                 account,
                 null,
@@ -351,34 +351,21 @@ public class PaymentServiceImpl implements PaymentService {
         return payment;
     }
 
-    private TravelPayment buildTravelPayment(final TravelPaymentRequestDTO request, final Account account) {
-        final TravelPayment payment = new TravelPayment();
+    private TrainPayment buildTrainPayment(final TrainPaymentRequestDTO request, final Account account) {
+        final TrainPayment payment = new TrainPayment();
         payment.setAccount(account);
         payment.setAmount(request.getAmount());
         payment.setCurrencyCode(Currency.UAH.name());
         payment.setPaymentDate(now());
         payment.setStatus(COMPLETED);
-        payment.setBeneficiaryName("Transport Provider");
-        payment.setPurpose(this.buildTravelPurpose(request));
+        payment.setBeneficiaryName("Укрзалізниця");
+        payment.setPurpose(this.buildTrainPurpose(request));
 
         return payment;
     }
 
-    private String buildTravelPurpose(final TravelPaymentRequestDTO request) {
-        final String transportType = request.getTransportType();
-        if ("TRAIN".equals(transportType)) {
-            return format("Квиток на потяг: %s (%s)", request.getRoute(), request.getTicketDetails());
-        }
-        if ("AIRPLANE".equals(transportType)) {
-            return format("Авіаквиток: %s (%s)", request.getRoute(), request.getTicketDetails());
-        }
-        if ("BUS".equals(transportType)) {
-            return format("Квиток на автобус: %s (%s)", request.getRoute(), request.getTicketDetails());
-        }
-        if ("CITY".equals(transportType)) {
-            return format("Міський транспорт: %s (%s)", request.getRoute(), request.getTicketDetails());
-        }
-        return format("Транспорт: %s", request.getRoute());
+    private String buildTrainPurpose(final TrainPaymentRequestDTO request) {
+        return format("Квиток на потяг: %s - %s (%s)", request.getFromCity(), request.getToCity(), request.getTicketType());
     }
 
     private BigDecimal calculateCartTotal(final List<CartItemDTO> items) {

@@ -8,7 +8,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Data
-public class TravelPaymentRequestDTO {
+public class TrainPaymentRequestDTO {
 
     @NotNull(message = "Account id is required")
     private Long accountId;
@@ -17,12 +17,12 @@ public class TravelPaymentRequestDTO {
     @Positive(message = "Amount must be positive")
     private BigDecimal amount;
 
-    @NotBlank(message = "Transport type is required")
-    private String transportType;
+    @NotBlank(message = "Departure city is required")
+    private String fromCity;
 
-    @NotBlank(message = "Route is required")
-    private String route;
+    @NotBlank(message = "Arrival city is required")
+    private String toCity;
 
-    @NotBlank(message = "Ticket details are required")
-    private String ticketDetails;
+    @NotBlank(message = "Ticket type is required")
+    private String ticketType;
 }

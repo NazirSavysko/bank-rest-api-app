@@ -5,7 +5,7 @@ import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.MobilePaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.TaxPaymentRequestDTO;
-import bank.rest.app.bankrestapp.dto.TravelPaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.TrainPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.get.GetPaymentDTO;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.mapper.Mapper;
@@ -97,12 +97,12 @@ public final class PaymentController {
         return ResponseEntity.ok("Оплата електроніки успішно завершена");
     }
 
-    @PostMapping("/travel")
-    public ResponseEntity<String> processTravelPayment(
+    @PostMapping("/train")
+    public ResponseEntity<String> processTrainPayment(
             final @AuthenticationPrincipal UserDetails userDetails,
-            final @Valid @RequestBody TravelPaymentRequestDTO request
+            final @Valid @RequestBody TrainPaymentRequestDTO request
     ) {
-        this.paymentService.processTravelPayment(userDetails.getUsername(), request);
-        return ResponseEntity.ok("Оплата квитків успішно завершена");
+        this.paymentService.processTrainPayment(userDetails.getUsername(), request);
+        return ResponseEntity.ok("Success");
     }
 }

@@ -10,7 +10,7 @@ import bank.rest.app.bankrestapp.entity.IbanPayment;
 import bank.rest.app.bankrestapp.entity.InternetPayment;
 import bank.rest.app.bankrestapp.entity.MobilePayment;
 import bank.rest.app.bankrestapp.entity.TaxPayment;
-import bank.rest.app.bankrestapp.entity.TravelPayment;
+import bank.rest.app.bankrestapp.entity.TrainPayment;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.entity.enums.PaymentStatus;
@@ -360,11 +360,11 @@ class AnalyticsServiceImplTest {
         customer.setAuthUser(authUser);
         account.setCustomer(customer);
 
-        final TravelPayment travelPayment = new TravelPayment();
-        travelPayment.setAccount(account);
-        travelPayment.setAmount(BigDecimal.valueOf(730));
-        travelPayment.setCurrencyCode("UAH");
-        travelPayment.setStatus(PaymentStatus.COMPLETED);
+        final TrainPayment trainPayment = new TrainPayment();
+        trainPayment.setAccount(account);
+        trainPayment.setAmount(BigDecimal.valueOf(730));
+        trainPayment.setCurrencyCode("UAH");
+        trainPayment.setStatus(PaymentStatus.COMPLETED);
 
         when(accountService.getAccountByNumber(accountNumber)).thenReturn(account);
         when(transactionRepository.findMonthlyTransactions(
@@ -378,7 +378,7 @@ class AnalyticsServiceImplTest {
                 eq(startDate),
                 eq(endDate),
                 eq(PaymentStatus.COMPLETED)
-        )).thenReturn(List.of(travelPayment));
+        )).thenReturn(List.of(trainPayment));
 
         final AnalyticsSummaryDTO summary = analyticsService.getMonthlySummary(accountNumber, year, month, userEmail);
 
