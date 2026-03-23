@@ -7,6 +7,7 @@ import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.MobilePaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.TaxPaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.TrainPaymentRequestDTO;
 import bank.rest.app.bankrestapp.entity.Account;
 import bank.rest.app.bankrestapp.entity.ElectronicsPayment;
 import bank.rest.app.bankrestapp.entity.IbanPayment;
@@ -14,6 +15,7 @@ import bank.rest.app.bankrestapp.entity.InternetPayment;
 import bank.rest.app.bankrestapp.entity.MobilePayment;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.entity.TaxPayment;
+import bank.rest.app.bankrestapp.entity.TrainPayment;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.AccountType;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
@@ -31,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -205,6 +208,27 @@ public class PaymentServiceImpl implements PaymentService {
         return this.paymentRepository.save(payment);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Payment processTrainPayment(final String email, final TrainPaymentRequestDTO dto) {
+        this.validateTrainDepartureDate(dto.getDepartureDate());
+        final Account account = this.getValidOwnedAccount(dto.getAccountId(), email);
+        this.validateTrainCurrency(account.getCurrencyCode());
+        this.validateSufficientFunds(account, dto.getAmount());
+        this.debitAccount(account, dto.getAmount());
+
+        final TrainPayment payment = this.buildTrainPayment(dto, account);
+        payment.setTransaction(this.createTransaction(
+                account,
+                null,
+                dto.getAmount(),
+                TransactionType.PAYMENT,
+                payment.getPurpose()
+        ));
+
+        return this.paymentRepository.save(payment);
+    }
+
     private void validateIbanPaymentAccount(final Account senderAccount, final BigDecimal amount) {
         this.validateFopAccount(senderAccount);
         this.validateIbanSupportedCurrency(senderAccount.getCurrencyCode());
@@ -326,6 +350,25 @@ public class PaymentServiceImpl implements PaymentService {
         return payment;
     }
 
+    private TrainPayment buildTrainPayment(final TrainPaymentRequestDTO request, final Account account) {
+        final TrainPayment payment = new TrainPayment();
+        payment.setAccount(account);
+        payment.setAmount(request.getAmount());
+        payment.setCurrencyCode(Currency.UAH.name());
+        payment.setPaymentDate(now());
+        payment.setStatus(COMPLETED);
+        payment.setBeneficiaryName("Укрзалізниця");
+        payment.setPurpose(format(
+                "Квиток на потяг: %s - %s, Дата: %s (%s)",
+                request.getFromCity(),
+                request.getToCity(),
+                request.getDepartureDate(),
+                request.getTicketType()
+        ));
+
+        return payment;
+    }
+
     private BigDecimal calculateCartTotal(final List<CartItemDTO> items) {
         return items.stream()
                 .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
@@ -401,6 +444,18 @@ public class PaymentServiceImpl implements PaymentService {
     private void validateElectronicsCurrency(final Currency currency) {
         if (!Currency.UAH.equals(currency)) {
             throw new InvalidAccountCurrencyException("Оплата за електроніку можлива лише з гривневого рахунку");
+        }
+    }
+
+    private void validateTrainCurrency(final Currency currency) {
+        if (!Currency.UAH.equals(currency)) {
+            throw new InvalidAccountCurrencyException(ERRORS_PAYMENTS_ALLOWED_ONLY_FROM_UAH_ACCOUNTS);
+        }
+    }
+
+    private void validateTrainDepartureDate(final LocalDate departureDate) {
+        if (departureDate == null || departureDate.isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Дата поїздки має бути сьогодні або в майбутньому");
         }
     }
 
