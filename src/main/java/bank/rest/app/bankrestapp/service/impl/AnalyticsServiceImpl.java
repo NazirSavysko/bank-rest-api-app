@@ -10,6 +10,7 @@ import bank.rest.app.bankrestapp.entity.MobilePayment;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.entity.TaxPayment;
 import bank.rest.app.bankrestapp.entity.Transaction;
+import bank.rest.app.bankrestapp.entity.UtilityPayment;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
 import bank.rest.app.bankrestapp.entity.enums.PaymentStatus;
 import bank.rest.app.bankrestapp.entity.enums.TransactionStatus;
@@ -109,6 +110,11 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .map(payment -> this.normalizeAmount(payment, account.getCurrencyCode()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        final BigDecimal totalUtilityExpenses = payments.stream()
+                .filter(UtilityPayment.class::isInstance)
+                .map(payment -> this.normalizeAmount(payment, account.getCurrencyCode()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         return new AnalyticsSummaryDTO(
                 incoming,
                 outgoingTransactions,
@@ -118,7 +124,8 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 totalInternetExpenses,
                 totalCardToCardExpenses,
                 totalTaxExpenses,
-                totalElectronicsExpenses
+                totalElectronicsExpenses,
+                totalUtilityExpenses
         );
     }
 

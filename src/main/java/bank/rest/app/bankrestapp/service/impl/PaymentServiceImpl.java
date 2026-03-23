@@ -2,6 +2,7 @@ package bank.rest.app.bankrestapp.service.impl;
 
 import bank.rest.app.bankrestapp.currency.CurrencyLoader;
 import bank.rest.app.bankrestapp.dto.CartItemDTO;
+import bank.rest.app.bankrestapp.dto.CommunalPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.ElectronicsPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.IbanPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
@@ -16,6 +17,7 @@ import bank.rest.app.bankrestapp.entity.MobilePayment;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.entity.TaxPayment;
 import bank.rest.app.bankrestapp.entity.TrainPayment;
+import bank.rest.app.bankrestapp.entity.UtilityPayment;
 import bank.rest.app.bankrestapp.entity.Transaction;
 import bank.rest.app.bankrestapp.entity.enums.AccountType;
 import bank.rest.app.bankrestapp.entity.enums.Currency;
@@ -229,6 +231,27 @@ public class PaymentServiceImpl implements PaymentService {
         return this.paymentRepository.save(payment);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Payment processCommunalPayment(final String email, final CommunalPaymentRequestDTO dto) {
+        final Account account = this.getValidOwnedAccount(dto.getAccountId(), email);
+        final BigDecimal deductionAmount = this.convertUahAmountToAccountCurrency(dto.getAmount(), account.getCurrencyCode());
+
+        this.validateSufficientFunds(account, deductionAmount);
+        this.debitAccount(account, deductionAmount);
+
+        final UtilityPayment payment = this.buildUtilityPayment(dto, account);
+        payment.setTransaction(this.createTransaction(
+                account,
+                null,
+                deductionAmount,
+                TransactionType.UTILITY_PAYMENT,
+                payment.getPurpose()
+        ));
+
+        return this.paymentRepository.save(payment);
+    }
+
     private void validateIbanPaymentAccount(final Account senderAccount, final BigDecimal amount) {
         this.validateFopAccount(senderAccount);
         this.validateIbanSupportedCurrency(senderAccount.getCurrencyCode());
@@ -256,6 +279,13 @@ public class PaymentServiceImpl implements PaymentService {
                 ));
 
         return currencyLoader.convert(originalAmount, senderAccount.getCurrencyCode().name(), recipientAccount.getCurrencyCode().name());
+    }
+
+    private BigDecimal convertUahAmountToAccountCurrency(final BigDecimal uahAmount, final Currency accountCurrency) {
+        if (Currency.UAH.equals(accountCurrency)) {
+            return uahAmount;
+        }
+        return this.currencyLoader.convert(uahAmount, Currency.UAH.name(), accountCurrency.name());
     }
 
     private void debitAccount(final Account account, final BigDecimal amount) {
@@ -364,6 +394,25 @@ public class PaymentServiceImpl implements PaymentService {
                 request.getToCity(),
                 request.getDepartureDate(),
                 request.getTicketType()
+        ));
+
+        return payment;
+    }
+
+    private UtilityPayment buildUtilityPayment(final CommunalPaymentRequestDTO request, final Account account) {
+        final UtilityPayment payment = new UtilityPayment();
+        payment.setAccount(account);
+        payment.setAmount(request.getAmount());
+        payment.setCurrencyCode(Currency.UAH.name());
+        payment.setPaymentDate(now());
+        payment.setStatus(COMPLETED);
+        payment.setProviderName(request.getUtilityProvider());
+        payment.setUtilityAccountNumber(request.getPersonalAccount());
+        payment.setBeneficiaryName(request.getUtilityProvider());
+        payment.setPurpose(format(
+                "Оплата комунальних послуг: %s (Ор: %s)",
+                request.getUtilityProvider(),
+                request.getPersonalAccount()
         ));
 
         return payment;
