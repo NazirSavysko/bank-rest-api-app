@@ -6,6 +6,7 @@ import bank.rest.app.bankrestapp.dto.InternetPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.MobilePaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.TaxPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.TrainPaymentRequestDTO;
+import bank.rest.app.bankrestapp.dto.CommunalPaymentRequestDTO;
 import bank.rest.app.bankrestapp.dto.get.GetPaymentDTO;
 import bank.rest.app.bankrestapp.entity.Payment;
 import bank.rest.app.bankrestapp.mapper.Mapper;
@@ -104,5 +105,14 @@ public final class PaymentController {
     ) {
         this.paymentService.processTrainPayment(userDetails.getUsername(), request);
         return ResponseEntity.ok("Оплата квитків на потяг успішно завершена");
+    }
+
+    @PostMapping("/communal")
+    public ResponseEntity<String> processCommunalPayment(
+            final @AuthenticationPrincipal UserDetails userDetails,
+            final @Valid @RequestBody CommunalPaymentRequestDTO request
+    ) {
+        this.paymentService.processCommunalPayment(userDetails.getUsername(), request);
+        return ResponseEntity.ok("Оплата комунальних послуг успішно завершена");
     }
 }
