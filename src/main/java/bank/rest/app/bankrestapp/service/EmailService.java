@@ -34,6 +34,16 @@ public interface EmailService {
     void sendVerificationCode(String email);
 
     /**
+     * Generates and sends a verification code to the specified email with custom message text.
+     *
+     * @param email recipient email address
+     * @param messageTemplate message template with "{code}" placeholder for generated code
+     * @throws RuntimeException if the message cannot be sent
+     */
+    @Transactional(rollbackFor = Exception.class)
+    void sendVerificationCodeWithMessage(String email, String messageTemplate);
+
+    /**
      * Ensures that the email address has already passed verification.
      *
      * @param email email address to check

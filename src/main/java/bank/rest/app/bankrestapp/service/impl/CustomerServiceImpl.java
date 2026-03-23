@@ -111,6 +111,39 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
+    public void initPasswordChange(final String email) {
+        this.getCustomerByEmail(email);
+        this.emailService.sendVerificationCodeWithMessage(email, "Your code to change your password is: {code}");
+    }
+
+    @Override
+    public void changePassword(final String email, final String verificationCode, final @NotNull String newPassword) {
+        final Customer customer = this.getCustomerByEmail(email);
+        this.emailService.verifyCode(email, verificationCode);
+        customer.getAuthUser().setPasswordHash(passwordEncoder.encode(newPassword));
+        customerRepository.save(customer);
+        this.emailService.checkIfCodeIsVerified(email);
+    }
+
+    @Override
+    public void initEmailChange(final String email) {
+        this.getCustomerByEmail(email);
+        this.emailService.sendVerificationCodeWithMessage(email, "Your code to change your email is: {code}");
+    }
+
+    @Override
+    public void changeEmail(final String email, final String verificationCode, final String newEmail) {
+        final Customer customer = this.getCustomerByEmail(email);
+        this.emailService.verifyCode(email, verificationCode);
+        if (!email.equals(newEmail) && customerRepository.findByAuthUserEmail(newEmail).isPresent()) {
+            throw new IllegalArgumentException(ERRORS_EMAIL_ALREADY_EXISTS);
+        }
+        customer.getAuthUser().setEmail(newEmail);
+        customerRepository.save(customer);
+        this.emailService.checkIfCodeIsVerified(email);
+    }
+
+    @Override
     public List<Customer> getAllCustomers() {
         return customerRepository.findAll();
     }
