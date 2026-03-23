@@ -1,12 +1,15 @@
 package bank.rest.app.bankrestapp.controller;
 
 import bank.rest.app.bankrestapp.controller.payload.UpdateCustomerPassword;
+import bank.rest.app.bankrestapp.dto.ChangeEmailRequestDTO;
+import bank.rest.app.bankrestapp.dto.ChangePasswordRequestDTO;
 import bank.rest.app.bankrestapp.dto.ResetPasswordRequestDTO;
 import bank.rest.app.bankrestapp.dto.UpdateCustomerDTO;
 import bank.rest.app.bankrestapp.dto.get.GetCustomerDTO;
 import bank.rest.app.bankrestapp.facade.CustomerFacade;
+import bank.rest.app.bankrestapp.service.CustomerService;
+import bank.rest.app.bankrestapp.validation.DtoValidator;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,6 +24,8 @@ import static org.springframework.http.ResponseEntity.ok;
 class CustomerController {
 
     private final CustomerFacade customerFacade;
+    private final CustomerService customerService;
+    private final DtoValidator dtoValidator;
 
     /**
      * Returns profile data for the authenticated customer.
@@ -79,5 +84,45 @@ class CustomerController {
 
         return ok()
                 .build();
+    }
+
+    @PostMapping("/me/settings/password/init")
+    public ResponseEntity<?> initPasswordChange(final @AuthenticationPrincipal UserDetails userDetails) {
+        this.customerService.initPasswordChange(userDetails.getUsername());
+        return ok().build();
+    }
+
+    @PostMapping("/me/settings/password/change")
+    public ResponseEntity<?> changePasswordWithVerification(
+            final @AuthenticationPrincipal UserDetails userDetails,
+            final @RequestBody ChangePasswordRequestDTO requestDTO,
+            final BindingResult bindingResult) {
+        this.dtoValidator.validate(requestDTO, bindingResult);
+        this.customerService.changePassword(
+                userDetails.getUsername(),
+                requestDTO.verificationCode(),
+                requestDTO.newPassword()
+        );
+        return ok().build();
+    }
+
+    @PostMapping("/me/settings/email/init")
+    public ResponseEntity<?> initEmailChange(final @AuthenticationPrincipal UserDetails userDetails) {
+        this.customerService.initEmailChange(userDetails.getUsername());
+        return ok().build();
+    }
+
+    @PostMapping("/me/settings/email/change")
+    public ResponseEntity<?> changeEmailWithVerification(
+            final @AuthenticationPrincipal UserDetails userDetails,
+            final @RequestBody ChangeEmailRequestDTO requestDTO,
+            final BindingResult bindingResult) {
+        this.dtoValidator.validate(requestDTO, bindingResult);
+        this.customerService.changeEmail(
+                userDetails.getUsername(),
+                requestDTO.verificationCode(),
+                requestDTO.newEmail()
+        );
+        return ok().build();
     }
 }

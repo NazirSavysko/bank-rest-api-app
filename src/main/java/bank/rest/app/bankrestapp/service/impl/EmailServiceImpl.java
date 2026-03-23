@@ -53,10 +53,14 @@ public class EmailServiceImpl implements EmailService {
 
     @Override
     public void sendVerificationCode(final String email) {
+        this.sendVerificationCodeWithMessage(email, "Your verification code is: {code}");
+    }
+
+    @Override
+    public void sendVerificationCodeWithMessage(final String email, final String messageTemplate) {
         final int generatedCode = (int) (Math.random() * 90000 + 10000);
         final String code = String.valueOf(generatedCode);
 
-        // 2. Оновлюємо базу даних
         this.codeRepo.deleteByEmail(email);
 
         final EmailVerificationCodes entity = new EmailVerificationCodes();
@@ -67,27 +71,23 @@ public class EmailServiceImpl implements EmailService {
 
         this.codeRepo.save(entity);
 
-        Resend resend = new Resend(apiKey);
+        final Resend resend = new Resend(apiKey);
+        final String plainTextContent = messageTemplate.replace("{code}", code);
 
         try {
-            org.springframework.core.io.ClassPathResource resource =
-                    new org.springframework.core.io.ClassPathResource("templates/verification-code-template.html");
-
-            String htmlContent = new String(resource.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
-
-            htmlContent = htmlContent.replace("{{CODE}}", code);
-
-            com.resend.services.emails.model.CreateEmailOptions sendEmailRequest =
+            final String htmlContent = buildEmailContent(code);
+            final com.resend.services.emails.model.CreateEmailOptions sendEmailRequest =
                     com.resend.services.emails.model.CreateEmailOptions.builder()
                             .from("Bank Emulator <no-reply@bank-emulator.app>")
                             .to(email)
-                            .subject("Код підтвердження електронної пошти")
+                            .subject("Email verification code")
+                            .text(plainTextContent)
                             .html(htmlContent)
                             .build();
 
             resend.emails().send(sendEmailRequest);
 
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             throw new java.io.UncheckedIOException("Не вдалося зчитати HTML шаблон", e);
         } catch (Exception e) {
             e.printStackTrace();

@@ -143,4 +143,92 @@ class CustomerServiceImplTest {
         List<Customer> list = customerService.getAllCustomers();
         assertEquals(1, list.size());
     }
+
+    @Test
+    void initPasswordChange_ShouldSendVerificationCodeWithExpectedMessage() {
+        String email = "user@example.com";
+        when(customerRepository.findByAuthUserEmail(email)).thenReturn(Optional.of(new Customer()));
+
+        customerService.initPasswordChange(email);
+
+        verify(emailService).sendVerificationCodeWithMessage(
+                email,
+                "Your code to change your password is: {code}"
+        );
+    }
+
+    @Test
+    void changePassword_ShouldVerifyCodeEncodeAndSaveThenDeleteCode() {
+        String email = "user@example.com";
+        String code = "12345";
+        String newPassword = "newPassword123";
+
+        Customer customer = new Customer();
+        AuthUSer authUser = new AuthUSer();
+        authUser.setEmail(email);
+        customer.setAuthUser(authUser);
+
+        when(customerRepository.findByAuthUserEmail(email)).thenReturn(Optional.of(customer));
+        when(passwordEncoder.encode(newPassword)).thenReturn("encodedPassword");
+
+        customerService.changePassword(email, code, newPassword);
+
+        verify(emailService).verifyCode(email, code);
+        verify(customerRepository).save(customer);
+        verify(emailService).checkIfCodeIsVerified(email);
+        assertEquals("encodedPassword", customer.getAuthUser().getPasswordHash());
+    }
+
+    @Test
+    void initEmailChange_ShouldSendVerificationCodeWithExpectedMessage() {
+        String email = "user@example.com";
+        when(customerRepository.findByAuthUserEmail(email)).thenReturn(Optional.of(new Customer()));
+
+        customerService.initEmailChange(email);
+
+        verify(emailService).sendVerificationCodeWithMessage(
+                email,
+                "Your code to change your email is: {code}"
+        );
+    }
+
+    @Test
+    void changeEmail_Success_ShouldUpdateEmailAndDeleteCode() {
+        String email = "user@example.com";
+        String code = "12345";
+        String newEmail = "new@example.com";
+
+        Customer customer = new Customer();
+        AuthUSer authUser = new AuthUSer();
+        authUser.setEmail(email);
+        customer.setAuthUser(authUser);
+
+        when(customerRepository.findByAuthUserEmail(email)).thenReturn(Optional.of(customer));
+        when(customerRepository.findByAuthUserEmail(newEmail)).thenReturn(Optional.empty());
+
+        customerService.changeEmail(email, code, newEmail);
+
+        verify(emailService).verifyCode(email, code);
+        verify(customerRepository).save(customer);
+        verify(emailService).checkIfCodeIsVerified(email);
+        assertEquals(newEmail, customer.getAuthUser().getEmail());
+    }
+
+    @Test
+    void changeEmail_NewEmailAlreadyExists_ShouldThrow() {
+        String email = "user@example.com";
+        String code = "12345";
+        String newEmail = "taken@example.com";
+
+        Customer customer = new Customer();
+        AuthUSer authUser = new AuthUSer();
+        authUser.setEmail(email);
+        customer.setAuthUser(authUser);
+
+        when(customerRepository.findByAuthUserEmail(email)).thenReturn(Optional.of(customer));
+        when(customerRepository.findByAuthUserEmail(newEmail)).thenReturn(Optional.of(new Customer()));
+
+        assertThrows(IllegalArgumentException.class, () -> customerService.changeEmail(email, code, newEmail));
+        verify(customerRepository, never()).save(any(Customer.class));
+    }
 }
