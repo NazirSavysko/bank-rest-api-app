@@ -97,10 +97,12 @@ public class PaymentServiceImpl implements PaymentService {
         if (!Objects.equals(recipientAccount.getEdrpou(), taxNumber)) {
             throw new IllegalArgumentException(ERRORS_FOP_ACCOUNT_EDRPOU_MISMATCH);
         }
-        final String fullName = recipientAccount.getCustomer().getFirstName() + " " + recipientAccount.getCustomer().getLastName();
+        String fullName = recipientAccount.getCustomer().getFirstName() + " " + recipientAccount.getCustomer().getLastName();
+
 
         if (recipientAccount.getAccountType() == AccountType.FOP) {
-            if (!Objects.equals(fullName + "  ФОП", recipientName + "  ФОП")) {
+            fullName = fullName + " ФОП";
+            if (!Objects.equals(fullName, recipientName)) {
                 throw new IllegalArgumentException(ERRORS_ACCOUNT_NAME_MISMATCH);
             }
         }else {
