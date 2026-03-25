@@ -100,7 +100,7 @@ public class PaymentServiceImpl implements PaymentService {
         final String fullName = recipientAccount.getCustomer().getFirstName() + " " + recipientAccount.getCustomer().getLastName();
 
         if (recipientAccount.getAccountType() == AccountType.FOP) {
-            if (!Objects.equals(fullName + "  ФОП", recipientName)) {
+            if (!Objects.equals(fullName + "  ФОП", recipientName + "  ФОП")) {
                 throw new IllegalArgumentException(ERRORS_ACCOUNT_NAME_MISMATCH);
             }
         }else {
