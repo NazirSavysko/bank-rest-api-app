@@ -76,21 +76,40 @@ public class PaymentServiceImpl implements PaymentService {
         return this.paymentRepository.save(payment);
     }
 
-    private Account getValidORecipientAccount(final String recipientIban,final String taxNumber,final String recipientName){
+    private Account getValidORecipientAccount(final String recipientIban, final String taxNumber, final String recipientName) {
         final Account recipientAccount = this.accountRepository.findWithLockByAccountNumber(recipientIban)
                 .orElseThrow(() -> new NoSuchElementException(ERRORS_ACCOUNT_NOT_FOUND_BY_NUMBER));
 
         if (!Objects.equals(recipientAccount.getEdrpou(), taxNumber)) {
             throw new IllegalArgumentException(ERRORS_FOP_ACCOUNT_EDRPOU_MISMATCH);
         }
-        final String fullName = recipientAccount.getCustomer().getFirstName() + " " + recipientAccount.getCustomer().getLastName();
+
+        // Safely build full name (handle nulls)
+        final String firstName = recipientAccount.getCustomer() != null && recipientAccount.getCustomer().getFirstName() != null
+                ? recipientAccount.getCustomer().getFirstName() : "";
+        final String lastName = recipientAccount.getCustomer() != null && recipientAccount.getCustomer().getLastName() != null
+                ? recipientAccount.getCustomer().getLastName() : "";
+        final String fullName = (firstName + " " + lastName).trim();
+
+        // Normalizer: trim and collapse multiple spaces to a single space
+        final java.util.function.Function<String, String> normalize = s -> {
+            if (s == null) return null;
+            return s.trim().replaceAll("\\s+", " ");
+        };
+
+        final String normalizedFull = normalize.apply(fullName);
+        final String normalizedRecipient = normalize.apply(recipientName);
 
         if (recipientAccount.getAccountType() == AccountType.FOP) {
-            if (!Objects.equals(fullName + "  ФОП", recipientName)) {
+            // For FOP append single space + 'ФОП' (tolerate spacing differences in input)
+            final String expected = normalizedFull == null || normalizedFull.isEmpty()
+                    ? "ФОП"
+                    : (normalizedFull + " ФОП");
+            if (!Objects.equals(expected, normalizedRecipient)) {
                 throw new IllegalArgumentException(ERRORS_ACCOUNT_NAME_MISMATCH);
             }
-        }else {
-            if (!Objects.equals(fullName, recipientName)) {
+        } else {
+            if (!Objects.equals(normalizedFull, normalizedRecipient)) {
                 throw new IllegalArgumentException(ERRORS_ACCOUNT_NAME_MISMATCH);
             }
         }
